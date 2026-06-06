@@ -357,3 +357,15 @@ src/
   App.tsx          <- Root component and routing
   main.tsx         <- Entry point
   index.css        <- Global styles and CSS variables — DO NOT MODIFY
+
+
+---
+
+## 15. Branch Rule
+
+You do not create branches. Ever.
+The branch is always created by the developer before the Cursor task starts.
+Your first action in any task is to run: git branch
+Confirm which branch you are on, then work only on that branch.
+Never run git checkout -b under any circumstances.
+Never create, rename, or switch branches.
