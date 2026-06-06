@@ -43,6 +43,18 @@ export type HeightUnit = 'cm' | 'in'
 
 export type BiologicalSex = 'male' | 'female'
 
+export type FoodState = 'empty' | 'snack' | 'full'
+
+export type HydrationState = 'low' | 'ok' | 'good'
+
+export type SleepLevel = 'poor' | 'ok' | 'good'
+
+export interface DoseContext {
+  foodState: FoodState
+  hydrationState: HydrationState
+  sleepLevel: SleepLevel
+}
+
 export interface Profile {
   nickname: string
   age: number
