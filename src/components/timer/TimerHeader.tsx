@@ -3,42 +3,42 @@ import { ChevronDownIcon, FlashlightIcon } from './TimerIcons'
 
 type TimerHeaderProps = {
   substance: Substance
-  onToggleSubstance: () => void
+  onSubstanceClick?: () => void
 }
 
-export function TimerHeader({ substance, onToggleSubstance }: TimerHeaderProps) {
+export function TimerHeader({ substance, onSubstanceClick }: TimerHeaderProps) {
   return (
-    <header className="flex items-start justify-between gap-4">
-      <div>
-        <h1 className="font-display text-[3.5rem] font-light lowercase leading-none tracking-[0.16em] text-[var(--color-text)]">
+    <header className="flex shrink-0 items-start justify-between px-4 pt-3">
+      <div className="flex flex-col">
+        <h1 className="font-display text-[clamp(28px,10vw,40px)] font-light lowercase tracking-[0.16em] text-[var(--color-text)]">
           doser
         </h1>
-        <p className="mt-2 text-sm uppercase tracking-[0.34em] text-[var(--color-purple)]">
+        <p className="mt-0.5 text-[11px] uppercase tracking-[0.34em] text-[var(--color-purple)]">
           TIMING AWARENESS
         </p>
       </div>
 
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           aria-label="Flashlight"
-          className="flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)]"
         >
-          <FlashlightIcon />
+          <FlashlightIcon className="h-5 w-5 text-[var(--color-text)]" />
         </button>
 
         <button
           type="button"
-          onClick={onToggleSubstance}
-          aria-label={`Selected substance ${substance}. Tap to switch.`}
-          className="flex h-[4.75rem] min-w-[8rem] items-center justify-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-base text-[var(--color-text)]"
+          aria-label={`Selected substance: ${substance}`}
+          onClick={onSubstanceClick}
+          className="flex h-14 min-w-[100px] shrink-0 items-center justify-center gap-2 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3"
         >
           <span
-            className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--color-accent)]"
+            className="h-2 w-2 shrink-0 rounded-full bg-[var(--color-accent)]"
             aria-hidden
           />
-          <span>{substance}</span>
-          <ChevronDownIcon className="text-[var(--color-text-dim)]" />
+          <span className="text-sm text-[var(--color-text)]">{substance}</span>
+          <ChevronDownIcon className="h-4 w-4 text-[var(--color-text)]" />
         </button>
       </div>
     </header>

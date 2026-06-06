@@ -1,18 +1,10 @@
-import type { ReactNode } from 'react'
-
 type CarouselCardShellProps = {
-  children: ReactNode
-  className?: string
+  children: React.ReactNode
 }
 
-export function CarouselCardShell({
-  children,
-  className = '',
-}: CarouselCardShellProps) {
+export function CarouselCardShell({ children }: CarouselCardShellProps) {
   return (
-    <div
-      className={`rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface)] py-8 px-4 ${className}`}
-    >
+    <div className="flex h-full min-h-0 w-full flex-col rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
       {children}
     </div>
   )
