@@ -328,3 +328,32 @@ Account, Profile, Notifications, Themes, Install App, Legal.
 - 9-factor tolerance model scoring
 
 These are intentional harm reduction calibration decisions, not bugs.
+
+
+---
+
+## 14. Folder Structure
+
+This is the established src/ layout. All new files go in the correct folder — do not create new top-level folders without explicit instruction.
+
+src/
+  components/
+    gate/          <- Age gate, legal acknowledgment, harm reduction acknowledgment
+    auth/          <- Log in, sign up, forgot password, recovery
+    onboarding/    <- Profile setup, substance defaults, notification basics
+    timer/
+      carousel/    <- All 6 carousel cards as individual components
+    insights/      <- All, GBL, BDO, Peer tabs
+    history/       <- Sessions, entries, edit/delete, import/export
+    tools/         <- Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference
+    settings/      <- Account, Profile, Notifications, Themes, Install, Legal
+  lib/
+    perceivedEffect/
+      effectCurves.ts           <- DO NOT MODIFY
+      perceivedEffectModel.ts   <- DO NOT MODIFY
+      toleranceModel.ts         <- DO NOT MODIFY
+  store/           <- App state
+  types.ts         <- All TypeScript types (see Section 8)
+  App.tsx          <- Root component and routing
+  main.tsx         <- Entry point
+  index.css        <- Global styles and CSS variables — DO NOT MODIFY
