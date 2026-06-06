@@ -369,3 +369,25 @@ Your first action in any task is to run: git branch
 Confirm which branch you are on, then work only on that branch.
 Never run git checkout -b under any circumstances.
 Never create, rename, or switch branches.
+
+
+---
+
+## 16. Current Build Status
+
+Last updated: 2026-06-06
+
+Phase 1 — Foundation: COMPLETE
+Phase 2 — Gate + Auth + Onboarding: IN PROGRESS
+  - Gate Layer (PR #1): MERGED
+  - Auth screens with Firebase (PR #2): MERGED
+  - Onboarding: NOT STARTED — next task
+
+Phase 3 — Timer Screen: NOT STARTED
+  IMPORTANT: Copy PEL files from old repo into src/lib/perceivedEffect/ before starting Phase 3.
+
+Phase 4 — History + Insights: NOT STARTED
+Phase 5 — Tools + Settings: NOT STARTED
+
+Firebase project: doser-e389f
+Auth methods enabled: Email/Password, Google
