@@ -122,3 +122,18 @@ Phase 3 — Timer Screen
 Phase 4 — History + Insights
 
 Phase 5 — Tools + Settings
+
+
+---
+
+## Final Step — Update AI_CONTEXT.md
+
+After every merged PR, before closing the session, update docs/AI_CONTEXT.md:
+
+1. Change the phase status to reflect what just merged
+2. Update "Next task" to the next thing in the phase
+3. Add any new tech decisions or known issues discovered this session
+4. Commit it: git add docs/AI_CONTEXT.md && git commit -m "chore: update AI context" && git push origin main
+
+This keeps any AI (Claude, ChatGPT, Gemini, Cursor) able to pick up exactly
+where you left off by reading this one file.
