@@ -34,12 +34,13 @@ PHASE 1 — Foundation: COMPLETE
   Clean Vite+React+TS+Tailwind scaffold committed to main.
   CSS variables, Google Fonts (Unbounded + JetBrains Mono), folder structure all locked in.
   Firebase connected (project: doser-e389f, Email/Password + Google auth enabled).
+  Firestore database created (us-east4, production mode, security rules set).
   .env file exists locally with Firebase config — gitignored, never committed.
 
-PHASE 2 — Gate + Auth + Onboarding: IN PROGRESS
+PHASE 2 — Gate + Auth + Onboarding: COMPLETE
   Gate Layer (PR #1): MERGED — age gate, legal, harm reduction acknowledgment screens
   Auth screens (PR #2): MERGED — log in, sign up, forgot password, recovery (Firebase)
-  Onboarding: NOT STARTED — this is the next task
+  Onboarding (PR #3): MERGED — 4-screen onboarding, profile saved to Firestore, skips on return
 
 PHASE 3 — Timer Screen: NOT STARTED
   !! IMPORTANT: Before starting Phase 3, copy PEL engine files from old repo into:
@@ -96,6 +97,10 @@ Cursor rules that matter most:
 Firebase over Supabase: Switched during Phase 2. Firebase Auth handles
   email/password and Google sign-in. Supabase was the original plan but was
   replaced. No Supabase code remains in the codebase.
+
+Firestore: Database created in us-east4 (Northern Virginia). Production mode.
+  Security rules set to allow read/write only for authenticated user on their own
+  users/{uid} document.
 
 Tailwind v3 (not v4): v4 is a breaking change. The project is locked to v3.4.
   Do not upgrade.
@@ -174,22 +179,6 @@ Full visual spec with exact pixel values and colors is in docs/HANDOFF.md Sectio
 
 ---
 
-## Onboarding — Next Task
-
-This is Phase 2, third task. Branch: feat/onboarding
-
-Four screens in sequence after auth, before the main app:
-1. Essential Profile Setup — nickname, age, weight, height, biological sex
-2. Substance Defaults — preferred dose and interval for GBL and BDO
-3. Notification Basics — enable/configure reminders
-4. Finish Into Timer — completion screen that routes to the Timer
-
-Data collected feeds into the Profile type (see HANDOFF.md Section 8 for exact shape).
-Profile must be saved to Firebase Firestore (not just local state) so it syncs.
-After onboarding completes, user should never see onboarding again.
-
----
-
 ## Known Issues / Watch Out For
 
 - Cursor keeps creating its own branches despite the rule. Always start prompts with:
@@ -205,6 +194,10 @@ After onboarding completes, user should never see onboarding again.
   as a template with placeholder values only.
 
 - PWA install prompt is blocked in incognito — always test in a standard browser session
+
+- Weight and dose number inputs have a decimal auto-format bug when typing — fixed in
+  onboarding via raw string state + parse on blur. Apply same pattern to any future
+  numeric inputs.
 
 ---
 
