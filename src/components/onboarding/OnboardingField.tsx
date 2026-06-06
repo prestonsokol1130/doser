@@ -4,6 +4,7 @@ type OnboardingFieldProps = {
   type?: 'text' | 'number'
   value: string
   onChange: (value: string) => void
+  onBlur?: () => void
   placeholder?: string
   inputMode?: 'decimal' | 'numeric' | 'text'
   min?: number
@@ -16,6 +17,7 @@ export function OnboardingField({
   type = 'text',
   value,
   onChange,
+  onBlur,
   placeholder,
   inputMode,
   min,
@@ -31,6 +33,7 @@ export function OnboardingField({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         inputMode={inputMode}
         min={min}
@@ -149,6 +152,7 @@ export function ToggleRow({
       <button
         type="button"
         role="switch"
+        aria-label={label}
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative h-8 w-14 shrink-0 rounded-full border border-[var(--color-border)] transition ${

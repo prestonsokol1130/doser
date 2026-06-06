@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { auth } from '../../lib/firebase'
 import {
   defaultProfile,
   saveOnboardingProfile,
@@ -17,22 +16,22 @@ export type OnboardingStep =
   | 'finish'
 
 type OnboardingLayerProps = {
+  uid: string
   onComplete: () => void
 }
 
-export function OnboardingLayer({ onComplete }: OnboardingLayerProps) {
+export function OnboardingLayer({ uid, onComplete }: OnboardingLayerProps) {
   const [step, setStep] = useState<OnboardingStep>('profile')
   const [profile, setProfile] = useState<Profile>(() => defaultProfile())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleFinish() {
-    const uid = auth.currentUser?.uid
-    if (!uid) {
-      setError('You must be signed in to complete onboarding.')
-      return
-    }
+  function goToStep(nextStep: OnboardingStep) {
+    setError(null)
+    setStep(nextStep)
+  }
 
+  async function handleFinish() {
     setError(null)
     setLoading(true)
 
@@ -55,8 +54,8 @@ export function OnboardingLayer({ onComplete }: OnboardingLayerProps) {
       <SubstanceDefaults
         profile={profile}
         onChange={setProfile}
-        onNext={() => setStep('notification')}
-        onBack={() => setStep('profile')}
+        onNext={() => goToStep('notification')}
+        onBack={() => goToStep('profile')}
       />
     )
   }
@@ -66,8 +65,8 @@ export function OnboardingLayer({ onComplete }: OnboardingLayerProps) {
       <NotificationBasics
         profile={profile}
         onChange={setProfile}
-        onNext={() => setStep('finish')}
-        onBack={() => setStep('substance')}
+        onNext={() => goToStep('finish')}
+        onBack={() => goToStep('substance')}
       />
     )
   }
@@ -77,7 +76,7 @@ export function OnboardingLayer({ onComplete }: OnboardingLayerProps) {
       <FinishIntoTimer
         nickname={profile.nickname}
         onFinish={() => void handleFinish()}
-        onBack={() => setStep('notification')}
+        onBack={() => goToStep('notification')}
         loading={loading}
         error={error}
       />
@@ -88,7 +87,7 @@ export function OnboardingLayer({ onComplete }: OnboardingLayerProps) {
     <ProfileSetup
       profile={profile}
       onChange={setProfile}
-      onNext={() => setStep('substance')}
+      onNext={() => goToStep('substance')}
     />
   )
 }

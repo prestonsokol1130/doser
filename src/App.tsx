@@ -47,7 +47,7 @@ function App() {
       })
       .catch(() => {
         if (!active) return
-        setPhase('onboarding')
+        setPhase('auth')
       })
 
     return () => {
@@ -71,7 +71,8 @@ function App() {
       <AuthLayer
         onComplete={() => {
           const uid = auth.currentUser?.uid ?? null
-          if (uid) setUserId(uid)
+          if (!uid) return
+          setUserId(uid)
           setPhase('onboarding-check')
         }}
       />
@@ -79,11 +80,26 @@ function App() {
   }
 
   if (phase === 'onboarding-check') {
-    return <div className="min-h-screen bg-[var(--color-bg)]" />
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex min-h-screen items-center justify-center bg-[var(--color-bg)]"
+      >
+        <p className="text-sm text-[var(--color-text-dim)]">
+          Checking your profile…
+        </p>
+      </div>
+    )
   }
 
   if (phase === 'onboarding') {
-    return <OnboardingLayer onComplete={() => setPhase('timer')} />
+    return (
+      <OnboardingLayer
+        uid={userId!}
+        onComplete={() => setPhase('timer')}
+      />
+    )
   }
 
   return <TimerScreen />

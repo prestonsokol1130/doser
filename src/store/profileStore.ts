@@ -76,8 +76,17 @@ export async function fetchUserDocument(
 }
 
 export async function isOnboardingComplete(uid: string): Promise<boolean> {
-  const userDoc = await fetchUserDocument(uid)
-  return userDoc?.onboardingComplete === true
+  const snapshot = await getDoc(userDocRef(uid))
+  if (!snapshot.exists()) return false
+
+  const data = snapshot.data()
+  if (!data || typeof data !== 'object') return false
+
+  return (
+    data.onboardingComplete === true &&
+    data.profile != null &&
+    typeof data.profile === 'object'
+  )
 }
 
 export async function saveOnboardingProfile(
