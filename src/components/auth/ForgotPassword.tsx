@@ -28,11 +28,8 @@ export function ForgotPassword({ onLogIn }: ForgotPasswordProps) {
         'If an account exists for that email, a reset link has been sent.',
       )
     } catch (resetError) {
-      setError(
-        resetError instanceof Error
-          ? resetError.message
-          : 'Unable to send reset link.',
-      )
+      console.error(resetError)
+      setError('Unable to send reset link. Please try again.')
     } finally {
       setLoading(false)
     }
