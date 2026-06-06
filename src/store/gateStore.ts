@@ -30,7 +30,11 @@ function readState(): GateState {
 }
 
 function writeState(state: GateState): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch (error) {
+    console.error('Failed to write gate state to localStorage:', error)
+  }
 }
 
 export function getGateStep(): GateStep {
