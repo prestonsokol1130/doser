@@ -1,0 +1,330 @@
+# Doser 2.0 — Cursor Handoff Packet
+
+## How to use this file
+At the start of every Cursor task, type @HANDOFF.md to give the agent full context before it writes a single line of code.
+
+---
+
+## 1. Project Overview
+
+App name: Doser | URL: usedoser.com
+Type: PWA — intentionally distributed outside app stores
+Stack: React + TypeScript + Vite + Tailwind CSS v3 + Supabase
+Purpose: Harm reduction tool for GBL, BDO, and GHB users. Safe interval timing, dosing pattern tracking, perceived effect level calculation. Not a medical device. Not a guarantee of safety.
+
+---
+
+## 2. Design System
+
+### Aesthetic
+- Dark only. No light mode. No gradients fading to white or light.
+- Flat design. No decorative drop shadows. No glassmorphism.
+- Clinical-adjacent minimalism. References: Apple Health, Oura, Whoop. Serious and data-trustworthy.
+- No design flourishes. Every element earns its place through function.
+
+### Capitalization Rule
+- "doser" (the wordmark) is the ONLY word in the app that is intentionally lowercase. Brand decision, not a style pattern.
+- All other text uses consistent capitalization. ALL CAPS is fine where it looks better (WAIT, LOG ENTRY, LAST ENTRY). Title Case for nav items and screen titles. Sentence case for descriptive text.
+- Rule is consistency across screens. Equivalent labels must match across all screens.
+- Do not apply the doser lowercase treatment to any other word anywhere in the app.
+
+### Typography
+- Wordmark "doser": Unbounded, font-light (weight 300), lowercase, letter-spacing 0.16em
+- All UI numbers and body text: JetBrains Mono
+- Both loaded from Google Fonts — already imported in src/index.css
+
+### CSS Color Variables
+All components must use these variables. Never hardcode hex values in components.
+
+--color-bg: #000000 (page background)
+--color-app: #090a0d (app shell background)
+--color-ring-inner: #111216 (timer ring inner circle)
+--color-surface: rgba(255,255,255,0.05) (card backgrounds)
+--color-border: rgba(255,255,255,0.07) (card borders)
+--color-accent: #d7e332 (ring fill, WAIT label, active states, icons)
+--color-cta: #ff5a18 (LOG ENTRY button)
+--color-purple: #b89cff (TIMING AWARENESS, next window, DOSE AMOUNT, mL labels)
+--color-text: #ffffff (primary text)
+--color-text-muted: rgba(255,255,255,0.55) (stat card labels)
+--color-text-dim: rgba(255,255,255,0.60) (scale labels, secondary)
+--color-nav-inactive: rgba(255,255,255,0.80) (inactive nav)
+--color-ring-gap: rgba(255,255,255,0.16) (timer ring gap)
+--color-tick-major: rgba(255,255,255,0.35) (scale major ticks)
+--color-tick-minor: rgba(255,255,255,0.22) (scale minor ticks)
+
+### Spacing
+- Mobile-first. 390px reference width.
+- Bottom safe area: env(safe-area-inset-bottom) on all fixed bottom elements.
+- Ring sizing: use clamp() or max-w-full — never hardcoded px.
+
+---
+
+## 3. Git Workflow
+
+Every task follows this process. No exceptions.
+
+Branch naming:
+- feat/[task-name] — new feature or screen
+- fix/[task-name] — bug fix
+- refactor/[task-name] — restructuring
+- style/[task-name] — visual/CSS only
+- chore/[task-name] — deps, config, tooling
+
+Per-task steps:
+1. git checkout main && git pull origin main
+2. git checkout -b feat/[task-name]
+3. Cursor works ONLY on this branch — never on main
+4. git add -p (review changes before committing)
+5. git commit -m "feat: short description"
+6. git push origin feat/[task-name]
+7. Open Pull Request on GitHub — CodeRabbit reviews automatically
+8. Read all CodeRabbit comments, fix anything flagged
+9. Merge PR to main only after review passes
+10. git checkout main && git pull && git branch -d feat/[task-name]
+
+Commit format: feat: / fix: / refactor: / style: / chore: followed by short description.
+Never push directly to main. One branch per Cursor task.
+
+---
+
+## 4. App Architecture
+
+Entry flow in order:
+1. Gate Layer — Age gate, Legal acknowledgment, Harm-reduction acknowledgment
+2. Auth — Log in, Sign up, Forgot password, Recovery
+3. Onboarding — Profile setup, Substance defaults, Notification basics, Finish into Timer
+4. Main App Shell — Five tabs: Insights / History / Timer / Tools / Settings
+
+Tabs:
+- Timer: Primary screen. Check timing state, log a dose.
+- Insights: Analysis and pattern interpretation of logged data.
+- History: Raw log review, editing, import/export.
+- Tools: Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference.
+- Settings: Account, Profile, Notifications, Themes, Install, Legal.
+
+---
+
+## 5. Timer Screen Visual Spec
+
+Primary screen. Reference screenshot is source of truth.
+
+### Header
+- Left: "doser" wordmark — Unbounded font-light 56px lowercase tracking 0.16em white
+- Below wordmark: "TIMING AWARENESS" — 14px uppercase tracking 0.34em var(--color-purple)
+- Right: Flashlight button — 76x76px rounded-[22px] border var(--color-border) bg var(--color-surface)
+- Right: Substance selector — 76px tall min-w-[128px] rounded-[22px] same border/bg. Dot var(--color-accent) + "GBL" + chevron
+
+### Top Stat Row
+Two equal cards: rounded-[22px] border var(--color-border) bg var(--color-surface) p-5.
+Last Entry: clock icon var(--color-accent), "LAST ENTRY" 12px uppercase tracking 0.18em var(--color-text-muted), value dose+bullet+time.
+Session Total: bar chart icon var(--color-accent), "SESSION TOTAL" same label style, value total mL.
+
+### Timer Ring Card
+Container: rounded-[28px] border var(--color-border) bg var(--color-surface) py-8 px-4.
+Ring outer: 470x470px max-w-full. conic-gradient: var(--color-accent) active arc, var(--color-ring-gap) ~16deg gap at top.
+Ring inner: 410x410px max-w-[88%] bg var(--color-ring-inner) rounded-full.
+Inside ring top to bottom:
+- State label "WAIT" — 28px semibold uppercase tracking 0.18em var(--color-accent)
+- Countdown "00:38:24" — 96px font-light tracking -0.04em white
+- Divider 1px 140px wide rgba(255,255,255,0.12)
+- "next window" — 21px var(--color-purple)
+- Time "12:20 AM" — 26px white
+
+### Pagination Dots
+Centered row gap-5. Active: 12x12px rounded-full var(--color-accent). Inactive: 12x12px rounded-full white/25%.
+
+### Dose Card
+Container: rounded-[28px] border var(--color-border) bg var(--color-surface) p-6.
+Minus button: 86x86px rounded-full border var(--color-border) minus icon var(--color-accent) 52px.
+Center: "DOSE AMOUNT" 15px uppercase tracking 0.34em var(--color-purple). Dose number 84px font-light. "mL" 22px var(--color-purple) baseline-aligned.
+Plus button: same as minus.
+Scale: 37 ticks 1px wide rounded. Center 56px var(--color-accent). Major every 4th 32px var(--color-tick-major). Minor 16px var(--color-tick-minor). Labels 16px var(--color-text-dim), active var(--color-accent). Range: 1.20 to 2.40.
+LOG ENTRY button: w-full h-[82px] rounded-[18px] bg var(--color-cta). Target icon + "LOG ENTRY" 22px semibold uppercase tracking 0.18em text-black.
+
+### Bottom Nav
+Border-top var(--color-border) bg rgba(255,255,255,0.04) pt-3 pb-6 plus safe area.
+5 cols: Insights/History/Timer/Tools/Settings. Active: var(--color-accent). Inactive: var(--color-nav-inactive). Labels 13px. Icons 32x32px.
+
+---
+
+## 6. Carousel Cards Visual Spec
+
+All cards share the Timer Ring card container style. 6 cards total.
+
+Card 1 — TIMER RING: See Section 5.
+
+Card 2 — TODAY:
+Header "TODAY". Stats: DOSES TODAY / TOTAL / AVG INTERVAL / FIRST ENTRY / LAST ENTRY. Labels 12px uppercase var(--color-text-muted). Values white.
+
+Card 3 — CURRENT STATE:
+Header "CURRENT STATE". Sub-label "PERCEIVED EFFECT" var(--color-purple). Large state text e.g. "Moderate". Trend label "Steady" muted. Gauge arc right side LOW to HIGH with needle. Bottom: NEXT WINDOW / SESSION COUNT / TOTAL.
+
+Card 4 — PAST 12 HOURS:
+Header "PAST 12 HOURS". Top: ENTRIES / TOTAL / LAST ENTRY. Entry list: time + amount + interval per row, horizontal bar var(--color-accent) proportional to dose size. WINDOW PROGRESS bar at bottom var(--color-accent).
+
+Card 5 — FORECAST:
+Header "FORECAST". Sub-label "PREDICTED LEVEL" var(--color-purple). Right: "AT NEXT WINDOW" + state label. PEL bell curve chart, Y-axis High/Moderate/Low/None, X-axis NOW/NEXT WINDOW. Fill var(--color-accent) low opacity, line var(--color-accent).
+
+Card 6 — SESSION COMPARE:
+Header "SESSION COMPARE". Sub-label "vs your average (last 10 sessions)" var(--color-purple). Three rows: DOSE SIZE / SPACING / TOTAL AMOUNT. Each: current value + bar + delta label. Delta labels var(--color-cta).
+
+---
+
+## 7. PEL Calculation Engine
+
+CRITICAL: This is hand-tuned subjective intensity modeling — NOT pharmacokinetic math. Do not replace, fix, or rewrite with PK equations. Calibration is intentional. Preserve exactly.
+
+What it measures: "How strongly do effects likely feel right now?" Not plasma concentration.
+
+Core files — copy from old repo, do not rewrite:
+- src/lib/perceivedEffect/effectCurves.ts
+- src/lib/perceivedEffect/perceivedEffectModel.ts
+- src/lib/perceivedEffect/toleranceModel.ts
+
+Effect curve constants:
+GBL: Onset 10min / Rise 18min / Plateau 12min / Decline half-life 38min / Hard wear-off 180min
+BDO: Onset 22min / Rise 28min / Plateau 15min / Decline half-life 58min / Hard wear-off 300min
+
+Curve shape: delay -> smoothstep rise -> flat peak -> exponential decay -> hard zero at wear-off. No tail.
+
+Display calibration (intentional, do not change):
+- Single anchor dose at peak: ~88% display
+- Ordinary overlap: high-90s, never 100%
+- 100% only in extreme stacked states
+- SOFT_SAT_LINEAR_CEIL = 0.6, SOFT_SAT_WIDTH = 0.33
+
+Tolerance model: 9-factor behavioral model 7/30/60-day windows. Index 0.6 (sensitive) to 2.2 (heavy). 1.0 = typical.
+High tolerance: same dose peaks ~40% not ~88%.
+PEL = 0% while tolerance still elevated after long break — correct, do not fix.
+
+Context modifiers: Food empty +8%/faster onset, full -7%/slower. Hydration low +3%, good -1%. Sleep poor +5%/faster, good -2%.
+Profile modifiers: Weight (75/weightKg)^0.1. Age max(0.88, 1-(age-30)*0.0035). Sex female +4%, male -2%.
+
+Key functions:
+- computePerceivedEffectLevelAt(doses, profile, atMs, contextByDoseId?)
+- computeDosePerceivedPercentAt(dose, profile, atMs, allDoses, contextByDoseId?)
+- isDosePerceptuallyActive(dose, profile, atMs, allDoses, contextByDoseId?)
+- formatPerceivedEffectPct(percent)
+- calculateBehavioralTolerance(doses, profile, nowMs)
+- describeToleranceState(tolerance)
+
+---
+
+## 8. Data Model
+
+```
+Substance = "GBL" | "BDO"
+LegacySubstance = "GHB"
+DoseSubstance = Substance | LegacySubstance
+WeightUnit = "kg" | "lbs"
+HeightUnit = "cm" | "in"
+BiologicalSex = "male" | "female"
+FoodState = "empty" | "snack" | "full"
+HydrationState = "low" | "ok" | "good"
+SleepLevel = "poor" | "ok" | "good"
+
+SubstancePrefs: { preferredDoseMl: number, preferredIntervalMinutes: number }
+
+DoseContext: { foodState, hydrationState, sleepLevel }
+
+Dose: { id: string, substance: DoseSubstance, amountMl: number, ts: number, updatedAt?: number }
+
+Profile: { nickname, age, heightCm, heightUnit, weightKg, weightUnit, biologicalSex,
+           gbl: SubstancePrefs, bdo: SubstancePrefs, avatarId, accentHex, glowHex,
+           notif: NotificationPrefs, taper: TaperPrefs, doseBuddy: DoseBuddyPrefs }
+
+DoseContextMap = Map<string, DoseContext>
+Built via: buildDoseContextMap(checkIns) in src/lib/doseBuddy.ts
+DoseContext does NOT embed in Dose — attached separately by dose id.
+
+ToleranceEstimate: { index, trend, confidence, drivers, doseSizeScore, frequencyScore,
+                     intervalScore, volumeScore, activeDayScore, streakScore,
+                     earlyRedoseScore, escalationScore, recoveryScore, rawComposite }
+ToleranceTrend = "rising" | "stable" | "easing"
+ToleranceConfidence = "calibrating" | "partial" | "full"
+```
+
+---
+
+## 9. Persistence
+
+- Supabase: auth and optional cloud sync
+- Local state via app store
+- PEL calculations are stateless — inputs only: doses + profile + timestamp
+- RLS must be enabled on all user data tables
+- Read existing Supabase schema before assuming column names
+
+---
+
+## 10. PWA
+
+- vite-plugin-pwa with Workbox service worker
+- iOS/iPadOS notifications require service worker implementation
+- Install prompt blocked in incognito — test in standard browser session
+- No app store distribution — web-only intentionally
+
+---
+
+## 11. Cursor Agent Rules
+
+Before writing any code:
+1. Read the relevant files in the codebase first. Do not assume paths, names, or class names.
+2. Read this entire document before starting any task.
+
+While working:
+3. If unsure about any detail not in this spec — STOP. Do not guess. Ask.
+4. Do not modify files outside the scope of the current task.
+5. Do not use placeholder, mock, or hardcoded fake data.
+6. Do not resolve errors silently — stop and report them exactly as they appear.
+7. Do not simplify or refactor working code unless explicitly told to.
+8. Do not invent a solution if the spec already defines how to build it.
+
+On styling:
+9. Never hardcode hex values in components. Use CSS variables from src/index.css only.
+10. Never hardcode px for ring/gauge sizing. Use clamp() or max-w-full.
+11. Layout fixes at root level only. No one-off px patches inside components.
+
+On calculations:
+12. Never duplicate PEL logic. Call computePerceivedEffectLevelAt — do not reimplement.
+
+On commits:
+13. One task per chat. No combining unrelated changes.
+14. Correction prompts must state what is wrong and why, not just "fix this".
+
+---
+
+## 12. Phased Build Order
+
+Phase 1 — Foundation: COMPLETE. Clean baseline committed to main.
+Next: Copy PEL files from old repo into src/lib/perceivedEffect/ before starting Phase 2.
+
+Phase 2 — Gate + Auth + Onboarding:
+Age gate -> Legal -> Harm-reduction acknowledgment.
+Log in / Sign up / Forgot password.
+Onboarding: profile setup -> substance defaults -> notification basics -> Timer.
+
+Phase 3 — Timer Screen:
+Header, stat row, carousel (6 cards), pagination dots, dose card.
+Build exactly to visual spec in Sections 5 and 6.
+Wire PEL engine to Timer ring and Current State card.
+
+Phase 4 — History + Insights:
+Sessions, Entries, Edit/Delete/Backdate, Import/Export/Restore.
+Insights: All, GBL, BDO, Peer tabs.
+
+Phase 5 — Tools + Settings:
+Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference.
+Account, Profile, Notifications, Themes, Install App, Legal.
+
+---
+
+## 13. What NOT to Change
+
+- PEL curve constants and shape
+- SOFT_SAT_LINEAR_CEIL and SOFT_SAT_WIDTH
+- Hard wear-off cutoff — hard zero, no tail
+- PEL = 0% while tolerance elevated — correct behavior, do not fix
+- Stacking diminishing returns formula
+- 9-factor tolerance model scoring
+
+These are intentional harm reduction calibration decisions, not bugs.
