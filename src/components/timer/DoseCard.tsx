@@ -2,21 +2,17 @@ import { useMemo } from 'react'
 import {
   DOSE_STEP,
   clampDoseAmount,
-  formatDoseAmount,
   snapDoseToStep,
 } from './timerUtils'
 import { MinusIcon, PlusIcon, TargetIcon } from './TimerIcons'
 
 const TICK_WIDTH = 20
 
-// Display-only tick range: 1.0 to 2.6 in 0.1 steps (17 ticks, 340px total).
-// Snap logic still uses DOSE_SCALE_TICKS from timerUtils.
-const RENDER_TICKS = Array.from({ length: 17 }, (_, i) =>
-  Math.round((10 + i) * 10) / 100,
+// Display-only: 0.1 to 10.0 in 0.1 steps (100 ticks, 2000px total track).
+// Snap/clamp logic uses DOSE_STEP from timerUtils.
+const RENDER_TICKS = Array.from({ length: 100 }, (_, i) =>
+  Math.round(i + 1) / 10,
 )
-
-// Labels shown only on the locked major values
-const LABELED_TICKS = new Set([1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4])
 
 type DoseCardProps = {
   doseAmount: number
@@ -73,7 +69,7 @@ export function DoseCard({
                   fontSize: '52px',
                 }}
               >
-                {formatDoseAmount(activeAmount)}
+                {activeAmount.toFixed(1)}
               </span>
               <span
                 className="text-[16px] text-[var(--color-load)]"
@@ -124,14 +120,22 @@ export function DoseCard({
             aria-hidden
           />
 
-          {/* scrolling tick track — centered on active tick via absolute left */}
+          {/* scrolling tick track */}
           <div
             className="absolute top-0 flex h-full items-end transition-[left] duration-[120ms] ease-out"
             style={{ left: `calc(50% - ${scaleOffset}px)` }}
           >
             {RENDER_TICKS.map((tick) => {
               const isActive = Math.abs(tick - activeAmount) < 0.005
-              const isLabeled = LABELED_TICKS.has(tick)
+              const rounded = Math.round(tick * 10) / 10
+              const isWhole =
+                Number.isInteger(Math.round(rounded * 10) / 10) &&
+                Math.abs(rounded - Math.round(rounded)) < 0.005 &&
+                rounded >= 1.0
+              const isHalf =
+                !isWhole &&
+                Math.abs((Math.round(tick * 10) % 5)) < 0.01
+
               return (
                 <div
                   key={tick}
@@ -142,9 +146,11 @@ export function DoseCard({
                     className={`rounded-[1px] ${
                       isActive
                         ? 'w-[2px] h-[30px] bg-[var(--color-ring)]'
-                        : isLabeled
-                          ? 'w-px h-[24px] bg-[rgba(255,255,255,0.30)]'
-                          : 'w-px h-[14px] bg-[rgba(255,255,255,0.18)]'
+                        : isWhole
+                          ? 'w-px h-[22px] bg-[rgba(255,255,255,0.30)]'
+                          : isHalf
+                            ? 'w-px h-[18px] bg-[rgba(255,255,255,0.22)]'
+                            : 'w-px h-[12px] bg-[rgba(255,255,255,0.14)]'
                     }`}
                   />
                   <span
@@ -155,7 +161,7 @@ export function DoseCard({
                     }`}
                     style={{ fontFamily: 'var(--font-body)' }}
                   >
-                    {isLabeled && !isActive ? tick.toFixed(1) : ''}
+                    {isWhole && !isActive ? String(Math.round(tick)) : ''}
                   </span>
                 </div>
               )

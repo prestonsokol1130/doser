@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import type { TimerState } from '../timerUtils'
 import { formatCountdown, formatTimeShort } from '../timerUtils'
 import { CarouselCardShell } from './CarouselCardShell'
@@ -7,44 +8,66 @@ type TimerRingCardProps = {
 }
 
 const RING_R = 135
-const CIRC = 2 * Math.PI * RING_R
-const GAP_DEG = 16
-const GAP_LEN = (GAP_DEG / 360) * CIRC
-const ARC_LEN = CIRC - GAP_LEN
-const ROTATION = -90 + GAP_DEG / 2
+const CIRC = 2 * Math.PI * RING_R // ≈ 848.23
+const ROTATION = -90              // fill starts at 12 o'clock
 
-function ProgressRing({ progress }: { progress: number }) {
-  const filled = Math.max(0, Math.min(1, progress)) * ARC_LEN
+type ProgressRingProps = {
+  progress: number
+  fillAnimating: boolean
+  onAnimationEnd: () => void
+}
+
+function ProgressRing({ progress, fillAnimating, onAnimationEnd }: ProgressRingProps) {
+  const filled = Math.max(0, Math.min(1, progress)) * CIRC
 
   return (
-    <svg
-      viewBox="0 0 280 280"
-      className="block w-full"
-      aria-hidden
-    >
-      <circle
-        cx="140"
-        cy="140"
-        r={RING_R}
-        fill="none"
-        stroke="rgba(255,255,255,0.16)"
-        strokeWidth="10"
-        strokeLinecap="butt"
-        strokeDasharray={`${ARC_LEN.toFixed(2)} ${GAP_LEN.toFixed(2)}`}
-        transform={`rotate(${ROTATION} 140 140)`}
-      />
-      <circle
-        cx="140"
-        cy="140"
-        r={RING_R}
-        fill="none"
-        stroke="var(--color-ring)"
-        strokeWidth="10"
-        strokeLinecap="butt"
-        strokeDasharray={`${filled.toFixed(2)} ${(CIRC - filled).toFixed(2)}`}
-        transform={`rotate(${ROTATION} 140 140)`}
-      />
-    </svg>
+    <>
+      <style>{`
+        @keyframes ringFillIn {
+          from { stroke-dasharray: 0 848.23; }
+          to   { stroke-dasharray: 848.23 0; }
+        }
+      `}</style>
+      <svg
+        viewBox="0 0 280 280"
+        className="block w-full"
+        aria-hidden
+      >
+        {/* track — plain closed circle, no dasharray */}
+        <circle
+          cx="140"
+          cy="140"
+          r={RING_R}
+          fill="none"
+          stroke="rgba(255,255,255,0.16)"
+          strokeWidth="10"
+          strokeLinecap="butt"
+          transform={`rotate(${ROTATION} 140 140)`}
+        />
+        {/* fill arc */}
+        <circle
+          cx="140"
+          cy="140"
+          r={RING_R}
+          fill="none"
+          stroke="var(--color-ring)"
+          strokeWidth="10"
+          strokeLinecap="butt"
+          transform={`rotate(${ROTATION} 140 140)`}
+          {...(fillAnimating
+            ? {
+                style: { animation: 'ringFillIn 4s ease-in-out forwards' },
+                onAnimationEnd: onAnimationEnd,
+              }
+            : {
+                style: {
+                  strokeDasharray: `${filled.toFixed(2)} ${(CIRC - filled).toFixed(2)}`,
+                  transition: 'stroke-dasharray 1.2s linear',
+                },
+              })}
+        />
+      </svg>
+    </>
   )
 }
 
@@ -55,11 +78,28 @@ export function TimerRingCard({ timer }: TimerRingCardProps) {
   const nextWindowLabel =
     timer.nextWindowMs != null ? formatTimeShort(timer.nextWindowMs) : '—'
 
+  const [fillAnimating, setFillAnimating] = useState(false)
+  const prevLastDoseTsRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (
+      timer.lastDoseTs != null &&
+      timer.lastDoseTs !== prevLastDoseTsRef.current
+    ) {
+      prevLastDoseTsRef.current = timer.lastDoseTs
+      setFillAnimating(true)
+    }
+  }, [timer.lastDoseTs])
+
   return (
     <CarouselCardShell>
       <div className="flex min-h-0 flex-1 items-center justify-center">
         <div className="relative mx-auto w-full max-w-[280px]">
-          <ProgressRing progress={timer.ringProgress} />
+          <ProgressRing
+            progress={timer.ringProgress}
+            fillAnimating={fillAnimating}
+            onAnimationEnd={() => setFillAnimating(false)}
+          />
 
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4">
             <p

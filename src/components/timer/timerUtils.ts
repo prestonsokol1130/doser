@@ -1,7 +1,8 @@
 import type { Dose, Profile, Substance } from '../../types'
 
-export const DOSE_SCALE_TICKS = [1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4] as const
-export const DOSE_STEP = 0.2
+export const DOSE_MIN = 0.1
+export const DOSE_MAX = 10.0
+export const DOSE_STEP = 0.1
 
 export type TimerPhase = 'safe' | 'wait'
 
@@ -11,6 +12,7 @@ export interface TimerState {
   remainingMs: number
   nextWindowMs: number | null
   ringProgress: number
+  lastDoseTs: number | null
 }
 
 export function preferredDoseForSubstance(
@@ -64,6 +66,7 @@ export function computeTimerState(
       remainingMs: 0,
       nextWindowMs: null,
       ringProgress: 0,
+      lastDoseTs: null,
     }
   }
 
@@ -79,7 +82,8 @@ export function computeTimerState(
       elapsedMs,
       remainingMs,
       nextWindowMs,
-      ringProgress: Math.min(1, elapsedMs / intervalMs),
+      ringProgress: remainingMs / intervalMs,
+      lastDoseTs: latest.ts,
     }
   }
 
@@ -88,7 +92,8 @@ export function computeTimerState(
     elapsedMs,
     remainingMs: 0,
     nextWindowMs,
-    ringProgress: 1,
+    ringProgress: 0,
+    lastDoseTs: latest.ts,
   }
 }
 
@@ -121,9 +126,10 @@ export function formatLastEntry(dose: Dose | null): string {
 }
 
 export function clampDoseAmount(amount: number): number {
-  const min = DOSE_SCALE_TICKS[0]
-  const max = DOSE_SCALE_TICKS[DOSE_SCALE_TICKS.length - 1]
-  return Math.min(max, Math.max(min, Math.round(amount * 100) / 100))
+  const v = Math.round(amount * 10) / 10
+  if (v > DOSE_MAX) return DOSE_MIN
+  if (v < DOSE_MIN) return DOSE_MAX
+  return v
 }
 
 export function snapDoseToStep(amount: number): number {
