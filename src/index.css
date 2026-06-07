@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Antonio:wght@200&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@600;700&family=Unbounded:wght@300;400;600;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -20,6 +20,60 @@
   --color-ring-gap: rgba(255, 255, 255, 0.16);
   --color-tick-major: rgba(255, 255, 255, 0.35);
   --color-tick-minor: rgba(255, 255, 255, 0.22);
+
+  /* ── Timer design-system additions ── */
+  --font-display: 'Antonio', system-ui, sans-serif;
+  --font-heading: 'Montserrat', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+
+  --app-bg:          #131313;
+  --app-surface:     #181a1e;
+  --app-surface-alt: #1c1e22;
+  --app-divider:     #222629;
+  --app-text:        #edf0f4;
+  --app-dim:         #c8cdd4;
+  --app-faint:       #3e454e;
+
+  --color-ring:   #C8E840;
+  --color-action: #E8532A;
+  --color-load:   #9B8FD4;
+
+  --ring-glow-sm: color-mix(in srgb, var(--color-ring) 18%, transparent);
+  --ring-glow-md: color-mix(in srgb, var(--color-ring) 30%, transparent);
+  --action-glow:  color-mix(in srgb, var(--color-action) 24%, transparent);
+
+  --ease-spring:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast:    150ms;
+  --dur-normal:  300ms;
+  --dur-medium:  440ms;
+  --dur-breathe: 3500ms;
+}
+
+@keyframes cardIn {
+  from { transform: translateY(12px); opacity: 0.6; }
+  to   { transform: none; opacity: 1; }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1);    opacity: 0.65; }
+  50%       { transform: scale(1.35); opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scalePop {
+  0%   { transform: scale(0.92); opacity: 0; }
+  60%  { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 * {

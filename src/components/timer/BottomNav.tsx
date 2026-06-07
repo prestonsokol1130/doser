@@ -24,7 +24,7 @@ export function BottomNav({ activeTab = 'timer' }: BottomNavProps) {
   return (
     <nav
       aria-label="Main navigation"
-      className="shrink-0 border-t border-[var(--color-border)] bg-[rgba(255,255,255,0.04)] pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      className="shrink-0 border-t border-[var(--app-divider)] bg-[rgba(255,255,255,0.04)] pt-2 pb-[max(14px,env(safe-area-inset-bottom))]"
     >
       <div className="grid grid-cols-5">
         {tabs.map(({ id, label, Icon }) => {
@@ -34,21 +34,14 @@ export function BottomNav({ activeTab = 'timer' }: BottomNavProps) {
               key={id}
               type="button"
               aria-current={active ? 'page' : undefined}
-              className="flex flex-col items-center gap-1 py-1"
+              className={`flex flex-col items-center gap-1 py-1 outline-none ${
+                active ? 'text-[var(--color-ring)]' : 'text-[var(--app-faint)]'
+              }`}
             >
-              <Icon
-                className={`h-6 w-6 ${
-                  active
-                    ? 'text-[var(--color-accent)]'
-                    : 'text-[var(--color-nav-inactive)]'
-                }`}
-              />
+              <Icon className="h-6 w-6" />
               <span
-                className={`text-[11px] ${
-                  active
-                    ? 'text-[var(--color-accent)]'
-                    : 'text-[var(--color-nav-inactive)]'
-                }`}
+                className="text-[9px] font-medium uppercase tracking-[0.07em]"
+                style={{ fontFamily: 'var(--font-body)' }}
               >
                 {label}
               </span>

@@ -102,9 +102,9 @@ export function PaginationDots({
           aria-label={`Go to card ${i + 1}`}
           aria-current={i === activeIndex ? 'true' : undefined}
           onClick={() => onSelect(i)}
-          className={`h-2.5 w-2.5 rounded-full ${
+          className={`h-2.5 w-2.5 rounded-full outline-none ${
             i === activeIndex
-              ? 'bg-[var(--color-accent)]'
+              ? 'bg-[var(--color-ring)]'
               : 'bg-[rgba(255,255,255,0.25)]'
           }`}
         />

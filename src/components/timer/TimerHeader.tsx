@@ -8,37 +8,43 @@ type TimerHeaderProps = {
 
 export function TimerHeader({ substance, onSubstanceClick }: TimerHeaderProps) {
   return (
-    <header className="flex shrink-0 items-start justify-between px-4 pt-3">
+    <header className="flex shrink-0 items-start justify-between px-3 pt-3.5">
       <div className="flex flex-col">
-        <h1 className="font-display text-[clamp(28px,10vw,40px)] font-light lowercase tracking-[0.16em] text-[var(--color-text)]">
+        <h1
+          className="font-display text-[38px] font-light lowercase leading-[1.05] tracking-[0.16em] text-[var(--app-text)]"
+        >
           doser
         </h1>
-        <p className="mt-0.5 text-[11px] uppercase tracking-[0.34em] text-[var(--color-purple)]">
+        <p
+          className="mt-0.5 text-[11px] uppercase tracking-[0.34em] text-[var(--color-load)]"
+          style={{ fontFamily: 'var(--font-body)' }}
+        >
           TIMING AWARENESS
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 pt-0.5">
         <button
           type="button"
-          aria-label="Flashlight"
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)]"
+          aria-label="Toggle flashlight"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border border-[var(--app-divider)] bg-[var(--app-surface)] text-[var(--app-text)] outline-none"
         >
-          <FlashlightIcon className="h-5 w-5 text-[var(--color-text)]" />
+          <FlashlightIcon className="h-6 w-6" />
         </button>
 
         <button
           type="button"
           aria-label={`Selected substance: ${substance}`}
           onClick={onSubstanceClick}
-          className="flex h-14 min-w-[100px] shrink-0 items-center justify-center gap-2 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3"
+          className="flex h-14 min-w-[106px] shrink-0 items-center justify-center gap-2 rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-[14px] text-[var(--app-text)] outline-none"
+          style={{ fontFamily: 'var(--font-body)', fontSize: '14px' }}
         >
           <span
-            className="h-2 w-2 shrink-0 rounded-full bg-[var(--color-accent)]"
+            className="h-2 w-2 shrink-0 rounded-full bg-[var(--color-ring)]"
             aria-hidden
           />
-          <span className="text-sm text-[var(--color-text)]">{substance}</span>
-          <ChevronDownIcon className="h-4 w-4 text-[var(--color-text)]" />
+          <span>{substance}</span>
+          <ChevronDownIcon className="h-3.5 w-3.5" />
         </button>
       </div>
     </header>

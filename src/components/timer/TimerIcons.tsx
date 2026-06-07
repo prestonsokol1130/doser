@@ -9,14 +9,17 @@ export function FlashlightIcon({ className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.75"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M9 2h6l1 5H8L9 2z" />
-      <path d="M10 7v12a2 2 0 0 0 4 0V7" />
-      <path d="M8 22h8" />
+      <path d="M12 1v2" />
+      <path d="M9.2 1.9l.9 1.6" />
+      <path d="M14.8 1.9l-.9 1.6" />
+      <path d="M10 4h4v3h-4z" />
+      <path d="M11 7h2v11h-2z" />
+      <path d="M9 20h6" />
     </svg>
   )
 }
