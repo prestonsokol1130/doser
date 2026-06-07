@@ -59,13 +59,6 @@ export function TimerRingCard({ timer }: TimerRingCardProps) {
     <CarouselCardShell>
       <div className="flex min-h-0 flex-1 items-center justify-center">
         <div className="relative mx-auto w-full max-w-[280px]">
-          {/* ambient breathe glow */}
-          <div
-            className="absolute inset-0 rounded-full animate-[breathe_3500ms_ease-in-out_infinite]"
-            style={{ background: 'var(--ring-glow-sm)' }}
-            aria-hidden
-          />
-
           <ProgressRing progress={timer.ringProgress} />
 
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4">

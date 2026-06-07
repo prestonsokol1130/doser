@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import {
-  DOSE_SCALE_TICKS,
   DOSE_STEP,
   clampDoseAmount,
   formatDoseAmount,
@@ -8,7 +7,16 @@ import {
 } from './timerUtils'
 import { MinusIcon, PlusIcon, TargetIcon } from './TimerIcons'
 
-const TICK_WIDTH = 13
+const TICK_WIDTH = 20
+
+// Display-only tick range: 1.0 to 2.6 in 0.1 steps (17 ticks, 340px total).
+// Snap logic still uses DOSE_SCALE_TICKS from timerUtils.
+const RENDER_TICKS = Array.from({ length: 17 }, (_, i) =>
+  Math.round((10 + i) * 10) / 100,
+)
+
+// Labels shown only on the locked major values
+const LABELED_TICKS = new Set([1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4])
 
 type DoseCardProps = {
   doseAmount: number
@@ -25,14 +33,14 @@ export function DoseCard({
 }: DoseCardProps) {
   const activeAmount = snapDoseToStep(doseAmount)
 
-  const activeIndex = useMemo(() => {
-    const index = DOSE_SCALE_TICKS.findIndex(
-      (tick) => Math.abs(tick - activeAmount) < 0.01,
+  const activeRenderIndex = useMemo(() => {
+    const index = RENDER_TICKS.findIndex(
+      (t) => Math.abs(t - activeAmount) < 0.005,
     )
     return index >= 0 ? index : 0
   }, [activeAmount])
 
-  const scaleOffset = (activeIndex + 0.5) * TICK_WIDTH
+  const scaleOffset = (activeRenderIndex + 0.5) * TICK_WIDTH
 
   return (
     <div className="shrink-0 px-3 pb-2">
@@ -121,8 +129,9 @@ export function DoseCard({
             className="absolute top-0 flex h-full items-end transition-[left] duration-[120ms] ease-out"
             style={{ left: `calc(50% - ${scaleOffset}px)` }}
           >
-            {DOSE_SCALE_TICKS.map((tick) => {
-              const isActive = Math.abs(tick - activeAmount) < 0.01
+            {RENDER_TICKS.map((tick) => {
+              const isActive = Math.abs(tick - activeAmount) < 0.005
+              const isLabeled = LABELED_TICKS.has(tick)
               return (
                 <div
                   key={tick}
@@ -133,7 +142,9 @@ export function DoseCard({
                     className={`rounded-[1px] ${
                       isActive
                         ? 'w-[2px] h-[30px] bg-[var(--color-ring)]'
-                        : 'w-px h-4 bg-[rgba(255,255,255,0.22)]'
+                        : isLabeled
+                          ? 'w-px h-[24px] bg-[rgba(255,255,255,0.30)]'
+                          : 'w-px h-[14px] bg-[rgba(255,255,255,0.18)]'
                     }`}
                   />
                   <span
@@ -144,7 +155,7 @@ export function DoseCard({
                     }`}
                     style={{ fontFamily: 'var(--font-body)' }}
                   >
-                    {tick.toFixed(2)}
+                    {isLabeled && !isActive ? tick.toFixed(1) : ''}
                   </span>
                 </div>
               )
