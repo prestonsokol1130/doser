@@ -112,15 +112,35 @@ export async function saveOnboardingProfile(
 
 export async function saveDoses(uid: string, doses: Dose[]): Promise<void> {
   try {
-    const batch = writeBatch(db)
     const dosesRef = collection(db, 'users', uid, 'doses')
 
-    // Instead of delete-all-then-set, use merge: set with merge to avoid race conditions
-    // Each dose is written individually so concurrent writes don't stomp each other
-    doses.forEach((dose) => {
-      const docRef = doc(dosesRef, dose.id)
+    // Differential sync: read existing IDs, delete ones no longer in the local array
+    const existing = await getDocs(dosesRef)
+    const existingIds = new Set(existing.docs.map((d) => d.id))
+    const newIds = new Set(doses.map((d) => d.id))
+    const toDelete = [...existingIds].filter((id) => !newIds.has(id))
+
+    // Batch operations in chunks to avoid 500-operation limit
+    let batch = writeBatch(db)
+    let operationCount = 0
+
+    // Delete doses that no longer exist locally
+    for (const id of toDelete) {
+      batch.delete(doc(dosesRef, id))
+      operationCount++
+
+      // Commit and start a new batch if we hit 400 operations (safety margin)
+      if (operationCount >= 400) {
+        await batch.commit()
+        batch = writeBatch(db)
+        operationCount = 0
+      }
+    }
+
+    // Write/overwrite current doses
+    for (const dose of doses) {
       batch.set(
-        docRef,
+        doc(dosesRef, dose.id),
         {
           id: dose.id,
           substance: dose.substance,
@@ -128,11 +148,21 @@ export async function saveDoses(uid: string, doses: Dose[]): Promise<void> {
           ts: dose.ts,
           updatedAt: dose.updatedAt ?? dose.ts,
         },
-        { merge: false } // Set with merge:false means "overwrite this dose document completely" (not merge fields). Other doses are unaffected.
+        { merge: false }
       )
-    })
+      operationCount++
 
-    await batch.commit()
+      if (operationCount >= 400) {
+        await batch.commit()
+        batch = writeBatch(db)
+        operationCount = 0
+      }
+    }
+
+    // Final commit for any remaining operations
+    if (operationCount > 0) {
+      await batch.commit()
+    }
   } catch (error) {
     console.error('Failed to save doses:', error)
     throw error
