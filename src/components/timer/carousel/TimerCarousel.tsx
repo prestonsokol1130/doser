@@ -62,7 +62,7 @@ export function TimerCarousel({
   ]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col pt-2">
+    <div className="flex min-h-0 flex-1 flex-col pt-2 max-h-[380px]">
       <div
         ref={viewportRef}
         className="relative min-h-0 flex-1 overflow-hidden px-4"
