@@ -1,6 +1,7 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { NotificationPrefs, Profile } from '../types'
+import type { Dose, NotificationPrefs, Profile } from '../types'
+import { VALID_DOSE_SUBSTANCES } from '../types'
 
 const USERS_COLLECTION = 'users'
 
