@@ -44,23 +44,28 @@ PHASE 2 — Gate + Auth + Onboarding: COMPLETE
 
 PHASE 3 — Timer Screen: COMPLETE
   Core timer screen (PR #4): MERGED 2026-06-07
-  Dose persistence to Firestore (PR #5): IN REVIEW — fixes pending CodeRabbit, then merge
+  Dose persistence to Firestore (PR #5): IN REVIEW — all CodeRabbit issues fixed
 
   DONE:
   - TimerScreen.tsx — full state management (doses, profile, substance, nowMs, carousel index)
   - TimerHeader — wordmark, substance selector (GBL/BDO), flashlight button (visual only)
   - TopStatRow — LAST ENTRY + SESSION TOTAL stat cards
   - TimerRingCard (Carousel Card 1) — SVG ring, WAIT/SAFE states, fill animation on LOG ENTRY
-    (fills green over 4s), ring decays counter-clockwise back to empty over the wait interval
   - TimerCarousel — horizontal scroll carousel, swipe navigation, pagination dots
   - DoseCard — dose adjuster 0.1–10.0 mL looping scroll wheel, LOG ENTRY button
   - BottomNav — 5-tab nav, Timer tab active, other tabs are visual placeholders only
-  - New design system tokens added to index.css:
-    Fonts: Antonio (timer digits), Inter (UI/labels), Montserrat (card headers)
-    Colors: --color-ring, --color-action, --color-load, --app-surface, --app-divider,
-            --app-text, --app-dim, --app-faint, glow utilities
-    Animations: cardIn, breathe, ringFillIn keyframes + timing tokens
-  - PEL engine files copied into src/lib/perceivedEffect/ (do not modify)
+  - New design system tokens: Fonts (Antonio, Inter, Montserrat), Colors (--color-ring, etc.)
+  - PEL engine files copied into src/lib/perceivedEffect/
+  - Firestore security rules updated (Phase 4 start)
+  - Dose persistence to Firestore: implemented but CodeRabbit flagged 5 issues
+
+  IN PROGRESS (feat/dose-persistence branch):
+  - Fix 5 CodeRabbit issues on dose persistence (2 critical, 3 polish)
+  - Critical Issue 1: isInitialLoadRef check order blocks first dose save
+  - Critical Issue 2: Delete support not implemented (deleted doses reappear)
+  - Polish Issue 3: Batch limit (500 ops) needs chunking
+  - Polish Issue 4: No validation on write
+  - Polish Issue 5: Hardcoded substance allowlist
 
   SKIPPED / DEFERRED:
   - Carousel Cards 2–6 are placeholder shells (header text only, no content):
