@@ -434,21 +434,27 @@ Phase 2 — Gate + Auth + Onboarding: COMPLETE
   - Auth screens with Firebase (PR #2): MERGED
   - Onboarding (PR #3): MERGED
 
-Phase 3 — Timer Screen: PARTIALLY COMPLETE
+Phase 3 — Timer Screen: COMPLETE
   - Core timer screen (PR #4): MERGED 2026-06-07
-  - Built: TimerScreen, TimerHeader, TopStatRow, TimerRingCard (Card 1),
-    TimerCarousel, DoseCard, BottomNav, timerUtils, new design tokens in index.css
-  - PEL engine files: already copied into src/lib/perceivedEffect/
-  - DEFERRED: Carousel Cards 2–6 are placeholder shells only.
-    Build these at the start of Phase 4 after dose persistence is implemented.
-    Cards 3–6 require persistent dose storage and PEL engine wiring.
-  - DEFERRED: Dose persistence to Firestore (doses currently in local React state only)
-  - DEFERRED: Flashlight button functionality
-  - DEFERRED: Tab navigation for Insights/History/Tools/Settings
+  - Built: TimerScreen, TimerHeader, TopStatRow, TimerRingCard, TimerCarousel,
+    DoseCard, BottomNav, timerUtils, new design tokens in index.css
+  - PEL engine files: copied into src/lib/perceivedEffect/
+  - Firestore security rules: updated with {document=**} wildcard
+
+Phase 3b — Dose Persistence: IN REVIEW (feat/dose-persistence branch)
+  - Firestore dose persistence implemented
+  - Security rules fixed (allow read/write on subcollections)
+  - Tested: doses persist on reload
+  - CodeRabbit flagged 5 issues (2 critical, 3 polish) — needs fixing before merge
+    Critical: isInitialLoadRef check order, delete support missing
+    Polish: batch limit, no validation on write, hardcoded substance list
+  - Next: Fix all 5 issues, merge to main
 
 Phase 4 — History + Insights: NOT STARTED
-  First task: implement dose persistence to Firestore, then History screen,
-  then wire carousel cards 2–6, then Insights screen.
+  First task: Fix dose persistence CodeRabbit issues
+  Then: Design + build History screen
+  Then: Wire carousel cards 2–6
+  Then: Build Insights screen
 
 Phase 5 — Tools + Settings: NOT STARTED
 

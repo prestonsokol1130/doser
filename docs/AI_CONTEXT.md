@@ -42,43 +42,41 @@ PHASE 2 — Gate + Auth + Onboarding: COMPLETE
   Auth screens (PR #2): MERGED — log in, sign up, forgot password, recovery (Firebase)
   Onboarding (PR #3): MERGED — 4-screen onboarding, profile saved to Firestore, skips on return
 
-PHASE 3 — Timer Screen: PARTIALLY COMPLETE
+PHASE 3 — Timer Screen: COMPLETE
   Core timer screen (PR #4): MERGED 2026-06-07
+  Firestore dose persistence (feat/dose-persistence): IN REVIEW
 
   DONE:
   - TimerScreen.tsx — full state management (doses, profile, substance, nowMs, carousel index)
   - TimerHeader — wordmark, substance selector (GBL/BDO), flashlight button (visual only)
   - TopStatRow — LAST ENTRY + SESSION TOTAL stat cards
   - TimerRingCard (Carousel Card 1) — SVG ring, WAIT/SAFE states, fill animation on LOG ENTRY
-    (fills green over 4s), ring decays counter-clockwise back to empty over the wait interval
   - TimerCarousel — horizontal scroll carousel, swipe navigation, pagination dots
   - DoseCard — dose adjuster 0.1–10.0 mL looping scroll wheel, LOG ENTRY button
   - BottomNav — 5-tab nav, Timer tab active, other tabs are visual placeholders only
-  - New design system tokens added to index.css:
-    Fonts: Antonio (timer digits), Inter (UI/labels), Montserrat (card headers)
-    Colors: --color-ring, --color-action, --color-load, --app-surface, --app-divider,
-            --app-text, --app-dim, --app-faint, glow utilities
-    Animations: cardIn, breathe, ringFillIn keyframes + timing tokens
-  - PEL engine files copied into src/lib/perceivedEffect/ (do not modify)
+  - New design system tokens: Fonts (Antonio, Inter, Montserrat), Colors (--color-ring, etc.)
+  - PEL engine files copied into src/lib/perceivedEffect/
+  - Firestore security rules updated (Phase 4 start)
+  - Dose persistence to Firestore: implemented but CodeRabbit flagged 5 issues
+
+  IN PROGRESS (feat/dose-persistence branch):
+  - Fix 5 CodeRabbit issues on dose persistence (2 critical, 3 polish)
+  - Critical Issue 1: isInitialLoadRef check order blocks first dose save
+  - Critical Issue 2: Delete support not implemented (deleted doses reappear)
+  - Polish Issue 3: Batch limit (500 ops) needs chunking
+  - Polish Issue 4: No validation on write
+  - Polish Issue 5: Hardcoded substance allowlist
 
   SKIPPED / DEFERRED:
-  - Carousel Cards 2–6 are placeholder shells (header text only, no content):
-      Card 2 — TODAY: session summary stats
-      Card 3 — CURRENT STATE: PEL gauge (needs PEL engine wired + persistent doses)
-      Card 4 — PAST 12 HOURS: dose history list + bars (needs persistent dose storage)
-      Card 5 — FORECAST: PEL bell curve chart (needs PEL engine wired)
-      Card 6 — SESSION COMPARE: compare vs average (needs historical session data)
-  - Flashlight button: button exists visually, no functionality implemented
-  - Dose persistence: doses live in local React state only, reset on every app reload
-  - Tab navigation: clicking Insights/History/Tools/Settings tabs does nothing yet
-
-  RECOMMENDED: Build carousel cards 2–6 as the FIRST task of Phase 4, immediately
-  after dose persistence to Firestore is implemented. Cards 3–6 depend on stored
-  dose history and the PEL engine being wired. Suggested target: 2026-07.
+  - Carousel Cards 2–6 are placeholder shells
+  - Flashlight button: visual only, no functionality
+  - Tab navigation: clicking other tabs does nothing yet
 
 PHASE 4 — History + Insights: NOT STARTED
-  Next task: implement dose persistence to Firestore (write doses[] to users/{uid}/doses),
-  then build History screen, then wire carousel cards 2–6, then Insights screen.
+  First task: Merge dose persistence (after CodeRabbit issues fixed)
+  Then: Design + build History screen
+  Then: Wire carousel cards 2–6
+  Then: Build Insights screen
 
 PHASE 5 — Tools + Settings: NOT STARTED
 
