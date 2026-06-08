@@ -62,6 +62,43 @@
 - Border radius: 16px for cards
 - No hardcoded colors — CSS variables only
 
+**CAROUSEL UI REQUIREMENTS (Critical):**
+
+**3D Cube Transition Effect:**
+- Implement a 3D cube transition when swiping between carousel cards (Card 1 → 2 → 3 → etc.)
+- Use CSS 3D transforms or a React animation library (Framer Motion recommended)
+- The cube should rotate smoothly on the Y-axis during swipes (perspective and translateZ)
+- Transition duration: 300–400ms, easing: ease-in-out
+- Example behavior: swiping left brings next card from right side, rotating in via 3D cube effect
+
+**Strict UI Isolation (Critical):**
+- The 3D cube effect MUST be completely contained to the carousel container only
+- All other components MUST remain entirely static and unaffected:
+  - TimerHeader (wordmark, substance selector, flashlight button) — zero motion
+  - TopStatRow (LAST ENTRY, SESSION TOTAL) — zero motion
+  - BottomNav (5 tabs) — zero motion
+  - Background — zero motion
+- No motion blur, no scale/translate of surrounding elements
+- The carousel container is the ONLY element with 3D transforms
+
+**Z-Indexing & Overflow Handling (Critical):**
+- The carousel container must have `perspective` applied to the parent div
+- Cards inside must use `transform-style: preserve-3d` for proper 3D rendering
+- Set `overflow: hidden` on the carousel container to prevent 3D transforms from clipping surrounding content
+- Ensure `z-index` stacking is correct: carousel cards should not appear above fixed header/nav
+- Test that the 3D effect does not bleed into or overlap static header/footer during rotation
+
+**Infinite Loop Behavior:**
+- Configure carousel to loop infinitely: after Card 6, swiping right goes back to Card 1
+- Similarly, swiping left from Card 1 goes to Card 6
+- No "end of carousel" stops — continuous circular swiping
+
+**Implementation Notes:**
+- Modify `src/components/timer/carousel/TimerCarousel.tsx` to add 3D transforms
+- You may add CSS to `src/index.css` for carousel-specific animations (or use inline styles + Framer Motion)
+- Test heavily on mobile (390px) and desktop to ensure no clipping or jank
+- The cube effect should feel smooth and performant — use GPU acceleration (transform3d, will-change)
+
 **PEL Engine Integration:**
 - The engine files exist in src/lib/perceivedEffect/ — do NOT modify them
 - You may call exported functions like `calculatePerceivedEffect(doses, substance, nowMs, profile, tolerance)`
@@ -168,6 +205,20 @@ Before you finish:
    - [ ] All text uses correct fonts and colors from design system
    - [ ] Swipe navigation still works with all 6 cards
    - [ ] Pagination dots show correct active state
+   
+   **3D Cube Transition (Critical):**
+   - [ ] 3D cube rotation animates smoothly when swiping between cards
+   - [ ] Cube rotates on Y-axis (cards appear to rotate in/out)
+   - [ ] Animation duration is 300–400ms, feels responsive
+   - [ ] Infinite loop: swiping right from Card 1 goes to Card 6; swiping left from Card 6 goes to Card 1
+   - [ ] Header (wordmark, substance selector) remains completely static during swipe — zero motion
+   - [ ] TopStatRow remains completely static during swipe — zero motion
+   - [ ] BottomNav remains completely static during swipe — zero motion
+   - [ ] Background remains completely static during swipe — zero motion
+   - [ ] 3D effect does NOT clip or bleed outside carousel container
+   - [ ] No overlap of 3D transformed cards with fixed header/nav areas
+   - [ ] Test on 390px mobile width: smooth, no jank, no visual glitches
+   - [ ] Test on desktop: smooth, no performance degradation
 
 2. **History screen:**
    - [ ] Tab click navigates to History (not a placeholder anymore)
