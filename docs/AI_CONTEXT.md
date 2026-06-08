@@ -118,26 +118,44 @@ docs/AI_CONTEXT.md — This file. The first thing any AI assistant should read t
 
 ---
 
-## How the Workflow Works
+## How the Workflow Works (Phase 4 onwards)
 
 Every task follows this exact pattern:
 1. Preston creates a feature branch: git checkout -b feat/[task-name]
-2. New Cursor Agent chat — never reuse an old chat
-3. Cursor reads @HANDOFF.md first, then the codebase, then builds
-4. Cursor stops and asks questions if anything is unclear — this is correct behavior
-5. Preston tests in the browser before approving anything
-6. Cursor commits and pushes to the feature branch
-7. Preston opens a PR on GitHub
-8. CodeRabbit reviews automatically — all major issues must be fixed before merging
+2. Start TWO concurrent chats:
+   - **Claude Code (Advisor):** reads task spec, answers architectural questions, guides Cursor, documents progress
+   - **Cursor (Builder):** reads @HANDOFF.md, codes implementation on the branch, takes direction from Claude Code
+3. Claude Code role:
+   - Reviews task requirements in NEXT_AGENT_PROMPT.md
+   - Answers Cursor's questions about design/architecture
+   - Generates specific code-writing prompts for Cursor when needed
+   - Transcribes progress and commits
+   - Guides Cursor toward solutions without writing code
+4. Cursor role:
+   - Implements features following Claude Code guidance
+   - Writes all code, commits, pushes to feature branch
+   - Asks Claude Code for clarification when stuck
+5. Preston tests in browser before approving
+6. Cursor commits and pushes to feature branch
+7. Preston opens PR on GitHub
+8. CodeRabbit reviews automatically — all issues must be fixed before merging
 9. Preston merges the PR
 10. Branch cleanup: git checkout main, git pull, git branch -d feat/[task-name]
 
-Cursor rules that matter most:
+Claude Code rules (Phase 4+):
+- Never write code — guide Cursor instead
+- Review NEXT_AGENT_PROMPT.md fully before advising
+- Answer questions from first principles (why, not just what)
+- Transcribe what Cursor has done into readable summaries
+- Generate focused code-writing prompts for Cursor as needed
+- Stop and ask Preston if requirements are ambiguous
+
+Cursor rules:
 - Never creates branches — Preston always creates them first
 - Never hardcodes hex colors — CSS variables only
 - Never duplicates PEL calculation logic — calls existing functions
 - Never modifies files outside the scope of the current task
-- When unsure about anything — stops and asks, never guesses
+- Asks Claude Code for guidance, never guesses
 
 ---
 
