@@ -30,11 +30,15 @@ Copy this block and put it before anything else you type:
 
 ------------------------------------------------------------
 @HANDOFF.md
+@STRUCTURE.md
 
 Do not create a new branch. Run git branch first to confirm
 which branch you are on, then work only on that branch.
 
 Read the handoff document fully before writing any code.
+Pay special attention to HANDOFF.md Section 2b (Design System Rules) —
+all new screens must follow those rules for colors, fonts, layout, copy, and animations.
+
 Read the existing codebase before assuming anything.
 If anything is unclear, stop and ask before writing code.
 ------------------------------------------------------------

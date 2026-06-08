@@ -1,7 +1,12 @@
 # Doser 2.0 — Codebase Structure Reference
 
 Last updated: 2026-06-07
-Read this alongside HANDOFF.md and AI_CONTEXT.md before building any new screen.
+
+**BEFORE BUILDING ANYTHING: Read HANDOFF.md Section 2b (Design System Rules).**
+That section defines all the colors, fonts, layout rules, copy rules, and animation rules
+that every new screen must follow. It is the authoritative reference.
+
+This file provides the file tree and folder structure. Read this alongside HANDOFF.md and AI_CONTEXT.md before building any new screen.
 
 ---
 
