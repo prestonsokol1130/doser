@@ -36,24 +36,70 @@ Purpose: Harm reduction tool for GBL, BDO, and GHB users. Safe interval timing, 
 - JetBrains Mono: legacy only — still used in gate/auth/onboarding screens, do not use for new screens
 - All fonts loaded from Google Fonts — already imported in src/index.css
 
-### CSS Color Variables
-All components must use these variables. Never hardcode hex values in components.
+## 2b. Design System Rules (Standard for All New Screens)
 
---color-bg: #000000 (page background)
---color-app: #090a0d (app shell background)
---color-ring-inner: #111216 (timer ring inner circle)
---color-surface: rgba(255,255,255,0.05) (card backgrounds)
---color-border: rgba(255,255,255,0.07) (card borders)
---color-accent: #d7e332 (ring fill, WAIT label, active states, icons)
---color-cta: #ff5a18 (LOG ENTRY button)
---color-purple: #b89cff (TIMING AWARENESS, next window, DOSE AMOUNT, mL labels)
---color-text: #ffffff (primary text)
---color-text-muted: rgba(255,255,255,0.55) (stat card labels)
---color-text-dim: rgba(255,255,255,0.60) (scale labels, secondary)
---color-nav-inactive: rgba(255,255,255,0.80) (inactive nav)
---color-ring-gap: rgba(255,255,255,0.16) (timer ring gap)
---color-tick-major: rgba(255,255,255,0.35) (scale major ticks)
---color-tick-minor: rgba(255,255,255,0.22) (scale minor ticks)
+### Color Tokens
+Use ONLY CSS variables from src/index.css. Never hardcode hex.
+- `var(--color-ring)` = #C8E840 — accent, ring fill, active states, icons
+- `var(--color-action)` = #E8532A — primary CTA button (LOG ENTRY, destructive actions)
+- `var(--color-load)` = #9B8FD4 — secondary text, sub-labels, secondary insights
+- `var(--app-bg)` = #131313 — full-screen background
+- `var(--app-surface)` = #181a1e — card backgrounds, elevated surfaces
+- `var(--app-text)` = #edf0f4 — primary text, headlines, values
+- `var(--app-dim)` = #c8cdd4 — secondary text, hints
+- `var(--app-faint)` = #3e454e — disabled states, inactive labels
+- `var(--app-divider)` = #222629 — card borders, dividers
+
+### Typography
+- Display numbers: `var(--font-display)` (Antonio 200) — timers, large values only
+- Headings/titles: `var(--font-heading)` (Montserrat 600–700) — card headers, screen titles
+- Body/UI text: `var(--font-body)` (Inter 400–600) — labels, buttons, copy, nav
+- Never hardcode font family names. Always use CSS variable references.
+
+### Layout
+- Use Flexbox or CSS Grid with `gap:` property (never inline margins)
+- Use Tailwind for structure/spacing only — never for colors
+- All colors: CSS variables via Tailwind syntax, e.g. `text-[var(--color-ring)]` or `bg-[var(--app-surface)]`
+- Never use bare Tailwind colors like `text-emerald-400` or `bg-gray-900`
+
+### Cards & Components
+- Card bg: `background: var(--app-surface)`
+- Card border: `1px solid var(--app-divider)`
+- Card radius: `border-radius: 16px`
+- Icon buttons: `border-radius: 10px`
+- Primary buttons: `border-radius: 14px`
+- No drop shadows, no gradients, no glassmorphism
+
+### Copy Rules
+- Buttons & labels: ALL CAPS (LOG ENTRY, WAIT, DOSE AMOUNT, INSIGHTS)
+- Descriptive text: Sentence case (First word capitalized, rest lowercase except proper nouns)
+- Always include units on numbers: "1.8 mL", not "1.8"
+- Time format: colons only, no am/pm ("01:20:00", "12:30 PM" is OK as shown in spec)
+- No emoji anywhere in the app
+
+### Animation
+- Prefer opacity transitions over color shifts on hover
+- Duration: 150ms (fast interactions) or 300ms (page transitions)
+- Easing: `cubic-bezier(0.4, 0, 0.2, 1)` (ease-in-out) for most transitions
+- No decorative infinite loops except explicit ambient effects (e.g., breathe pulse)
+
+---
+
+### CSS Color Variables (Legacy — Gate/Auth/Onboarding only)
+For compatibility with existing screens, these are still defined in src/index.css.
+DO NOT use in new screens. They exist only for gate, auth, and onboarding:
+
+--color-accent: #d7e332 (used by gate, auth, onboarding)
+--color-cta: #ff5a18 (used by gate, auth, onboarding)
+--color-purple: #b89cff (used by gate, auth, onboarding)
+--color-bg: #000000 (used by gate, auth, onboarding)
+--color-app: #090a0d (used by gate, auth, onboarding)
+--color-surface: rgba(255,255,255,0.05) (used by gate, auth, onboarding)
+--color-border: rgba(255,255,255,0.07) (used by gate, auth, onboarding)
+--color-text: #ffffff (used by gate, auth, onboarding)
+--color-text-muted: rgba(255,255,255,0.55) (used by gate, auth, onboarding)
+--color-text-dim: rgba(255,255,255,0.60) (used by gate, auth, onboarding)
+--color-nav-inactive: rgba(255,255,255,0.80) (used by gate, auth, onboarding)
 
 ### Spacing
 - Mobile-first. 390px reference width.
