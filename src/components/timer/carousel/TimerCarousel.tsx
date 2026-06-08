@@ -62,10 +62,10 @@ export function TimerCarousel({
   ]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-4 pt-2">
+    <div className="flex min-h-0 flex-1 flex-col pt-2">
       <div
         ref={viewportRef}
-        className="relative min-h-0 flex-1 overflow-hidden"
+        className="relative min-h-0 flex-1 overflow-hidden px-4"
         style={{ perspective: '1000px' }}
         onTouchStart={(e) => {
           touchStartX.current = e.touches[0]?.clientX ?? 0

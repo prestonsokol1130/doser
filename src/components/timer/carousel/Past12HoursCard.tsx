@@ -34,7 +34,7 @@ export function Past12HoursCard({ doses, nowMs }: CarouselCardData) {
   return (
     <CarouselCardShell>
       <CardHeader title="PAST 12 HOURS" />
-      <div className="grid shrink-0 grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <CardStat label="ENTRIES" value={recent.length > 0 ? String(recent.length) : '—'} />
         <CardStat label="TOTAL" value={recent.length > 0 ? `${total.toFixed(1)} mL` : '—'} />
         <CardStat
@@ -96,7 +96,7 @@ export function Past12HoursCard({ doses, nowMs }: CarouselCardData) {
         )}
       </div>
       {bars.length > 0 && (
-        <div className="mt-2 shrink-0">
+        <div className="mt-2">
           <p
             className="mb-1 text-[9px] uppercase tracking-[0.14em] text-[var(--app-faint)]"
             style={{ fontFamily: 'var(--font-body)' }}
@@ -114,7 +114,7 @@ export function Past12HoursCard({ doses, nowMs }: CarouselCardData) {
           </div>
         </div>
       )}
-      <div className="mt-2 shrink-0">
+      <div className="mt-2">
         <p
           className="mb-1 text-[9px] uppercase tracking-[0.14em] text-[var(--app-faint)]"
           style={{ fontFamily: 'var(--font-body)' }}

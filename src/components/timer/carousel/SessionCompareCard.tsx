@@ -132,7 +132,7 @@ export function SessionCompareCard({
           Log doses to compare your session.
         </p>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <CompareRow
             label="DOSE SIZE"
             current={

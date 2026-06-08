@@ -109,11 +109,11 @@ export function CurrentStateCard({ doses, profile, nowMs, timer }: CarouselCardD
             {tolerance.label} · {formatToleranceIndex(pel.toleranceIndex)}
           </p>
         </div>
-        <div className="flex shrink-0 items-center">
+        <div className="flex items-center">
           <PelGauge percent={pel.percent} />
         </div>
       </div>
-      <div className="mt-auto grid shrink-0 grid-cols-3 gap-2 border-t border-[var(--app-divider)] pt-2">
+      <div className="mt-auto grid grid-cols-3 gap-2 border-t border-[var(--app-divider)] pt-2">
         <CardStat
           label="NEXT WINDOW"
           value={

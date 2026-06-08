@@ -172,7 +172,7 @@ export function ForecastCard({ doses, profile, nowMs, timer }: CarouselCardData)
 
   return (
     <CarouselCardShell>
-      <div className="flex shrink-0 items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-2">
         <CardHeader title="FORECAST" subtitle="PREDICTED LEVEL" />
         <div className="text-right">
           <p
@@ -205,7 +205,7 @@ export function ForecastCard({ doses, profile, nowMs, timer }: CarouselCardData)
         />
       </div>
       <p
-        className="mt-1 shrink-0 text-center text-[10px] text-[var(--app-faint)]"
+        className="mt-1 text-center text-[10px] text-[var(--app-faint)]"
         style={{ fontFamily: 'var(--font-body)' }}
       >
         Now {current}% · 8-hour projection
