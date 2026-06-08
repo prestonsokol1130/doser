@@ -29,9 +29,12 @@ Purpose: Harm reduction tool for GBL, BDO, and GHB users. Safe interval timing, 
 - Do not apply the doser lowercase treatment to any other word anywhere in the app.
 
 ### Typography
-- Wordmark "doser": Unbounded, font-light (weight 300), lowercase, letter-spacing 0.16em
-- All UI numbers and body text: JetBrains Mono
-- Both loaded from Google Fonts — already imported in src/index.css
+- Wordmark "doser": Unbounded weight 300 — used ONLY for the wordmark, nothing else
+- Timer digits, dose picker number: Antonio weight 200 — var(--font-display)
+- Card section headers, screen titles: Montserrat weight 600/700 — var(--font-heading)
+- All labels, nav text, body copy, buttons: Inter weight 400/500/600 — var(--font-body)
+- JetBrains Mono: legacy only — still used in gate/auth/onboarding screens, do not use for new screens
+- All fonts loaded from Google Fonts — already imported in src/index.css
 
 ### CSS Color Variables
 All components must use these variables. Never hardcode hex values in components.
