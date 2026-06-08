@@ -145,34 +145,27 @@ PWA only: No app store distribution. Web-only intentionally.
 
 ## Design System Summary
 
-Dark only. Flat. Clinical-adjacent. No gradients to white. No glassmorphism.
-Reference apps: Apple Health, Oura, Whoop.
+**For complete design rules, see HANDOFF.md Section 2b (Design System Rules).**
+That section is the authoritative reference and must be read by every agent building new screens.
 
-Font system (as of Phase 3):
-  --font-display: Antonio 200 — timer digits, dose picker number only
-  --font-heading: Montserrat 600/700 — card section headers
-  --font-body:    Inter 400/500/600 — all labels, nav, body text
-  Unbounded 300 — "doser" wordmark ONLY. Never use for anything else.
-  JetBrains Mono — legacy, used in gate/auth/onboarding screens only
-"doser" wordmark is the ONLY intentional lowercase in the entire app.
-Everything else uses consistent capitalization.
+Quick reference:
+- Dark only. Flat. Clinical-adjacent. No shadows, gradients, or glassmorphism.
+- Reference apps: Apple Health, Oura, Whoop.
+- Always use CSS variables — never hardcode hex.
+- Use Tailwind for structure/layout only — never for colors.
 
-All colors use CSS variables defined in src/index.css. Never hardcode hex.
-Two variable sets exist — do not confuse them:
+**Font System (Phase 3 onwards):**
+- `var(--font-display)` — Antonio 200 (timer digits, large values only)
+- `var(--font-heading)` — Montserrat 600/700 (card headers, screen titles)
+- `var(--font-body)` — Inter 400/600 (labels, buttons, nav, copy)
+- Unbounded 300 — "doser" wordmark ONLY
+- JetBrains Mono — gate/auth/onboarding screens only, do not use for new screens
 
-  LEGACY (gate/auth/onboarding — do not rename or remove):
-  --color-accent: #d7e332    --color-cta: #ff5a18
-  --color-purple: #b89cff    --color-surface: rgba(255,255,255,0.05)
-  --color-border: rgba(255,255,255,0.07)
+**Color System (Two sets exist):**
+- LEGACY (gate/auth/onboarding only): --color-accent, --color-cta, --color-purple, etc.
+- NEW (timer + all future screens): --color-ring, --color-action, --color-load, --app-*, etc.
 
-  NEW DESIGN SYSTEM (timer screen + all future screens):
-  --color-ring: #C8E840      (accent — ring fill, active states, icons)
-  --color-action: #E8532A    (CTA — LOG ENTRY button)
-  --color-load: #9B8FD4      (secondary — sub-labels, next window)
-  --app-bg: #131313          --app-surface: #181a1e
-  --app-divider: #222629     --app-text: #edf0f4
-  --app-dim: #c8cdd4         --app-faint: #3e454e
-  All new screens must use the NEW set.
+See HANDOFF.md Section 2b for all 9 color tokens, layout rules, copy rules, and animation rules.
 
 ---
 
