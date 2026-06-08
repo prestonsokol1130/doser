@@ -94,7 +94,7 @@ export function TimerRingCard({ timer }: TimerRingCardProps) {
   return (
     <CarouselCardShell>
       <div className="flex min-h-0 flex-1 items-center justify-center">
-        <div className="relative mx-auto w-full max-w-[280px]">
+        <div className="relative mx-auto w-full max-w-[240px]">
           <ProgressRing
             progress={timer.ringProgress}
             fillAnimating={fillAnimating}
