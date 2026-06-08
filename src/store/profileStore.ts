@@ -1,6 +1,13 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { NotificationPrefs, Profile } from '../types'
+import type { Dose, NotificationPrefs, Profile } from '../types'
 
 const USERS_COLLECTION = 'users'
 
@@ -101,4 +108,50 @@ export async function saveOnboardingProfile(
     },
     { merge: true },
   )
+}
+
+export async function saveDoses(uid: string, doses: Dose[]): Promise<void> {
+  try {
+    const batch = writeBatch(db)
+    const dosesRef = collection(db, 'users', uid, 'doses')
+
+    const existing = await getDocs(dosesRef)
+    existing.docs.forEach((existingDoc) => batch.delete(existingDoc.ref))
+
+    doses.forEach((dose) => {
+      const docRef = doc(dosesRef, dose.id)
+      batch.set(docRef, {
+        id: dose.id,
+        substance: dose.substance,
+        amountMl: dose.amountMl,
+        ts: dose.ts,
+        updatedAt: dose.updatedAt ?? dose.ts,
+      })
+    })
+
+    await batch.commit()
+  } catch (error) {
+    console.error('Failed to save doses:', error)
+    throw error
+  }
+}
+
+export async function fetchDoses(uid: string): Promise<Dose[]> {
+  try {
+    const dosesRef = collection(db, 'users', uid, 'doses')
+    const snapshot = await getDocs(dosesRef)
+    return snapshot.docs.map((doseDoc) => {
+      const data = doseDoc.data()
+      return {
+        id: data.id,
+        substance: data.substance,
+        amountMl: data.amountMl,
+        ts: data.ts,
+        updatedAt: data.updatedAt,
+      } as Dose
+    })
+  } catch (error) {
+    console.error('Failed to fetch doses:', error)
+    return []
+  }
 }

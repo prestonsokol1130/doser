@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { auth } from '../../lib/firebase'
 import {
   defaultProfile,
+  fetchDoses,
   fetchUserDocument,
+  saveDoses,
 } from '../../store/profileStore'
 import type { Dose, Profile, Substance } from '../../types'
 import { BottomNav } from './BottomNav'
@@ -41,19 +43,24 @@ export function TimerScreen() {
 
     let active = true
 
-    fetchUserDocument(uid)
-      .then((doc) => {
+    Promise.all([
+      fetchUserDocument(uid),
+      fetchDoses(uid),
+    ])
+      .then(([profileDoc, loadedDoses]) => {
         if (!active) return
-        const loaded = doc?.profile ?? defaultProfile()
+        const loaded = profileDoc?.profile ?? defaultProfile()
         setProfile(loaded)
         setDoseAmount(
           snapDoseToStep(preferredDoseForSubstance(loaded, 'GBL')),
         )
+        setDoses(loadedDoses)
       })
       .catch((error) => {
         if (!active) return
-        console.error('Failed to fetch user profile:', error)
+        console.error('Failed to load profile or doses:', error)
         setProfile(defaultProfile())
+        setDoses([])
       })
       .finally(() => {
         if (active) setProfileLoading(false)
@@ -63,6 +70,19 @@ export function TimerScreen() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    const uid = auth.currentUser?.uid
+    if (!uid || doses.length === 0) return
+
+    const timeoutId = setTimeout(() => {
+      saveDoses(uid, doses).catch((error) => {
+        console.error('Failed to save doses:', error)
+      })
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
+  }, [doses])
 
   useEffect(() => {
     const id = window.setInterval(() => setNowMs(Date.now()), 1000)
