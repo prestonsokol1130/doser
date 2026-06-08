@@ -356,7 +356,9 @@ src/
   types.ts         <- All TypeScript types (see Section 8)
   App.tsx          <- Root component and routing
   main.tsx         <- Entry point
-  index.css        <- Global styles and CSS variables — DO NOT MODIFY
+  index.css        <- Global styles and CSS variables.
+                      MAY add new variables and font imports.
+                      NEVER remove or rename existing variables — gate/auth/onboarding use them.
 
 
 ---
@@ -375,18 +377,30 @@ Never create, rename, or switch branches.
 
 ## 16. Current Build Status
 
-Last updated: 2026-06-06
+Last updated: 2026-06-07
 
 Phase 1 — Foundation: COMPLETE
-Phase 2 — Gate + Auth + Onboarding: IN PROGRESS
+Phase 2 — Gate + Auth + Onboarding: COMPLETE
   - Gate Layer (PR #1): MERGED
   - Auth screens with Firebase (PR #2): MERGED
-  - Onboarding: NOT STARTED — next task
+  - Onboarding (PR #3): MERGED
 
-Phase 3 — Timer Screen: NOT STARTED
-  IMPORTANT: Copy PEL files from old repo into src/lib/perceivedEffect/ before starting Phase 3.
+Phase 3 — Timer Screen: PARTIALLY COMPLETE
+  - Core timer screen (PR #4): MERGED 2026-06-07
+  - Built: TimerScreen, TimerHeader, TopStatRow, TimerRingCard (Card 1),
+    TimerCarousel, DoseCard, BottomNav, timerUtils, new design tokens in index.css
+  - PEL engine files: already copied into src/lib/perceivedEffect/
+  - DEFERRED: Carousel Cards 2–6 are placeholder shells only.
+    Build these at the start of Phase 4 after dose persistence is implemented.
+    Cards 3–6 require persistent dose storage and PEL engine wiring.
+  - DEFERRED: Dose persistence to Firestore (doses currently in local React state only)
+  - DEFERRED: Flashlight button functionality
+  - DEFERRED: Tab navigation for Insights/History/Tools/Settings
 
 Phase 4 — History + Insights: NOT STARTED
+  First task: implement dose persistence to Firestore, then History screen,
+  then wire carousel cards 2–6, then Insights screen.
+
 Phase 5 — Tools + Settings: NOT STARTED
 
 Firebase project: doser-e389f

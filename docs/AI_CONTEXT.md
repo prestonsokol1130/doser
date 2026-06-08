@@ -28,7 +28,7 @@ Code review: CodeRabbit connected, reviews every PR automatically
 
 ## Current Build Status
 
-Last updated: 2026-06-06
+Last updated: 2026-06-07
 
 PHASE 1 — Foundation: COMPLETE
   Clean Vite+React+TS+Tailwind scaffold committed to main.
@@ -42,14 +42,44 @@ PHASE 2 — Gate + Auth + Onboarding: COMPLETE
   Auth screens (PR #2): MERGED — log in, sign up, forgot password, recovery (Firebase)
   Onboarding (PR #3): MERGED — 4-screen onboarding, profile saved to Firestore, skips on return
 
-PHASE 3 — Timer Screen: NOT STARTED
-  !! IMPORTANT: Before starting Phase 3, copy PEL engine files from old repo into:
-     src/lib/perceivedEffect/effectCurves.ts
-     src/lib/perceivedEffect/perceivedEffectModel.ts
-     src/lib/perceivedEffect/toleranceModel.ts
-  These files must not be rewritten — they are hand-tuned and must be copied exactly.
+PHASE 3 — Timer Screen: PARTIALLY COMPLETE
+  Core timer screen (PR #4): MERGED 2026-06-07
+
+  DONE:
+  - TimerScreen.tsx — full state management (doses, profile, substance, nowMs, carousel index)
+  - TimerHeader — wordmark, substance selector (GBL/BDO), flashlight button (visual only)
+  - TopStatRow — LAST ENTRY + SESSION TOTAL stat cards
+  - TimerRingCard (Carousel Card 1) — SVG ring, WAIT/SAFE states, fill animation on LOG ENTRY
+    (fills green over 4s), ring decays counter-clockwise back to empty over the wait interval
+  - TimerCarousel — horizontal scroll carousel, swipe navigation, pagination dots
+  - DoseCard — dose adjuster 0.1–10.0 mL looping scroll wheel, LOG ENTRY button
+  - BottomNav — 5-tab nav, Timer tab active, other tabs are visual placeholders only
+  - New design system tokens added to index.css:
+    Fonts: Antonio (timer digits), Inter (UI/labels), Montserrat (card headers)
+    Colors: --color-ring, --color-action, --color-load, --app-surface, --app-divider,
+            --app-text, --app-dim, --app-faint, glow utilities
+    Animations: cardIn, breathe, ringFillIn keyframes + timing tokens
+  - PEL engine files copied into src/lib/perceivedEffect/ (do not modify)
+
+  SKIPPED / DEFERRED:
+  - Carousel Cards 2–6 are placeholder shells (header text only, no content):
+      Card 2 — TODAY: session summary stats
+      Card 3 — CURRENT STATE: PEL gauge (needs PEL engine wired + persistent doses)
+      Card 4 — PAST 12 HOURS: dose history list + bars (needs persistent dose storage)
+      Card 5 — FORECAST: PEL bell curve chart (needs PEL engine wired)
+      Card 6 — SESSION COMPARE: compare vs average (needs historical session data)
+  - Flashlight button: button exists visually, no functionality implemented
+  - Dose persistence: doses live in local React state only, reset on every app reload
+  - Tab navigation: clicking Insights/History/Tools/Settings tabs does nothing yet
+
+  RECOMMENDED: Build carousel cards 2–6 as the FIRST task of Phase 4, immediately
+  after dose persistence to Firestore is implemented. Cards 3–6 depend on stored
+  dose history and the PEL engine being wired. Suggested target: 2026-07.
 
 PHASE 4 — History + Insights: NOT STARTED
+  Next task: implement dose persistence to Firestore (write doses[] to users/{uid}/doses),
+  then build History screen, then wire carousel cards 2–6, then Insights screen.
+
 PHASE 5 — Tools + Settings: NOT STARTED
 
 ---
@@ -118,19 +148,31 @@ PWA only: No app store distribution. Web-only intentionally.
 Dark only. Flat. Clinical-adjacent. No gradients to white. No glassmorphism.
 Reference apps: Apple Health, Oura, Whoop.
 
-Font: Unbounded (wordmark, display) + JetBrains Mono (all UI text)
+Font system (as of Phase 3):
+  --font-display: Antonio 200 — timer digits, dose picker number only
+  --font-heading: Montserrat 600/700 — card section headers
+  --font-body:    Inter 400/500/600 — all labels, nav, body text
+  Unbounded 300 — "doser" wordmark ONLY. Never use for anything else.
+  JetBrains Mono — legacy, used in gate/auth/onboarding screens only
 "doser" wordmark is the ONLY intentional lowercase in the entire app.
-Everything else uses consistent capitalization (ALL CAPS, Title Case, or sentence
-case — pick one per context and hold it across all screens).
+Everything else uses consistent capitalization.
 
 All colors use CSS variables defined in src/index.css. Never hardcode hex.
-Key colors:
-  --color-accent: #d7e332 (yellow-green, ring, active states)
-  --color-cta: #ff5a18 (orange-red, LOG ENTRY button, CTA)
-  --color-purple: #b89cff (sub-labels, secondary info)
-  --color-bg: #000000
-  --color-app: #090a0d
-  --color-surface: rgba(255,255,255,0.05)
+Two variable sets exist — do not confuse them:
+
+  LEGACY (gate/auth/onboarding — do not rename or remove):
+  --color-accent: #d7e332    --color-cta: #ff5a18
+  --color-purple: #b89cff    --color-surface: rgba(255,255,255,0.05)
+  --color-border: rgba(255,255,255,0.07)
+
+  NEW DESIGN SYSTEM (timer screen + all future screens):
+  --color-ring: #C8E840      (accent — ring fill, active states, icons)
+  --color-action: #E8532A    (CTA — LOG ENTRY button)
+  --color-load: #9B8FD4      (secondary — sub-labels, next window)
+  --app-bg: #131313          --app-surface: #181a1e
+  --app-divider: #222629     --app-text: #edf0f4
+  --app-dim: #c8cdd4         --app-faint: #3e454e
+  All new screens must use the NEW set.
 
 ---
 
