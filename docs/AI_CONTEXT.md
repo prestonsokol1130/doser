@@ -105,6 +105,8 @@ PHASE 5 — Tools + Settings: NOT STARTED
 
 ## Key Documents in This Repo
 
+**All documentation lives in docs/ folder for organization.**
+
 docs/HANDOFF.md — Full technical spec for Cursor agents. Design system, visual spec,
   PEL engine documentation, data model, all agent rules. Every Cursor task starts
   with @HANDOFF.md.
@@ -115,6 +117,16 @@ docs/MY_CHECKLIST.md — Preston's plain-English step-by-step process for every 
 
 docs/AI_CONTEXT.md — This file. The first thing any AI assistant should read to
   understand the full project state before helping.
+
+docs/CLAUDE_CODE_OPERATING_MANUAL.md — Complete guide for Claude Code advisor role.
+  Responsibilities, constraints, red lines, git workflow, session end checklist.
+  Every Claude Code session reads this to understand the advisor role.
+
+docs/CLAUDE_CODE_PHASE4_STARTUP.txt — Quick startup reference for Claude Code.
+  Role in one sentence, workflow, critical rules, red lines. Complement to above.
+
+docs/NEXT_AGENT_PROMPT.md — Detailed Phase 4 task specification (carousel cards 2–6,
+  History screen, 3D cube animation). Sent to Cursor for implementation.
 
 ---
 
