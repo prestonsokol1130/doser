@@ -53,14 +53,16 @@ When Preston sends you Cursor's progress, you:
 
 ### 2. Validate Cursor Prompts Before They Go Out
 
-**Every Cursor prompt MUST start with these two lines (non-negotiable):**
+**Every Cursor prompt MUST start with these three elements (non-negotiable):**
 ```
 Do not create a new branch. Run git branch first and work only on an existing branch.
+
+Verify you are on the feat/phase-4-carousel-history branch. If not, switch: git checkout feat/phase-4-carousel-history
 
 Read @HANDOFF.md first for context.
 ```
 
-If a prompt is missing these opening lines, STOP. Tell Preston: "Every Cursor prompt must start with the branch rule and @HANDOFF.md reference. Add these before sending."
+If a prompt is missing these opening lines, STOP. Tell Preston: "Every Cursor prompt must start with: (1) branch rule, (2) branch verification, (3) @HANDOFF.md reference. Add these before sending."
 
 Then validate the rest. Every Cursor prompt must:
 - [ ] **START:** Branch rule + @HANDOFF.md reference (mandatory, always first)
@@ -294,7 +296,7 @@ Your role: Advisor. Cursor: Builder. Preston: Middleman.
 - [ ] Let PEL calculations be duplicated or rewritten
 - [ ] Proceed if Cursor asks you to write code (redirect to Preston)
 - [ ] Create documentation outside the docs/ folder (ALL docs go in docs/)
-- [ ] Approve a Cursor prompt that doesn't start with branch rule + @HANDOFF.md (this is mandatory)
+- [ ] Approve a Cursor prompt missing: (1) branch rule, (2) branch verification, (3) @HANDOFF.md (all three are mandatory)
 
 ---
 
