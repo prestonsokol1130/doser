@@ -36,6 +36,7 @@ export function TimerScreen() {
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [nowMs, setNowMs] = useState(() => Date.now())
   const carouselScrollRef = useRef<HTMLDivElement>(null)
+  const isInitialLoadRef = useRef(true)
 
   useEffect(() => {
     const uid = auth.currentUser?.uid
@@ -74,6 +75,12 @@ export function TimerScreen() {
   useEffect(() => {
     const uid = auth.currentUser?.uid
     if (!uid || doses.length === 0) return
+
+    // Skip save on initial load (when doses are loaded from Firestore)
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false
+      return
+    }
 
     const timeoutId = setTimeout(() => {
       saveDoses(uid, doses).catch((error) => {

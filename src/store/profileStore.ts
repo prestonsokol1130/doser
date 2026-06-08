@@ -7,7 +7,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { Dose, NotificationPrefs, Profile } from '../types'
+import type { Dose, DoseSubstance, NotificationPrefs, Profile } from '../types'
 
 const USERS_COLLECTION = 'users'
 
@@ -115,18 +115,21 @@ export async function saveDoses(uid: string, doses: Dose[]): Promise<void> {
     const batch = writeBatch(db)
     const dosesRef = collection(db, 'users', uid, 'doses')
 
-    const existing = await getDocs(dosesRef)
-    existing.docs.forEach((existingDoc) => batch.delete(existingDoc.ref))
-
+    // Instead of delete-all-then-set, use merge: set with merge to avoid race conditions
+    // Each dose is written individually so concurrent writes don't stomp each other
     doses.forEach((dose) => {
       const docRef = doc(dosesRef, dose.id)
-      batch.set(docRef, {
-        id: dose.id,
-        substance: dose.substance,
-        amountMl: dose.amountMl,
-        ts: dose.ts,
-        updatedAt: dose.updatedAt ?? dose.ts,
-      })
+      batch.set(
+        docRef,
+        {
+          id: dose.id,
+          substance: dose.substance,
+          amountMl: dose.amountMl,
+          ts: dose.ts,
+          updatedAt: dose.updatedAt ?? dose.ts,
+        },
+        { merge: false }, // overwrite this specific dose, don't delete others
+      )
     })
 
     await batch.commit()
@@ -140,16 +143,31 @@ export async function fetchDoses(uid: string): Promise<Dose[]> {
   try {
     const dosesRef = collection(db, 'users', uid, 'doses')
     const snapshot = await getDocs(dosesRef)
-    return snapshot.docs.map((doseDoc) => {
-      const data = doseDoc.data()
-      return {
-        id: data.id,
-        substance: data.substance,
-        amountMl: data.amountMl,
-        ts: data.ts,
-        updatedAt: data.updatedAt,
-      } as Dose
-    })
+    return snapshot.docs
+      .map((doseDoc) => {
+        const data = doseDoc.data()
+
+        // Validate required fields exist and have correct types
+        if (
+          typeof data.id !== 'string' ||
+          !['GBL', 'BDO', 'GHB'].includes(data.substance) ||
+          typeof data.amountMl !== 'number' ||
+          typeof data.ts !== 'number'
+        ) {
+          console.warn('Invalid dose document skipped:', data)
+          return null
+        }
+
+        return {
+          id: data.id,
+          substance: data.substance as DoseSubstance,
+          amountMl: data.amountMl,
+          ts: data.ts,
+          updatedAt:
+            typeof data.updatedAt === 'number' ? data.updatedAt : data.ts,
+        } as Dose
+      })
+      .filter((dose): dose is Dose => dose !== null)
   } catch (error) {
     console.error('Failed to fetch doses:', error)
     return []
