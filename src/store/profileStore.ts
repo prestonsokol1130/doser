@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { Dose, DoseSubstance, NotificationPrefs, Profile } from '../types'
+import { VALID_DOSE_SUBSTANCES } from '../types'
 
 const USERS_COLLECTION = 'users'
 
@@ -114,10 +115,24 @@ export async function saveDoses(uid: string, doses: Dose[]): Promise<void> {
   try {
     const dosesRef = collection(db, 'users', uid, 'doses')
 
+    // Validate doses before persisting
+    const validDoses = doses.filter((dose) => {
+      const isValid =
+        typeof dose.id === 'string' &&
+        VALID_DOSE_SUBSTANCES.includes(dose.substance) &&
+        typeof dose.amountMl === 'number' &&
+        typeof dose.ts === 'number'
+
+      if (!isValid) {
+        console.warn('Invalid dose skipped during save:', dose)
+      }
+      return isValid
+    })
+
     // Differential sync: read existing IDs, delete ones no longer in the local array
     const existing = await getDocs(dosesRef)
     const existingIds = new Set(existing.docs.map((d) => d.id))
-    const newIds = new Set(doses.map((d) => d.id))
+    const newIds = new Set(validDoses.map((d) => d.id))
     const toDelete = [...existingIds].filter((id) => !newIds.has(id))
 
     // Batch operations in chunks to avoid 500-operation limit
@@ -138,7 +153,7 @@ export async function saveDoses(uid: string, doses: Dose[]): Promise<void> {
     }
 
     // Write/overwrite current doses
-    for (const dose of doses) {
+    for (const dose of validDoses) {
       batch.set(
         doc(dosesRef, dose.id),
         {
@@ -180,7 +195,7 @@ export async function fetchDoses(uid: string): Promise<Dose[]> {
         // Validate required fields exist and have correct types
         if (
           typeof data.id !== 'string' ||
-          !['GBL', 'BDO', 'GHB'].includes(data.substance) ||
+          !VALID_DOSE_SUBSTANCES.includes(data.substance) ||
           typeof data.amountMl !== 'number' ||
           typeof data.ts !== 'number'
         ) {
