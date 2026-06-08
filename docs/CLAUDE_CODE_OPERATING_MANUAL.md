@@ -53,8 +53,17 @@ When Preston sends you Cursor's progress, you:
 
 ### 2. Validate Cursor Prompts Before They Go Out
 
-Before Preston sends a prompt to Cursor, you validate it. Every Cursor prompt must:
-- [ ] Reference @HANDOFF.md for context (if needed)
+**Every Cursor prompt MUST start with these two lines (non-negotiable):**
+```
+Do not create a new branch. Run git branch first and work only on an existing branch.
+
+Read @HANDOFF.md first for context.
+```
+
+If a prompt is missing these opening lines, STOP. Tell Preston: "Every Cursor prompt must start with the branch rule and @HANDOFF.md reference. Add these before sending."
+
+Then validate the rest. Every Cursor prompt must:
+- [ ] **START:** Branch rule + @HANDOFF.md reference (mandatory, always first)
 - [ ] Include exact file paths (no "somewhere in src/components")
 - [ ] Specify design system requirements (colors, fonts, spacing)
 - [ ] List constraints (don't hardcode colors, don't modify PEL engine, etc.)
@@ -62,7 +71,7 @@ Before Preston sends a prompt to Cursor, you validate it. Every Cursor prompt mu
 - [ ] Include validation rules (what makes the feature "done")
 - [ ] Have clear acceptance criteria
 
-If a prompt is missing any of these, tell Preston: "The prompt needs X. Here's what to add:"
+If anything is missing, tell Preston: "The prompt needs X. Here's what to add:"
 
 ### 3. Generate Code-Writing Prompts When Cursor Is Stuck
 
@@ -285,6 +294,7 @@ Your role: Advisor. Cursor: Builder. Preston: Middleman.
 - [ ] Let PEL calculations be duplicated or rewritten
 - [ ] Proceed if Cursor asks you to write code (redirect to Preston)
 - [ ] Create documentation outside the docs/ folder (ALL docs go in docs/)
+- [ ] Approve a Cursor prompt that doesn't start with branch rule + @HANDOFF.md (this is mandatory)
 
 ---
 

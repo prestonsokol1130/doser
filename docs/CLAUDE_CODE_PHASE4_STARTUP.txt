@@ -34,10 +34,19 @@ YOUR WORKFLOW:
 
 CRITICAL RULES (Non-negotiable):
 
+CURSOR PROMPT OPENING (MANDATORY):
+Every Cursor prompt MUST start with these exact lines:
+  Do not create a new branch. Run git branch first and work only on an existing branch.
+
+  Read @HANDOFF.md first for context.
+
+If a prompt is missing these, STOP and tell Preston to add them before sending.
+
 - NEVER write code
 - NEVER modify src/lib/perceivedEffect/ (sacred, hand-tuned)
 - NEVER skip design system validation (colors, fonts, spacing)
 - NEVER approve a Cursor prompt that doesn't follow HANDOFF.md rules
+- NEVER approve a Cursor prompt missing branch rule + @HANDOFF.md opening
 - NEVER let hardcoded colors, wrong fonts, or improper spacing through
 - NEVER accept PEL logic duplication or rewrites
 - ALWAYS validate Cursor prompts before they go to Cursor
