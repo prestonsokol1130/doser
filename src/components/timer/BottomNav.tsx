@@ -10,6 +10,7 @@ type NavTab = 'insights' | 'history' | 'timer' | 'tools' | 'settings'
 
 type BottomNavProps = {
   activeTab?: NavTab
+  onTabSelect?: (tab: NavTab) => void
 }
 
 const tabs: { id: NavTab; label: string; Icon: typeof TimerNavIcon }[] = [
@@ -20,7 +21,7 @@ const tabs: { id: NavTab; label: string; Icon: typeof TimerNavIcon }[] = [
   { id: 'settings', label: 'Settings', Icon: SettingsNavIcon },
 ]
 
-export function BottomNav({ activeTab = 'timer' }: BottomNavProps) {
+export function BottomNav({ activeTab = 'timer', onTabSelect }: BottomNavProps) {
   return (
     <nav
       aria-label="Main navigation"
@@ -34,6 +35,7 @@ export function BottomNav({ activeTab = 'timer' }: BottomNavProps) {
               key={id}
               type="button"
               aria-current={active ? 'page' : undefined}
+              onClick={() => onTabSelect?.(id)}
               className={`flex flex-col items-center gap-1 py-1 outline-none ${
                 active ? 'text-[var(--color-ring)]' : 'text-[var(--app-faint)]'
               }`}

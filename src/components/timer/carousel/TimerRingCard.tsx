@@ -24,8 +24,8 @@ function ProgressRing({ progress, fillAnimating, onAnimationEnd }: ProgressRingP
     <>
       <style>{`
         @keyframes ringFillIn {
-          from { stroke-dasharray: 0 848.23; }
-          to   { stroke-dasharray: 848.23 0; }
+          from { stroke-dasharray: 0 ${CIRC.toFixed(2)}; }
+          to   { stroke-dasharray: ${CIRC.toFixed(2)} 0; }
         }
       `}</style>
       <svg

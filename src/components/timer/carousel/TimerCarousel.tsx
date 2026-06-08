@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react'
+import type React from 'react'
 import type { TimerState } from '../timerUtils'
 import { CurrentStateCard } from './CurrentStateCard'
 import { ForecastCard } from './ForecastCard'
@@ -13,14 +14,15 @@ type TimerCarouselProps = {
   activeIndex: number
   onActiveIndexChange: (index: number) => void
   timer: TimerState
+  scrollRef: React.RefObject<HTMLDivElement | null>
 }
 
 export function TimerCarousel({
   activeIndex,
   onActiveIndexChange,
   timer,
+  scrollRef,
 }: TimerCarouselProps) {
-  const scrollRef = useRef<HTMLDivElement>(null)
   const touchStartX = useRef(0)
 
   const scrollToIndex = useCallback(
@@ -31,17 +33,23 @@ export function TimerCarousel({
       el.scrollTo({ left: clamped * el.clientWidth, behavior: 'smooth' })
       onActiveIndexChange(clamped)
     },
-    [onActiveIndexChange],
+    [scrollRef, onActiveIndexChange],
   )
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current
     if (!el || el.clientWidth === 0) return
-    const index = Math.round(el.scrollLeft / el.clientWidth)
+    const index = Math.max(
+      0,
+      Math.min(
+        CAROUSEL_CARD_COUNT - 1,
+        Math.round(el.scrollLeft / el.clientWidth),
+      ),
+    )
     if (index !== activeIndex) {
       onActiveIndexChange(index)
     }
-  }, [activeIndex, onActiveIndexChange])
+  }, [scrollRef, activeIndex, onActiveIndexChange])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-4 pt-2">
@@ -59,7 +67,6 @@ export function TimerCarousel({
           }
         }}
         className="flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        data-timer-carousel
       >
         <div className="flex h-full min-h-0 w-full shrink-0 snap-center snap-always">
           <TimerRingCard timer={timer} />
@@ -102,7 +109,7 @@ export function PaginationDots({
           aria-label={`Go to card ${i + 1}`}
           aria-current={i === activeIndex ? 'true' : undefined}
           onClick={() => onSelect(i)}
-          className={`h-2.5 w-2.5 rounded-full outline-none ${
+          className={`h-2.5 w-2.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--app-bg)] ${
             i === activeIndex
               ? 'bg-[var(--color-ring)]'
               : 'bg-[rgba(255,255,255,0.25)]'

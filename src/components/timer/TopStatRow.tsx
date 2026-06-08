@@ -57,7 +57,7 @@ export function TopStatRow({ doses, substance }: TopStatRowProps) {
   const total = sessionTotalMl(doses, substance)
 
   const lastEntryValue = latest ? `${latest.amountMl.toFixed(2)} mL` : '—'
-  const lastEntrySubTime = latest ? `AT ${formatTimeShort(latest.ts)}` : ''
+  const lastEntrySubTime = latest ? `AT ${formatTimeShort(latest.ts)}` : undefined
   const sessionTotalValue = `${total.toFixed(1)} mL`
 
   return (

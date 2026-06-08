@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { auth } from '../../lib/firebase'
 import {
   defaultProfile,
@@ -33,6 +33,7 @@ export function TimerScreen() {
   )
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [nowMs, setNowMs] = useState(() => Date.now())
+  const carouselScrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const uid = auth.currentUser?.uid
@@ -97,14 +98,9 @@ export function TimerScreen() {
 
   const handleDotSelect = useCallback((index: number) => {
     setCarouselIndex(index)
-    const scrollEl = document.querySelector<HTMLDivElement>(
-      '[data-timer-carousel]',
-    )
-    if (scrollEl) {
-      scrollEl.scrollTo({
-        left: index * scrollEl.clientWidth,
-        behavior: 'smooth',
-      })
+    const el = carouselScrollRef.current
+    if (el) {
+      el.scrollTo({ left: index * el.clientWidth, behavior: 'smooth' })
     }
   }, [])
 
@@ -126,6 +122,7 @@ export function TimerScreen() {
         activeIndex={carouselIndex}
         onActiveIndexChange={handleCarouselIndexChange}
         timer={timer}
+        scrollRef={carouselScrollRef}
       />
 
       <PaginationDots

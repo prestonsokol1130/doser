@@ -125,6 +125,7 @@ export function formatLastEntry(dose: Dose | null): string {
   return `${formatDoseAmount(dose.amountMl)} • ${formatTimeShort(dose.ts)}`
 }
 
+// Intentional wrap: scroll wheel loops 0.1 → 10.0 → 0.1 by design.
 export function clampDoseAmount(amount: number): number {
   const v = Math.round(amount * 10) / 10
   if (v > DOSE_MAX) return DOSE_MIN
