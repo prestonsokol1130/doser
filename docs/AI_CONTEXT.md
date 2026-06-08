@@ -44,7 +44,7 @@ PHASE 2 — Gate + Auth + Onboarding: COMPLETE
 
 PHASE 3 — Timer Screen: COMPLETE
   Core timer screen (PR #4): MERGED 2026-06-07
-  Firestore dose persistence (feat/dose-persistence): IN REVIEW
+  Dose persistence to Firestore (PR #5): IN REVIEW — all CodeRabbit issues fixed
 
   DONE:
   - TimerScreen.tsx — full state management (doses, profile, substance, nowMs, carousel index)
@@ -68,15 +68,36 @@ PHASE 3 — Timer Screen: COMPLETE
   - Polish Issue 5: Hardcoded substance allowlist
 
   SKIPPED / DEFERRED:
-  - Carousel Cards 2–6 are placeholder shells
-  - Flashlight button: visual only, no functionality
-  - Tab navigation: clicking other tabs does nothing yet
+  - Carousel Cards 2–6 are placeholder shells (header text only, no content):
+      Card 2 — TODAY: session summary stats
+      Card 3 — CURRENT STATE: PEL gauge (needs PEL engine wired + persistent doses)
+      Card 4 — PAST 12 HOURS: dose history list + bars (now has persistent storage)
+      Card 5 — FORECAST: PEL bell curve chart (needs PEL engine wired)
+      Card 6 — SESSION COMPARE: compare vs average (needs historical session data)
+  - Flashlight button: button exists visually, no functionality implemented
+  - Tab navigation: clicking Insights/History/Tools/Settings tabs does nothing yet
 
-PHASE 4 — History + Insights: NOT STARTED
-  First task: Merge dose persistence (after CodeRabbit issues fixed)
-  Then: Design + build History screen
-  Then: Wire carousel cards 2–6
-  Then: Build Insights screen
+  DOSE PERSISTENCE (Phase 3b):
+  - Implemented: saveDoses() with differential sync and batch chunking (400 ops limit)
+  - Implemented: fetchDoses() with validation on load
+  - Firestore structure: users/{uid}/doses subcollection with validation
+  - Security rules updated: match /users/{uid}/{document=**} for subcollection access
+  - Validation: All doses checked for valid id (string), substance (GBL/BDO/GHB),
+    amountMl (number), ts (number) before write and on fetch
+  - Constant: VALID_DOSE_SUBSTANCES exported from types.ts to prevent drift
+  - Next: Merge PR #5 after CodeRabbit passes, then Phase 4 can start
+
+  RECOMMENDED: Build carousel cards 2–6 as the FIRST task of Phase 4, immediately
+  after dose persistence PR merges. Cards 3–6 depend on stored dose history and
+  the PEL engine being wired. Also implement History screen in Phase 4. Target: 2026-07.
+
+PHASE 4 — History + Carousel + Insights: NOT STARTED
+  Blocked on: PR #5 (dose persistence) merge status
+  Next tasks (after PR #5 merges):
+  1. Build carousel cards 2–6: TODAY stats, PEL gauge, dose history, forecast, session compare
+  2. Implement History screen (full dose log, edit, delete, import/export)
+  3. Wire PEL engine integration into cards 3 and 5
+  4. Build Insights screen (patterns, analysis)
 
 PHASE 5 — Tools + Settings: NOT STARTED
 

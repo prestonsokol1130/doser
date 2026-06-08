@@ -5,7 +5,7 @@ export type LegacySubstance = 'GHB'
 
 export type DoseSubstance = Substance | LegacySubstance
 
-export const VALID_DOSE_SUBSTANCES = ['GBL', 'BDO', 'GHB'] as const
+export const VALID_DOSE_SUBSTANCES = ['GBL', 'BDO', 'GHB'] as const satisfies readonly DoseSubstance[]
 
 export type NotifPresetId =
   | 'all'

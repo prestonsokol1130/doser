@@ -1,6 +1,13 @@
-import { collection, doc, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { Dose, NotificationPrefs, Profile } from '../types'
+import type { Dose, DoseSubstance, NotificationPrefs, Profile } from '../types'
 import { VALID_DOSE_SUBSTANCES } from '../types'
 
 const USERS_COLLECTION = 'users'
@@ -102,4 +109,112 @@ export async function saveOnboardingProfile(
     },
     { merge: true },
   )
+}
+
+export async function saveDoses(uid: string, doses: Dose[]): Promise<void> {
+  try {
+    const dosesRef = collection(db, 'users', uid, 'doses')
+
+    // Validate doses before persisting
+    const validDoses = doses.filter((dose) => {
+      const isValid =
+        typeof dose.id === 'string' &&
+        VALID_DOSE_SUBSTANCES.includes(dose.substance) &&
+        typeof dose.amountMl === 'number' &&
+        typeof dose.ts === 'number'
+
+      if (!isValid) {
+        console.warn('Invalid dose skipped during save:', dose)
+      }
+      return isValid
+    })
+
+    // Differential sync: read existing IDs, delete ones no longer in the local array
+    const existing = await getDocs(dosesRef)
+    const existingIds = new Set(existing.docs.map((d) => d.id))
+    const newIds = new Set(validDoses.map((d) => d.id))
+    const toDelete = [...existingIds].filter((id) => !newIds.has(id))
+
+    // Batch operations in chunks to avoid 500-operation limit
+    let batch = writeBatch(db)
+    let operationCount = 0
+
+    // Delete doses that no longer exist locally
+    for (const id of toDelete) {
+      batch.delete(doc(dosesRef, id))
+      operationCount++
+
+      // Commit and start a new batch if we hit 400 operations (safety margin)
+      if (operationCount >= 400) {
+        await batch.commit()
+        batch = writeBatch(db)
+        operationCount = 0
+      }
+    }
+
+    // Write/overwrite current doses
+    for (const dose of validDoses) {
+      batch.set(
+        doc(dosesRef, dose.id),
+        {
+          id: dose.id,
+          substance: dose.substance,
+          amountMl: dose.amountMl,
+          ts: dose.ts,
+          updatedAt: dose.updatedAt ?? dose.ts,
+        },
+        { merge: false }
+      )
+      operationCount++
+
+      if (operationCount >= 400) {
+        await batch.commit()
+        batch = writeBatch(db)
+        operationCount = 0
+      }
+    }
+
+    // Final commit for any remaining operations
+    if (operationCount > 0) {
+      await batch.commit()
+    }
+  } catch (error) {
+    console.error('Failed to save doses:', error)
+    throw error
+  }
+}
+
+export async function fetchDoses(uid: string): Promise<Dose[]> {
+  try {
+    const dosesRef = collection(db, 'users', uid, 'doses')
+    const snapshot = await getDocs(dosesRef)
+    return snapshot.docs
+      .map((doseDoc) => {
+        const data = doseDoc.data()
+
+        // Validate required fields exist and have correct types
+        if (
+          typeof data.id !== 'string' ||
+          !VALID_DOSE_SUBSTANCES.includes(data.substance) ||
+          typeof data.amountMl !== 'number' ||
+          typeof data.ts !== 'number'
+        ) {
+          console.warn('Invalid dose document skipped:', data)
+          return null
+        }
+
+        return {
+          id: data.id,
+          substance: data.substance as DoseSubstance,
+          amountMl: data.amountMl,
+          ts: data.ts,
+          updatedAt:
+            typeof data.updatedAt === 'number' ? data.updatedAt : data.ts,
+        } as Dose
+      })
+      .filter((dose): dose is Dose => dose !== null)
+  } catch (error) {
+    console.error('Failed to fetch doses:', error)
+    return []
+  }
 }
