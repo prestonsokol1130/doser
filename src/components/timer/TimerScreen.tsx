@@ -50,8 +50,9 @@ export function TimerScreen() {
           snapDoseToStep(preferredDoseForSubstance(loaded, 'GBL')),
         )
       })
-      .catch(() => {
+      .catch((error) => {
         if (!active) return
+        console.error('Failed to fetch user profile:', error)
         setProfile(defaultProfile())
       })
       .finally(() => {

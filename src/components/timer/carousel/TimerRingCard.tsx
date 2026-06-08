@@ -79,7 +79,7 @@ export function TimerRingCard({ timer }: TimerRingCardProps) {
     timer.nextWindowMs != null ? formatTimeShort(timer.nextWindowMs) : '—'
 
   const [fillAnimating, setFillAnimating] = useState(false)
-  const prevLastDoseTsRef = useRef<number | null>(null)
+  const prevLastDoseTsRef = useRef<number | null>(timer.lastDoseTs)
 
   useEffect(() => {
     if (
