@@ -1,9 +1,9 @@
 START HERE — Read these files in this order:
 
-1. CLAUDE_CODE_OPERATING_MANUAL.md — Your complete role, responsibilities, constraints, and workflow
+1. docs/CLAUDE_CODE_OPERATING_MANUAL.md — Your complete role, responsibilities, constraints, and workflow
 2. docs/AI_CONTEXT.md — Project state and what Phase 4 is
 3. docs/HANDOFF.md — Design system, technical specs, PEL engine (reference only, don't modify)
-4. NEXT_AGENT_PROMPT.md — Phase 4 detailed task spec (for reference)
+4. docs/NEXT_AGENT_PROMPT.md — Phase 4 detailed task spec (for reference)
 
 ---
 

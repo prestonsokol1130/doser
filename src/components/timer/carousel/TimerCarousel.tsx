@@ -1,6 +1,5 @@
-import { useCallback, useRef } from 'react'
-import type React from 'react'
-import type { TimerState } from '../timerUtils'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { CarouselCardData } from './carouselTypes'
 import { CurrentStateCard } from './CurrentStateCard'
 import { ForecastCard } from './ForecastCard'
 import { Past12HoursCard } from './Past12HoursCard'
@@ -10,52 +9,64 @@ import { TodayCard } from './TodayCard'
 
 export const CAROUSEL_CARD_COUNT = 6
 
-type TimerCarouselProps = {
+const FACE_ANGLE = 360 / CAROUSEL_CARD_COUNT
+const CUBE_TRANSITION_MS = 350
+
+type TimerCarouselProps = CarouselCardData & {
   activeIndex: number
   onActiveIndexChange: (index: number) => void
-  timer: TimerState
-  scrollRef: React.RefObject<HTMLDivElement | null>
 }
 
 export function TimerCarousel({
   activeIndex,
   onActiveIndexChange,
-  timer,
-  scrollRef,
+  ...cardData
 }: TimerCarouselProps) {
+  const viewportRef = useRef<HTMLDivElement>(null)
   const touchStartX = useRef(0)
+  const [depthPx, setDepthPx] = useState(280)
+
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+
+    const update = () => {
+      const w = el.clientWidth
+      if (w > 0) {
+        const radius = w / (2 * Math.tan(Math.PI / CAROUSEL_CARD_COUNT))
+        setDepthPx(Math.round(radius))
+      }
+    }
+
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const scrollToIndex = useCallback(
     (index: number) => {
-      const el = scrollRef.current
-      if (!el) return
       const clamped = Math.max(0, Math.min(CAROUSEL_CARD_COUNT - 1, index))
-      el.scrollTo({ left: clamped * el.clientWidth, behavior: 'smooth' })
       onActiveIndexChange(clamped)
     },
-    [scrollRef, onActiveIndexChange],
+    [onActiveIndexChange],
   )
 
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current
-    if (!el || el.clientWidth === 0) return
-    const index = Math.max(
-      0,
-      Math.min(
-        CAROUSEL_CARD_COUNT - 1,
-        Math.round(el.scrollLeft / el.clientWidth),
-      ),
-    )
-    if (index !== activeIndex) {
-      onActiveIndexChange(index)
-    }
-  }, [scrollRef, activeIndex, onActiveIndexChange])
+  const cards = [
+    <TimerRingCard key="ring" timer={cardData.timer} />,
+    <TodayCard key="today" {...cardData} />,
+    <CurrentStateCard key="state" {...cardData} />,
+    <Past12HoursCard key="past" {...cardData} />,
+    <ForecastCard key="forecast" {...cardData} />,
+    <SessionCompareCard key="compare" {...cardData} />,
+  ]
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-4 pt-2">
       <div
-        ref={scrollRef}
-        onScroll={handleScroll}
+        ref={viewportRef}
+        className="relative min-h-0 flex-1 overflow-hidden"
+        style={{ perspective: '1000px' }}
         onTouchStart={(e) => {
           touchStartX.current = e.touches[0]?.clientX ?? 0
         }}
@@ -66,25 +77,30 @@ export function TimerCarousel({
             scrollToIndex(activeIndex + (delta < 0 ? 1 : -1))
           }
         }}
-        className="flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <div className="flex h-full min-h-0 w-full shrink-0 snap-center snap-always">
-          <TimerRingCard timer={timer} />
-        </div>
-        <div className="flex h-full min-h-0 w-full shrink-0 snap-center snap-always">
-          <TodayCard />
-        </div>
-        <div className="flex h-full min-h-0 w-full shrink-0 snap-center snap-always">
-          <CurrentStateCard />
-        </div>
-        <div className="flex h-full min-h-0 w-full shrink-0 snap-center snap-always">
-          <Past12HoursCard />
-        </div>
-        <div className="flex h-full min-h-0 w-full shrink-0 snap-center snap-always">
-          <ForecastCard />
-        </div>
-        <div className="flex h-full min-h-0 w-full shrink-0 snap-center snap-always">
-          <SessionCompareCard />
+        <div
+          className="relative h-full w-full"
+          style={{
+            transformStyle: 'preserve-3d',
+            transform: `rotateY(${-activeIndex * FACE_ANGLE}deg)`,
+            transition: `transform ${CUBE_TRANSITION_MS}ms var(--ease-in-out)`,
+          }}
+        >
+          {cards.map((card, i) => (
+            <div
+              key={i}
+              className="absolute inset-0 h-full w-full"
+              style={{
+                transform: `rotateY(${i * FACE_ANGLE}deg) translateZ(${depthPx}px)`,
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
+                pointerEvents: i === activeIndex ? 'auto' : 'none',
+              }}
+              aria-hidden={i !== activeIndex}
+            >
+              {card}
+            </div>
+          ))}
         </div>
       </div>
     </div>

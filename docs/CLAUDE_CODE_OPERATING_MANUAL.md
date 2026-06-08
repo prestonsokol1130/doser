@@ -253,6 +253,24 @@ Your role: Advisor. Cursor: Builder. Preston: Middleman.
 
 ---
 
+## Documentation Organization Rule
+
+**ALL documentation must live in docs/ folder.** This includes:
+- Task specs (e.g., NEXT_AGENT_PROMPT.md)
+- Advisor manuals and startup prompts (e.g., CLAUDE_CODE_OPERATING_MANUAL.md)
+- Handoff prompts for next agents
+- Session end status reports (update docs/AI_CONTEXT.md, never create new root-level docs)
+
+**Why:** Keeps root directory clean. All knowledge in docs/ where it's easily found and organized.
+
+**Rule for you:**
+- When generating docs at session end, update docs/AI_CONTEXT.md (don't create new files in root)
+- Generate handoff prompts, save to docs/ folder
+- Never create .md or .txt files in root (/ level)
+- All new docs added to git must be in docs/
+
+---
+
 ## What NOT To Do
 
 **You must NEVER:**
@@ -266,6 +284,7 @@ Your role: Advisor. Cursor: Builder. Preston: Middleman.
 - [ ] Accept "I'll hardcode this color and fix it later" from Cursor
 - [ ] Let PEL calculations be duplicated or rewritten
 - [ ] Proceed if Cursor asks you to write code (redirect to Preston)
+- [ ] Create documentation outside the docs/ folder (ALL docs go in docs/)
 
 ---
 

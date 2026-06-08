@@ -1,13 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { auth } from '../../lib/firebase'
-import {
-  defaultProfile,
-  fetchDoses,
-  fetchUserDocument,
-  saveDoses,
-} from '../../store/profileStore'
+import { useCallback, useState } from 'react'
 import type { Dose, Profile, Substance } from '../../types'
-import { BottomNav } from './BottomNav'
 import {
   CAROUSEL_CARD_COUNT,
   PaginationDots,
@@ -23,82 +15,24 @@ import {
   snapDoseToStep,
 } from './timerUtils'
 
-export function TimerScreen() {
-  const [profile, setProfile] = useState<Profile>(defaultProfile())
-  const [profileLoading, setProfileLoading] = useState(
-    () => !!auth.currentUser?.uid,
-  )
+type TimerScreenProps = {
+  profile: Profile
+  doses: Dose[]
+  setDoses: React.Dispatch<React.SetStateAction<Dose[]>>
+  nowMs: number
+}
+
+export function TimerScreen({
+  profile,
+  doses,
+  setDoses,
+  nowMs,
+}: TimerScreenProps) {
   const [substance, setSubstance] = useState<Substance>('GBL')
-  const [doses, setDoses] = useState<Dose[]>([])
   const [doseAmount, setDoseAmount] = useState(() =>
-    snapDoseToStep(preferredDoseForSubstance(defaultProfile(), 'GBL')),
+    snapDoseToStep(preferredDoseForSubstance(profile, 'GBL')),
   )
   const [carouselIndex, setCarouselIndex] = useState(0)
-  const [nowMs, setNowMs] = useState(() => Date.now())
-  const carouselScrollRef = useRef<HTMLDivElement>(null)
-  const isInitialLoadRef = useRef(true)
-
-  useEffect(() => {
-    const uid = auth.currentUser?.uid
-    if (!uid) return
-
-    let active = true
-
-    Promise.all([
-      fetchUserDocument(uid),
-      fetchDoses(uid),
-    ])
-      .then(([profileDoc, loadedDoses]) => {
-        if (!active) return
-        const loaded = profileDoc?.profile ?? defaultProfile()
-        setProfile(loaded)
-        setDoseAmount(
-          snapDoseToStep(preferredDoseForSubstance(loaded, 'GBL')),
-        )
-        setDoses(loadedDoses)
-      })
-      .catch((error) => {
-        if (!active) return
-        console.error('Failed to load profile or doses:', error)
-        setProfile(defaultProfile())
-        setDoses([])
-      })
-      .finally(() => {
-        if (active) setProfileLoading(false)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [])
-
-  useEffect(() => {
-    const uid = auth.currentUser?.uid
-    if (!uid) return
-
-    // Skip save on initial load (when doses are loaded from Firestore)
-    // Must check this BEFORE checking dose count to properly flip the ref
-    if (isInitialLoadRef.current) {
-      isInitialLoadRef.current = false
-      return
-    }
-
-    // Don't save empty dose arrays (nothing to persist)
-    if (doses.length === 0) return
-
-    const timeoutId = setTimeout(() => {
-      saveDoses(uid, doses).catch((error) => {
-        console.error('Failed to save doses:', error)
-      })
-    }, 500)
-
-    return () => clearTimeout(timeoutId)
-  }, [doses])
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNowMs(Date.now()), 1000)
-    return () => window.clearInterval(id)
-  }, [])
 
   const timer = computeTimerState(doses, substance, profile, nowMs)
 
@@ -111,8 +45,7 @@ export function TimerScreen() {
       ts: Date.now(),
     }
     setDoses((prev) => [...prev, dose])
-    setNowMs(Date.now())
-  }, [doseAmount, substance])
+  }, [doseAmount, substance, setDoses])
 
   const handleSubstanceToggle = useCallback(() => {
     setSubstance((prev) => {
@@ -130,22 +63,10 @@ export function TimerScreen() {
 
   const handleDotSelect = useCallback((index: number) => {
     setCarouselIndex(index)
-    const el = carouselScrollRef.current
-    if (el) {
-      el.scrollTo({ left: index * el.clientWidth, behavior: 'smooth' })
-    }
   }, [])
 
-  if (profileLoading) {
-    return (
-      <div className="flex h-[100dvh] items-center justify-center bg-[var(--color-bg)]">
-        <p className="text-sm text-[var(--color-text-dim)]">Loading…</p>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[var(--color-bg)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <TimerHeader substance={substance} onSubstanceClick={handleSubstanceToggle} />
 
       <TopStatRow doses={doses} substance={substance} />
@@ -154,7 +75,10 @@ export function TimerScreen() {
         activeIndex={carouselIndex}
         onActiveIndexChange={handleCarouselIndexChange}
         timer={timer}
-        scrollRef={carouselScrollRef}
+        doses={doses}
+        profile={profile}
+        substance={substance}
+        nowMs={nowMs}
       />
 
       <PaginationDots
@@ -168,8 +92,6 @@ export function TimerScreen() {
         onDoseAmountChange={setDoseAmount}
         onLogEntry={handleLogEntry}
       />
-
-      <BottomNav activeTab="timer" />
     </div>
   )
 }

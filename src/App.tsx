@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { AuthLayer } from './components/auth/AuthLayer'
 import { GateLayer } from './components/gate/GateLayer'
 import { OnboardingLayer } from './components/onboarding/OnboardingLayer'
-import { TimerScreen } from './components/timer/TimerScreen'
+import { MainApp } from './components/MainApp'
 import { auth } from './lib/firebase'
 import { subscribeToAuth } from './store/authStore'
 import { isGateComplete } from './store/gateStore'
@@ -102,7 +102,7 @@ function App() {
     )
   }
 
-  return <TimerScreen />
+  return <MainApp />
 }
 
 export default App
