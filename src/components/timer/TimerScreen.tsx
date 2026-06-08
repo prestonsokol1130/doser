@@ -74,6 +74,7 @@ export function TimerScreen() {
 
   useEffect(() => {
     const uid = auth.currentUser?.uid
+    // Don't save empty dose arrays (nothing to persist)
     if (!uid || doses.length === 0) return
 
     // Skip save on initial load (when doses are loaded from Firestore)

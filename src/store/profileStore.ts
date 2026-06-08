@@ -128,7 +128,7 @@ export async function saveDoses(uid: string, doses: Dose[]): Promise<void> {
           ts: dose.ts,
           updatedAt: dose.updatedAt ?? dose.ts,
         },
-        { merge: false }, // overwrite this specific dose, don't delete others
+        { merge: false } // Set with merge:false means "overwrite this dose document completely" (not merge fields). Other doses are unaffected.
       )
     })
 
