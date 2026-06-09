@@ -31,8 +31,18 @@ export function EditDoseModal({ dose, onSave, onClose }: EditDoseModalProps) {
 
   const handleSave = () => {
     setError(null)
-    const parsed = parseFloat(amountStr)
-    if (!Number.isFinite(parsed) || parsed < DOSE_MIN || parsed > DOSE_MAX) {
+    const trimmed = amountStr.trim()
+    if (trimmed === '') {
+      setError('Enter a dose amount.')
+      return
+    }
+    const parsed = parseFloat(trimmed)
+    if (!Number.isFinite(parsed)) {
+      setError(`Amount must be between ${DOSE_MIN.toFixed(1)} and ${DOSE_MAX.toFixed(1)} mL.`)
+      return
+    }
+    const amountMl = snapDoseToStep(parsed)
+    if (amountMl < DOSE_MIN || amountMl > DOSE_MAX) {
       setError(`Amount must be between ${DOSE_MIN.toFixed(1)} and ${DOSE_MAX.toFixed(1)} mL.`)
       return
     }
@@ -45,7 +55,7 @@ export function EditDoseModal({ dose, onSave, onClose }: EditDoseModalProps) {
     onSave({
       ...dose,
       substance,
-      amountMl: snapDoseToStep(parsed),
+      amountMl,
       ts,
       updatedAt: Date.now(),
     })
