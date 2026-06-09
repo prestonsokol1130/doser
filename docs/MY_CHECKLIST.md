@@ -115,17 +115,14 @@ Run these in the terminal after merging:
 
 ## Phases still to build
 
-Phase 2 — Gate + Auth + Onboarding (in progress)
-  - Gate Layer: DONE
-  - Auth screens: Log in, Sign up, Forgot password
-  - Onboarding: Profile setup, Substance defaults, Notification basics
+Phase 4 — History + Carousel + 3D Cube: COMPLETE
+  - Carousel cards 2–6 are built and wired
+  - History screen is built and live
+  - Phase 4 review fixes were applied and merged
 
-Phase 3 — Timer Screen
-  NOTE: Copy PEL files from old repo into src/lib/perceivedEffect/ before starting this phase
-
-Phase 4 — History + Insights
-
-Phase 5 — Tools + Settings
+Phase 5 — Tools + Settings: NEXT
+  - Tools: Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference
+  - Settings: Account, Profile, Notifications, Themes, Install App, Legal
 
 
 ---

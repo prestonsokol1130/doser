@@ -56,10 +56,10 @@ PHASE 3 — Timer Screen: COMPLETE
   - BottomNav — 5-tab nav, Timer tab active, other tabs are visual placeholders only
   - New design system tokens: Fonts (Antonio, Inter, Montserrat), Colors (--color-ring, etc.)
   - PEL engine files copied into src/lib/perceivedEffect/
-  - Firestore security rules updated (Phase 4 start)
+  - Firestore security rules updated (Phase 4 start, historical)
   - Dose persistence to Firestore: implemented but CodeRabbit flagged 5 issues
 
-  IN PROGRESS (feat/dose-persistence branch):
+  IN PROGRESS (historical, feat/dose-persistence branch):
   - Fix 5 CodeRabbit issues on dose persistence (2 critical, 3 polish)
   - Critical Issue 1: isInitialLoadRef check order blocks first dose save
   - Critical Issue 2: Delete support not implemented (deleted doses reappear)
@@ -67,7 +67,7 @@ PHASE 3 — Timer Screen: COMPLETE
   - Polish Issue 4: No validation on write
   - Polish Issue 5: Hardcoded substance allowlist
 
-  SKIPPED / DEFERRED:
+  SKIPPED / DEFERRED (historical notes):
   - Carousel Cards 2–6 are placeholder shells (header text only, no content):
       Card 2 — TODAY: session summary stats
       Card 3 — CURRENT STATE: PEL gauge (needs PEL engine wired + persistent doses)
@@ -85,16 +85,14 @@ PHASE 3 — Timer Screen: COMPLETE
   - Validation: All doses checked for valid id (string), substance (GBL/BDO/GHB),
     amountMl (number), ts (number) before write and on fetch
   - Constant: VALID_DOSE_SUBSTANCES exported from types.ts to prevent drift
-  - Next: Merge PR #5 after CodeRabbit passes, then Phase 4 can start
+  - Next: Historical note — PR #5 merged, then Phase 4 was built and is now complete
 
-  RECOMMENDED: Build carousel cards 2–6 as the FIRST task of Phase 4, immediately
-  after dose persistence PR merges. Cards 3–6 depend on stored dose history and
-  the PEL engine being wired. Also implement History screen in Phase 4. Target: 2026-07.
+  RECOMMENDED: Phase 4 is complete. Move to Phase 5 planning and build-out.
 
-PHASE 4 — History + Carousel + 3D Cube: IN PROGRESS (feat/carousel-history-phase4)
+PHASE 4 — History + Carousel + 3D Cube: COMPLETE (PR #7 merged to main on 2026-06-09)
   Last touched: 2026-06-09
 
-  BUILT (by Cursor, then debugged/polished directly by Claude Code):
+  COMPLETED PHASE 4 DELIVERABLES:
   - Carousel cards 2–6 wired to real data + PEL engine:
       Card 2 TODAY, Card 3 CURRENT STATE (PEL gauge), Card 4 PAST 12 HOURS,
       Card 5 FORECAST, Card 6 SESSION COMPARE
@@ -105,24 +103,20 @@ PHASE 4 — History + Carousel + 3D Cube: IN PROGRESS (feat/carousel-history-pha
   - Helper libs: src/lib/sessionStats.ts, src/lib/pelDisplay.ts
   - Timer ring fully reworked: contained, correct size clamp(260px,40vh,350px),
     READY/--:--:--/awaiting entry idle state, scaled text, rounded corners
+  - Phase 4 validation fixes: EditDoseModal validation feedback, currentSession guard,
+    chronological 7-day sorting, guarded dist/ ignore example in git handoff doc
+  - CodeRabbit-applied CarouselCardShell fix on the remote branch: rounded-[22px]
+    now lives in the class list instead of the old inline borderRadius style
+  - dist/ removed from git tracking and added to .gitignore
 
-  ⚠️ NOT YET COMMITTED — all Phase 4 work is in the working tree only. Many NEW
-     files are UNTRACKED (MainApp.tsx, history/, CardStat.tsx, carouselTypes.ts,
-     sessionStats.ts, pelDisplay.ts). Committing only modified files WILL break the
-     build. See docs/CODEX_HANDOFF_PHASE4_GIT.md for the exact commit/PR steps.
-
-  STILL TODO IN PHASE 4:
-  1. Commit ALL Phase 4 files (tracked + untracked) — see Codex handoff doc
-  2. Remove dist/ from git tracking and add to .gitignore (caused a service-worker
-     caching trap during this session)
-  3. Open PR, clear CodeRabbit feedback, merge
-  4. Polish: cards 2–6 have inconsistent vertical alignment (SESSION COMPARE is the
-     good template — fills card height; CURRENT STATE & PAST 12 HOURS have empty
-     bottoms). Verify History screen end-to-end (list/edit/delete/filter).
-  5. Investigate the 2 console errors + 1 warning visible in DevTools (likely the
-     Firebase auth iframe / PWA — confirm before merge)
+  PHASE 4 MERGE / CLEANUP:
+  - PR #7 merged to main
+  - Feature branch cleanup should be done locally and remotely
+  - If any stale CodeRabbit thread remains visible, confirm it against the current
+    main branch before making more code changes
 
 PHASE 5 — Tools + Settings: NOT STARTED
+  Next phase to build: Tools, Settings, and any remaining phase 5 shell wiring.
 
 ---
 
@@ -139,17 +133,17 @@ docs/MY_CHECKLIST.md — Preston's plain-English step-by-step process for every 
   cleanup. Read this to understand the workflow.
 
 docs/AI_CONTEXT.md — This file. The first thing any AI assistant should read to
-  understand the full project state before helping.
+  understand the full project state before helping. It should always reflect the
+  latest completed phase and the next phase to build, which is now Phase 5.
 
 docs/CLAUDE_CODE_OPERATING_MANUAL.md — Complete guide for Claude Code advisor role.
   Responsibilities, constraints, red lines, git workflow, session end checklist.
   Every Claude Code session reads this to understand the advisor role.
 
-docs/CLAUDE_CODE_PHASE4_STARTUP.txt — Quick startup reference for Claude Code.
-  Role in one sentence, workflow, critical rules, red lines. Complement to above.
+docs/CLAUDE_CODE_PHASE4_STARTUP.txt — Archived Phase 4 startup reference. Use
+  only for historical context; current agents should read the Phase 5 prompt.
 
-docs/NEXT_AGENT_PROMPT.md — Detailed Phase 4 task specification (carousel cards 2–6,
-  History screen, 3D cube animation). Sent to Cursor for implementation.
+docs/NEXT_AGENT_PROMPT.md — Phase 5 handoff prompt for the next agent.
 
 ---
 

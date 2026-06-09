@@ -74,6 +74,8 @@ src/
 │
 └── components/
     │
+    ├── MainApp.tsx                   Shared app shell for Timer + History.
+    │
     ├── gate/                         PHASE 2 — COMPLETE (PR #1 merged)
     │   ├── GateLayer.tsx             Orchestrates gate screens in sequence.
     │   ├── GateLayout.tsx            Shared layout wrapper for gate screens.
@@ -101,12 +103,13 @@ src/
     │   ├── NotificationBasics.tsx    Screen 3: notification preferences.
     │   └── FinishIntoTimer.tsx       Screen 4: completion screen, advances to TimerScreen.
     │
-    ├── timer/                        PHASE 3 — IN PROGRESS (PR #4 open)
+    ├── timer/                        PHASE 3 — COMPLETE (PR #4 merged)
     │   ├── TimerScreen.tsx           Root of the main app shell. Owns all state:
     │   │                             doses[], profile, substance, doseAmount, carouselIndex, nowMs.
     │   │                             Loads profile from Firestore on mount via fetchUserDocument.
     │   │                             Ticks nowMs every 1000ms via setInterval.
-    │   │                             Passes timer state down to carousel.
+    │   │                             Passes timer state down to carousel and the
+    │   │                             shared MainApp shell used by Timer + History.
     │   ├── TimerHeader.tsx           Header row: "doser" wordmark + flashlight btn + substance pill.
     │   ├── TopStatRow.tsx            Two stat cards: LAST ENTRY + SESSION TOTAL.
     │   ├── DoseCard.tsx              Bottom dose control: −/+ buttons, scroll ruler, LOG ENTRY btn.
@@ -127,16 +130,17 @@ src/
     │       ├── CarouselCardShell.tsx Shared card container (border, bg, radius) for all carousel cards.
     │       ├── TimerRingCard.tsx     Card 1 — BUILT. SVG stroke ring, countdown, WAIT/SAFE state.
     │       │                         Fill animation on LOG ENTRY (4s), then decays with remaining time.
-    │       ├── TodayCard.tsx         Card 2 — PLACEHOLDER. Not yet built.
-    │       ├── CurrentStateCard.tsx  Card 3 — PLACEHOLDER. Needs PEL engine wired in.
-    │       ├── Past12HoursCard.tsx   Card 4 — PLACEHOLDER. Not yet built.
-    │       ├── ForecastCard.tsx      Card 5 — PLACEHOLDER. Needs PEL engine wired in.
-    │       └── SessionCompareCard.tsx Card 6 — PLACEHOLDER. Not yet built.
+    │       ├── TodayCard.tsx         Card 2 — BUILT. Today summary stats.
+    │       ├── CurrentStateCard.tsx  Card 3 — BUILT. PEL gauge + tolerance state.
+    │       ├── Past12HoursCard.tsx   Card 4 — BUILT. Dose history timeline.
+    │       ├── ForecastCard.tsx      Card 5 — BUILT. PEL forecast curve.
+    │       └── SessionCompareCard.tsx Card 6 — BUILT. Session compare vs average.
     │
-    ├── insights/                     PHASE 4 — NOT STARTED
-    │   └── (empty — create files here when building)
+    ├── history/                      PHASE 4 — COMPLETE (PR #7 merged)
+    │   ├── EditDoseModal.tsx         Edit dose amount, substance, and timestamp.
+    │   └── HistoryScreen.tsx         Chronological dose list, filter, delete, edit.
     │
-    ├── history/                      PHASE 4 — NOT STARTED
+    ├── insights/                     PHASE 5 — NOT STARTED
     │   └── (empty — create files here when building)
     │
     ├── tools/                        PHASE 5 — NOT STARTED
@@ -157,9 +161,9 @@ src/
    (BottomNav accepts an optional `onTabSelect?: (tab: string) => void` prop)
 
 **How doses are stored:**
-Doses live in local React state inside `TimerScreen.tsx` (`doses: Dose[]`).
-They are NOT persisted to Firestore yet. Each app session starts empty.
-Persistence to Firestore is a future task.
+Doses live in shared React state in the main app shell and are persisted to
+Firestore through `saveDoses()` / `fetchDoses()` helpers. New features should read
+from the shared dose state instead of creating a second source of truth.
 
 **How profile data is accessed:**
 `fetchUserDocument(uid)` from `src/store/profileStore.ts` returns the Firestore

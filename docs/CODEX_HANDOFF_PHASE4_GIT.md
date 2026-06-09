@@ -1,9 +1,9 @@
-# Codex Handoff — Phase 4 Commit + PR + Branch Cleanup
+# Codex Handoff — Phase 4 Commit + PR + Branch Cleanup (Archived)
 
 **Written:** 2026-06-09 by Claude Code (advisor) for the next agent (Codex).
 **Repo:** https://github.com/prestonsokol1130/doser
 **Local path:** `C:\Users\Preston Sokol\Projects\doser 2.0\doser`
-**Branch you must stay on:** `feat/carousel-history-phase4`
+**Archived branch:** `feat/carousel-history-phase4`
 
 > Read `docs/AI_CONTEXT.md` and `docs/HANDOFF.md` first for full project context.
 > Preston is a non-coding solo dev relaying between AI agents. Be explicit and
@@ -14,15 +14,14 @@
 ## 1. Where things stand
 
 Phase 4 (carousel cards 2–6, 3D cube transition, History screen, timer-ring rework)
-is **functionally complete and working in the browser** on the dev server, but **none
-of it is committed yet.** Your job is to get this branch into a correct, complete,
-committable state and walk Preston through the PR.
+is complete and merged to `main`. This file is historical. Use
+`docs/NEXT_AGENT_PROMPT.md` for the active Phase 5 handoff.
 
 ### The single most important fact
 
-**The Phase 4 work is split between MODIFIED (tracked) files and brand-new UNTRACKED
-files.** If you commit only the modified files, the app will not build because the
-modified files import the untracked ones. You must `git add` BOTH.
+**The Phase 4 work was split between MODIFIED (tracked) files and brand-new
+UNTRACKED files.** If you commit only the modified files, the app will not build
+because the modified files import the untracked ones. You had to `git add` BOTH.
 
 Run `git status` and you will see something like:
 
@@ -113,15 +112,13 @@ git rm -r --cached dist
 
 ---
 
-## 4. The commit + PR process (spell this out for Preston)
+## 4. The commit + PR process (historical reference only)
 
-> Reminder: stay on `feat/carousel-history-phase4`. Never `git checkout -b`. Never
-> commit to `main`. End commit messages with the Co-Authored-By line only if Preston
-> asks; otherwise normal messages are fine.
+> Reminder: this was the Phase 4 delivery branch. It is archived now.
 
 ```bash
 # 0. confirm branch
-git branch --show-current     # must print: feat/carousel-history-phase4
+git branch --show-current     # historical example: feat/carousel-history-phase4
 
 # 1. ignore + untrack dist (section 3)
 echo "dist/" >> .gitignore
@@ -131,7 +128,7 @@ git rm -r --cached dist
 npx tsc --noEmit -p tsconfig.app.json
 npm run build                 # must succeed; this proves no missing imports
 
-# 3. stage everything that belongs to Phase 4 (source only, NOT dist)
+# 3. stage everything that belonged to Phase 4 (source only, NOT dist)
 git add .gitignore
 git add src/
 
@@ -148,8 +145,8 @@ git commit -m "feat: phase 4 carousel cards 2-6, 3D cube transition, history scr
 git push origin feat/carousel-history-phase4
 ```
 
-Then Preston opens the PR on GitHub (base `main` <- compare
-`feat/carousel-history-phase4`). CodeRabbit reviews automatically.
+Then Preston opened the PR on GitHub (base `main` <- compare
+`feat/carousel-history-phase4`). CodeRabbit reviewed automatically.
 
 ### CodeRabbit
 Read every comment. Categorize by severity. Likely flags to expect:
@@ -158,7 +155,7 @@ Read every comment. Categorize by severity. Likely flags to expect:
 - Any hardcoded hex colors (should be none — CSS variables only).
 - `dist/` removal should clear a lot of noise.
 
-Fix real issues, push to the same branch (CodeRabbit re-reviews), then Preston merges.
+Fix real issues, push to the same branch (CodeRabbit re-reviews), then Preston merged.
 
 ### After merge (branch cleanup)
 ```bash
@@ -170,7 +167,7 @@ git push origin --delete feat/carousel-history-phase4
 
 ---
 
-## 5. Known issues / things to verify before merge
+## 5. Known issues / things to verify before merge (historical reference only)
 
 1. **Console errors** — DevTools showed ~2 errors + 1 warning. Likely the Firebase
    auth iframe (`/__/auth/iframe`) or PWA registration, but CONFIRM. Open the Console
@@ -186,7 +183,7 @@ git push origin --delete feat/carousel-history-phase4
 
 ---
 
-## 6. Dev server / environment notes
+## 6. Dev server / environment notes (historical reference only)
 - Dev server is (or was) running in the background on **http://localhost:5199/**.
   Start it with: `npm run dev -- --port 5199 --strictPort` from the repo root.
 - If UI changes don't appear: it's almost always the service-worker cache. Use a fresh
@@ -197,6 +194,7 @@ git push origin --delete feat/carousel-history-phase4
 ---
 
 ## 7. After Phase 4 merges
-- Phase 4 polish (card alignment) if not done.
-- Phase 5: Insights screen, Tools (Dose Buddy, Taper), Settings.
+- Phase 4 is merged and archived.
+- Phase 5 is next: Tools and Settings.
+- Update the active handoff docs instead of this archive for new work.
 - All docs live in `docs/` — never create root-level docs.

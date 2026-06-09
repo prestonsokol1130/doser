@@ -357,9 +357,10 @@ Header, stat row, carousel (6 cards), pagination dots, dose card.
 Build exactly to visual spec in Sections 5 and 6.
 Wire PEL engine to Timer ring and Current State card.
 
-Phase 4 — History + Insights:
-Sessions, Entries, Edit/Delete/Backdate, Import/Export/Restore.
-Insights: All, GBL, BDO, Peer tabs.
+Phase 4 — History + Carousel + 3D Cube: COMPLETE.
+History: list, filter, delete, edit.
+Carousel: cards 2–6 wired to real data + PEL engine.
+3D cube transition: working and merged.
 
 Phase 5 — Tools + Settings:
 Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference.
@@ -450,13 +451,17 @@ Phase 3b — Dose Persistence: IN REVIEW (feat/dose-persistence branch)
     Polish: batch limit, no validation on write, hardcoded substance list
   - Next: Fix all 5 issues, merge to main
 
-Phase 4 — History + Insights: NOT STARTED
-  First task: Fix dose persistence CodeRabbit issues
-  Then: Design + build History screen
-  Then: Wire carousel cards 2–6
-  Then: Build Insights screen
+Phase 4 — History + Carousel + 3D Cube: COMPLETE
+  - PR #7 merged to main
+  - History screen done
+  - Carousel cards 2–6 done
+  - 3D cube transition done
+  - Phase 4 review fixes applied
 
 Phase 5 — Tools + Settings: NOT STARTED
+  First task: Build Tools screens and supporting shell wiring
+  Then: Build Settings screens
+  Then: Update AI_CONTEXT.md and any other reference docs as phase 5 lands
 
 Firebase project: doser-e389f
 Auth methods enabled: Email/Password, Google
