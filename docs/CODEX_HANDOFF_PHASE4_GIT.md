@@ -105,7 +105,7 @@ Do this as part of the commit:
 # from repo root: C:\Users\Preston Sokol\Projects\doser 2.0\doser
 # 1. ensure dist/ is ignored
 #    (append to .gitignore if not already present)
-echo "dist/" >> .gitignore        # check it isn't already there first
+if (-not (Select-String -Path .gitignore -Pattern '^dist/$' -Quiet)) { Add-Content .gitignore 'dist/' }
 
 # 2. stop tracking the already-committed dist files (keeps them on disk)
 git rm -r --cached dist
