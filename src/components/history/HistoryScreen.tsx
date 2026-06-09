@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { formatTimeAgo } from '@/lib/sessionStats'
 import type { Dose, DoseSubstance, Profile } from '@/types'
+import { VALID_DOSE_SUBSTANCES } from '@/types'
 import { formatTimeShort } from '../timer/timerUtils'
 import { EditDoseModal } from './EditDoseModal'
 
@@ -80,7 +81,7 @@ export function HistoryScreen({
       </header>
 
       <div className="flex shrink-0 gap-2 px-4 pb-3">
-        {(['all', 'GBL', 'BDO'] as const).map((option) => {
+        {(['all', ...VALID_DOSE_SUBSTANCES] as const).map((option) => {
           const active = filter === option
           return (
             <button
@@ -111,11 +112,11 @@ export function HistoryScreen({
         ) : (
           <ul className="flex flex-col gap-2">
             {filtered.map((dose, index) => {
-              const prev = filtered[index + 1]
+              const prior = index > 0 ? filtered[index - 1] : null
               const showDate =
-                !prev ||
+                prior == null ||
                 new Date(dose.ts).toDateString() !==
-                  new Date(prev.ts).toDateString()
+                  new Date(prior.ts).toDateString()
 
               return (
                 <li key={dose.id}>

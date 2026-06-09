@@ -19,6 +19,7 @@ export function EditDoseModal({ dose, onSave, onClose }: EditDoseModalProps) {
   const [amountStr, setAmountStr] = useState(String(dose.amountMl))
   const [substance, setSubstance] = useState<DoseSubstance>(dose.substance)
   const [datetime, setDatetime] = useState(toLocalDatetimeValue(dose.ts))
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -29,10 +30,17 @@ export function EditDoseModal({ dose, onSave, onClose }: EditDoseModalProps) {
   }, [onClose])
 
   const handleSave = () => {
+    setError(null)
     const parsed = parseFloat(amountStr)
-    if (!Number.isFinite(parsed) || parsed < DOSE_MIN || parsed > DOSE_MAX) return
+    if (!Number.isFinite(parsed) || parsed < DOSE_MIN || parsed > DOSE_MAX) {
+      setError(`Amount must be between ${DOSE_MIN.toFixed(1)} and ${DOSE_MAX.toFixed(1)} mL.`)
+      return
+    }
     const ts = new Date(datetime).getTime()
-    if (!Number.isFinite(ts)) return
+    if (!Number.isFinite(ts)) {
+      setError('Enter a valid date and time.')
+      return
+    }
 
     onSave({
       ...dose,
@@ -123,6 +131,16 @@ export function EditDoseModal({ dose, onSave, onClose }: EditDoseModalProps) {
             style={{ fontFamily: 'var(--font-body)' }}
           />
         </label>
+
+        {error != null && (
+          <p
+            className="mt-3 text-[12px] text-[var(--color-action)]"
+            style={{ fontFamily: 'var(--font-body)' }}
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
 
         <div className="mt-4 flex gap-2">
           <button

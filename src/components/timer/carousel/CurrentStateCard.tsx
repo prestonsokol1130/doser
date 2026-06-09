@@ -12,6 +12,7 @@ import {
   pelGaugeColor,
   perceivedEffectLabel,
 } from '@/lib/pelDisplay'
+import { dosesPast12Hours, totalMl } from '@/lib/sessionStats'
 import { formatTimeShort } from '../timerUtils'
 import { CardHeader, CardStat } from './CardStat'
 import { CarouselCardShell } from './CarouselCardShell'
@@ -128,7 +129,7 @@ export function CurrentStateCard({ doses, profile, nowMs, timer }: CarouselCardD
         />
         <CardStat
           label="TOTAL"
-          value={`${doses.filter((d) => d.ts >= nowMs - 12 * 60 * 60 * 1000).reduce((s, d) => s + d.amountMl, 0).toFixed(1)} mL`}
+          value={`${totalMl(dosesPast12Hours(doses, nowMs)).toFixed(1)} mL`}
         />
       </div>
     </CarouselCardShell>

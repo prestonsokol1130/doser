@@ -26,7 +26,9 @@ export function dosesPast12Hours(doses: Dose[], nowMs: number): Dose[] {
 
 export function dosesPast7Days(doses: Dose[], nowMs: number): Dose[] {
   const cutoff = nowMs - 7 * 24 * HOUR_MS
-  return doses.filter((d) => d.ts >= cutoff && d.ts <= nowMs)
+  return doses
+    .filter((d) => d.ts >= cutoff && d.ts <= nowMs)
+    .sort((a, b) => a.ts - b.ts)
 }
 
 export function totalMl(doses: Dose[]): number {
@@ -130,6 +132,7 @@ export function currentSession(
   if (filtered.length === 0) return []
 
   const sessions = splitIntoSessions(filtered)
+  if (sessions.length === 0) return []
   const last = sessions[sessions.length - 1]!
   const lastDoseTs = last[last.length - 1]!.ts
   if (nowMs - lastDoseTs > SESSION_GAP_MS) return []

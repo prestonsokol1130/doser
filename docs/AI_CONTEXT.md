@@ -28,7 +28,7 @@ Code review: CodeRabbit connected, reviews every PR automatically
 
 ## Current Build Status
 
-Last updated: 2026-06-07
+Last updated: 2026-06-09
 
 PHASE 1 — Foundation: COMPLETE
   Clean Vite+React+TS+Tailwind scaffold committed to main.
@@ -91,13 +91,36 @@ PHASE 3 — Timer Screen: COMPLETE
   after dose persistence PR merges. Cards 3–6 depend on stored dose history and
   the PEL engine being wired. Also implement History screen in Phase 4. Target: 2026-07.
 
-PHASE 4 — History + Carousel + Insights: NOT STARTED
-  Blocked on: PR #5 (dose persistence) merge status
-  Next tasks (after PR #5 merges):
-  1. Build carousel cards 2–6: TODAY stats, PEL gauge, dose history, forecast, session compare
-  2. Implement History screen (full dose log, edit, delete, import/export)
-  3. Wire PEL engine integration into cards 3 and 5
-  4. Build Insights screen (patterns, analysis)
+PHASE 4 — History + Carousel + 3D Cube: IN PROGRESS (feat/carousel-history-phase4)
+  Last touched: 2026-06-09
+
+  BUILT (by Cursor, then debugged/polished directly by Claude Code):
+  - Carousel cards 2–6 wired to real data + PEL engine:
+      Card 2 TODAY, Card 3 CURRENT STATE (PEL gauge), Card 4 PAST 12 HOURS,
+      Card 5 FORECAST, Card 6 SESSION COMPARE
+  - 3D cube carousel transition (rotateY prism, 650ms, working)
+  - History screen (HistoryScreen.tsx + EditDoseModal.tsx): list, filter, delete, edit
+  - MainApp.tsx shell: loads profile+doses once, shares between Timer and History,
+    bottom-nav tab switching
+  - Helper libs: src/lib/sessionStats.ts, src/lib/pelDisplay.ts
+  - Timer ring fully reworked: contained, correct size clamp(260px,40vh,350px),
+    READY/--:--:--/awaiting entry idle state, scaled text, rounded corners
+
+  ⚠️ NOT YET COMMITTED — all Phase 4 work is in the working tree only. Many NEW
+     files are UNTRACKED (MainApp.tsx, history/, CardStat.tsx, carouselTypes.ts,
+     sessionStats.ts, pelDisplay.ts). Committing only modified files WILL break the
+     build. See docs/CODEX_HANDOFF_PHASE4_GIT.md for the exact commit/PR steps.
+
+  STILL TODO IN PHASE 4:
+  1. Commit ALL Phase 4 files (tracked + untracked) — see Codex handoff doc
+  2. Remove dist/ from git tracking and add to .gitignore (caused a service-worker
+     caching trap during this session)
+  3. Open PR, clear CodeRabbit feedback, merge
+  4. Polish: cards 2–6 have inconsistent vertical alignment (SESSION COMPARE is the
+     good template — fills card height; CURRENT STATE & PAST 12 HOURS have empty
+     bottoms). Verify History screen end-to-end (list/edit/delete/filter).
+  5. Investigate the 2 console errors + 1 warning visible in DevTools (likely the
+     Firebase auth iframe / PWA — confirm before merge)
 
 PHASE 5 — Tools + Settings: NOT STARTED
 
@@ -264,6 +287,27 @@ Full visual spec with exact pixel values and colors is in docs/HANDOFF.md Sectio
 - Weight and dose number inputs have a decimal auto-format bug when typing — fixed in
   onboarding via raw string state + parse on blur. Apply same pattern to any future
   numeric inputs.
+
+- SERVICE WORKER CACHING TRAP (cost hours in the 2026-06-09 session): VitePWA uses
+  registerType: 'autoUpdate'. A past production preview registered a service worker on
+  localhost that then served a FROZEN cached build over the dev server — code changes
+  did not appear no matter how many times the page was refreshed. Symptoms: edits
+  confirmed in the served module via curl, but the browser shows old UI. Fixes:
+  (a) run the dev server on a fresh port that never had a SW, and/or
+  (b) DevTools > Application > Service Workers > Unregister, then Clear site data.
+  Permanent fix: stop committing dist/ and consider disabling PWA in dev.
+
+- TAILWIND JIT STALENESS: changing an arbitrary Tailwind class value (e.g.
+  rounded-[28px] -> rounded-[22px]) sometimes does NOT regenerate the CSS rule on a
+  long-running dev server — the element's class changes but the old CSS rule is still
+  applied. For critical, frequently-tuned values (ring size, radius, font size) prefer
+  inline style={{ ... }} with CSS values (clamp() is allowed for ring/gauge sizing per
+  HANDOFF.md). This is why TimerRingCard sizing uses inline styles, not Tailwind.
+
+- 3D CAROUSEL PERSPECTIVE: the cube faces use translateZ(depthPx); the rotating stage
+  MUST also use translateZ(-depthPx) so the active face lands at z=0. Without it the
+  front face is magnified ~1.5x (rings/cards look zoomed and corners get clipped by the
+  viewport's overflow-hidden). Do not remove the stage translateZ(-depthPx).
 
 ---
 
