@@ -30,7 +30,7 @@ function ProgressRing({ progress, fillAnimating, onAnimationEnd }: ProgressRingP
       `}</style>
       <svg
         viewBox="0 0 280 280"
-        className="block w-full"
+        className="block h-full w-full"
         aria-hidden
       >
         {/* track — plain closed circle, no dasharray */}
@@ -73,8 +73,9 @@ function ProgressRing({ progress, fillAnimating, onAnimationEnd }: ProgressRingP
 
 export function TimerRingCard({ timer }: TimerRingCardProps) {
   const isWait = timer.phase === 'wait'
-  const displayMs = isWait ? timer.remainingMs : timer.elapsedMs
-  const stateLabel = isWait ? 'WAIT' : 'SAFE'
+  const stateLabel = isWait ? 'WAIT' : 'Ready'
+  const centerText = isWait ? formatCountdown(timer.remainingMs) : '--:--:--'
+  const bottomLabel = isWait ? 'next window' : 'awaiting entry'
   const nextWindowLabel =
     timer.nextWindowMs != null ? formatTimeShort(timer.nextWindowMs) : '—'
 
@@ -94,17 +95,26 @@ export function TimerRingCard({ timer }: TimerRingCardProps) {
   return (
     <CarouselCardShell>
       <div className="flex min-h-0 flex-1 items-center justify-center">
-        <div className="relative mx-auto w-full max-w-[280px]">
+        <div
+          className="relative mx-auto"
+          style={{
+            width: 'clamp(260px, 40vh, 350px)',
+            height: 'clamp(260px, 40vh, 350px)',
+          }}
+        >
           <ProgressRing
             progress={timer.ringProgress}
             fillAnimating={fillAnimating}
             onAnimationEnd={() => setFillAnimating(false)}
           />
 
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4">
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2">
             <p
-              className="text-[20px] font-semibold uppercase tracking-[0.18em] text-[var(--color-ring)]"
-              style={{ fontFamily: 'var(--font-body)' }}
+              className="font-semibold uppercase tracking-[0.18em] text-[var(--color-ring)]"
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: 'clamp(20px, 3vh, 26px)',
+              }}
             >
               {`• ${stateLabel} •`}
             </p>
@@ -113,22 +123,30 @@ export function TimerRingCard({ timer }: TimerRingCardProps) {
               style={{
                 fontFamily: 'var(--font-display)',
                 fontWeight: 200,
-                fontSize: '74px',
+                fontSize: 'clamp(60px, 11vh, 96px)',
                 letterSpacing: '-0.02em',
               }}
             >
-              {formatCountdown(displayMs)}
+              {centerText}
             </p>
             <div className="my-2 h-px w-[140px] bg-[rgba(255,255,255,0.12)]" />
             <p
-              className="text-[14px] text-[var(--color-load)]"
-              style={{ fontFamily: 'var(--font-body)' }}
+              className="text-[var(--color-load)]"
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: 'clamp(14px, 2vh, 18px)',
+              }}
             >
-              next window
+              {bottomLabel}
             </p>
-            <p className="mt-0.5 text-[18px] text-[var(--app-text)]">
-              {nextWindowLabel}
-            </p>
+            {isWait && (
+              <p
+                className="mt-0.5 text-[var(--app-text)]"
+                style={{ fontSize: 'clamp(18px, 2.6vh, 24px)' }}
+              >
+                {nextWindowLabel}
+              </p>
+            )}
           </div>
         </div>
       </div>
