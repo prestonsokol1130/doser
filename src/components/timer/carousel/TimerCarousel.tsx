@@ -10,7 +10,7 @@ import { TodayCard } from './TodayCard'
 export const CAROUSEL_CARD_COUNT = 6
 
 const FACE_ANGLE = 360 / CAROUSEL_CARD_COUNT
-const CUBE_TRANSITION_MS = 350
+const CUBE_TRANSITION_MS = 650
 
 type TimerCarouselProps = CarouselCardData & {
   activeIndex: number
@@ -62,10 +62,10 @@ export function TimerCarousel({
   ]
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col pt-2 max-h-[310px]">
+    <div className="flex min-h-0 flex-1 flex-col px-3 pt-3">
       <div
         ref={viewportRef}
-        className="relative min-h-0 flex-1 overflow-hidden px-4"
+        className="relative min-h-0 w-full flex-1 overflow-hidden"
         style={{ perspective: '1000px' }}
         onTouchStart={(e) => {
           touchStartX.current = e.touches[0]?.clientX ?? 0
@@ -82,7 +82,7 @@ export function TimerCarousel({
           className="relative h-full w-full"
           style={{
             transformStyle: 'preserve-3d',
-            transform: `rotateY(${-activeIndex * FACE_ANGLE}deg)`,
+            transform: `translateZ(${-depthPx}px) rotateY(${-activeIndex * FACE_ANGLE}deg)`,
             transition: `transform ${CUBE_TRANSITION_MS}ms var(--ease-in-out)`,
           }}
         >
@@ -117,7 +117,7 @@ export function PaginationDots({
   onSelect: (index: number) => void
 }) {
   return (
-    <div className="flex shrink-0 items-center justify-center gap-3 py-2">
+    <div className="flex shrink-0 items-center justify-center gap-3 py-3">
       {Array.from({ length: count }, (_, i) => (
         <button
           key={i}
