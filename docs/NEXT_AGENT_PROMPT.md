@@ -1,211 +1,93 @@
-# Prompt for Next Agent — Phase 4 (Carousel Cards + History Screen)
+# Prompt for Next Codex Agent - Phase 4 Merge Cleanup
 
-**START WITH THIS:** Read @HANDOFF.md first, then read docs/AI_CONTEXT.md to understand the full project state.
+@HANDOFF.md
+@STRUCTURE.md
 
----
+Do not create a new branch. Run `git branch --show-current` first and work only on the existing branch.
 
-## Current Status
+Verify you are on `feat/carousel-history-phase4`. If not, stop and tell me. Do not switch branches yourself.
 
-**Phase 3b (Dose Persistence) is COMPLETE and MERGED** (as of 2026-06-07).
-- Doses now persist to Firestore with validation: saveDoses() and fetchDoses() in profileStore.ts
-- All CodeRabbit issues fixed and pushed to feat/dose-persistence
-- PR #5 pending merge — should pass CodeRabbit once this session is over
-- Firestore subcollection structure: users/{uid}/doses with full validation on read/write
-- Security rules updated for subcollection access: match /users/{uid}/{document=**}
+Read `docs/AI_CONTEXT.md` before writing any code.
+Read `docs/CODEX_HANDOFF_PHASE4_GIT.md` before writing any code.
 
----
+Read the handoff document fully before writing any code.
+Pay special attention to HANDOFF.md Section 2b (Design System Rules).
 
-## Your Task: Phase 4 — Carousel Cards + History Screen
+Read the existing codebase before assuming anything.
+If anything is unclear, stop and ask before writing code.
 
-### Part 1: Wire Carousel Cards 2–6 (Medium Priority First)
+## Current State
 
-**Status:** Cards 2–6 exist as placeholder shells with header text only.
+- Branch: `feat/carousel-history-phase4`
+- Phase 4 feature work is already implemented and pushed
+- PR #7 is the active review / merge target
+- `dist/` has been removed from git tracking and is ignored
+- The worktree should stay clean unless you are making the final review cleanup or merge-doc updates
 
-**Required Builds:**
+## What Is Already Done
 
-1. **Card 2 — TODAY (Session Summary)**
-   - Total doses logged today (count + total mL)
-   - Substance breakdown (e.g., "2.4 mL GBL, 1.8 mL BDO")
-   - Session time window (first dose → last dose)
-   - Time since last dose
-   
-2. **Card 3 — CURRENT STATE (PEL Gauge)**
-   - Uses PEL engine: call `calculatePerceivedEffect()` from src/lib/perceivedEffect/
-   - Display as large percentage (0–100%)
-   - Color coding: red (0%), yellow (50%), green (100%)
-   - Show current tolerance level
-   - Update every 1000ms as nowMs updates
-   
-3. **Card 4 — PAST 12 HOURS (Dose History)**
-   - Timeline of all doses logged in last 12 hours
-   - Each dose: time, substance, amount, time since that dose
-   - Optional: small bar chart showing dose spacing
-   - Scrollable if many doses
-   
-4. **Card 5 — FORECAST (PEL Bell Curve)**
-   - Uses PEL engine: call `calculateForecast()` or similar to project next 8 hours
-   - Display as SVG chart: X-axis time (now → +8h), Y-axis PEL (0–100%)
-   - Show current position on curve
-   - Highlight "next safe window" if available
-   
-5. **Card 6 — SESSION COMPARE (Pattern Analysis)**
-   - Compare current session vs 7-day average
-   - Total dose count, average spacing, average dose size
-   - Trend indicator (↑ more aggressive, ↓ lighter, → consistent)
+- `MainApp.tsx` orchestrates shared app state for Timer and History
+- `HistoryScreen.tsx` and `EditDoseModal.tsx` are implemented
+- `sessionStats.ts` and `pelDisplay.ts` are implemented and wired in
+- carousel cards 2-6 are data-driven
+- the 3D cube carousel transition is implemented
+- the timer ring rework is in place
+- the Phase 4 validation fixes are already applied:
+  - History date headings
+  - `currentSession()` empty-session guard
+  - chronological 7-day sorting
+  - visible edit validation errors
+- the guarded `.gitignore` append example is documented in `docs/CODEX_HANDOFF_PHASE4_GIT.md`
 
-**Design System Rules:**
-- Use `var(--font-heading)` for card titles (Montserrat 600)
-- Use `var(--font-body)` for labels (Inter 400)
-- Use `var(--color-ring)` for active/highlight states (#C8E840)
-- Use `var(--color-load)` for secondary insights (#9B8FD4)
-- Card bg: `var(--app-surface)` with 1px border `var(--app-divider)`
-- Border radius: 16px for cards
-- No hardcoded colors — CSS variables only
+## What Still Needs Attention
 
-**PEL Engine Integration:**
-- The engine files exist in src/lib/perceivedEffect/ — do NOT modify them
-- You may call exported functions like `calculatePerceivedEffect(doses, substance, nowMs, profile, tolerance)`
-- Engine is hand-tuned for subjective intensity modeling (not pharmacokinetic math)
-- GBL onset 10min, rise 18min, plateau 12min, decline 38min half-life, hard cutoff 180min
-- BDO onset 22min, rise 28min, plateau 15min, decline 58min half-life, hard cutoff 300min
-- Single dose at peak = ~88% (intentional), 100% only in extreme stacking (intentional)
+1. Check the live PR #7 review state after refresh.
+2. Decide which CodeRabbit comments are still live and which are stale.
+3. Only change `TimerCarousel.tsx` if you can verify a real scroll/swipe conflict.
+4. Merge PR #7 once the review state is acceptable.
+5. After merge, update `docs/AI_CONTEXT.md` with the merged result and mark Phase 4 complete.
+6. After merge, clean up the branch locally and remotely.
 
----
+## Review Items To Re-check
 
-### Part 2: Build History Screen (High Priority After Cards)
+- `src/components/timer/carousel/CarouselCardShell.tsx`
+  - CodeRabbit already suggested `rounded-[22px]` instead of the old inline radius. If the current remote branch already has that change, do not re-open the issue.
+- `src/components/timer/carousel/TimerCarousel.tsx`
+  - Do not add `preventDefault()` unless you can prove a real touch conflict.
+- `docs/CODEX_HANDOFF_PHASE4_GIT.md`
+  - If any stale review comment still references the old `.gitignore` example, confirm it points to the guarded `Select-String` / `Add-Content` version already committed.
 
-**Status:** Does not exist yet. Will be Tab 2 in bottom nav.
+## Constraints
 
-**Features Required:**
+- Do NOT modify `src/lib/perceivedEffect/`
+- Do NOT remove `translateZ(-depthPx)` from the carousel stage
+- Do NOT convert the inline timer ring clamp sizing back to Tailwind
+- Do NOT create a new branch
+- Do NOT commit to `main`
+- Do NOT rewrite Phase 4 from scratch
 
-1. **Dose List View**
-   - Chronological list (newest first) of all logged doses
-   - Each row: date + time, substance badge, amount, time-ago
-   - Swipe-to-delete or delete button per dose (must update Firestore)
-   - Filter by substance (GBL / BDO / All)
-   - Search by date or amount range (optional for Phase 4)
+## Merge / Cleanup Steps After Review Is Clear
 
-2. **Edit Dose**
-   - Tap a dose → modal with edit form
-   - Can change amount, substance, timestamp
-   - Save → updates Firestore
-   - Cancel → discard
+1. Merge PR #7 to `main`.
+2. Pull the merged `main` locally.
+3. Delete the feature branch locally and remotely:
+   - `git checkout main`
+   - `git pull origin main`
+   - `git branch -d feat/carousel-history-phase4`
+   - `git push origin --delete feat/carousel-history-phase4`
+4. Update `docs/AI_CONTEXT.md` with the merged Phase 4 status.
 
-3. **Bulk Actions** (optional for Phase 4)
-   - Select multiple doses → delete all
-   - Export as CSV (dates, substance, amounts, notes if added later)
+## Validation
 
-4. **Screen Layout**
-   - Header: "HISTORY" (all caps), subtitle optional
-   - Top: filter/search bar
-   - Main: scrollable dose list (full height, bottom safe area)
-   - No carousel on History screen — just list view
+If you make any additional change, re-run:
+- `npx tsc --noEmit -p tsconfig.app.json`
+- `npm run build`
 
-**Data Source:**
-- Use fetchDoses(uid) from profileStore.ts
-- When dose is deleted/edited, call saveDoses(uid, updatedArray) to persist
-- Local state management: useState for doses array, filter state, selected dose
+## Report Back
 
-**Design System:**
-- Use same color tokens as timer screen
-- Typography: Montserrat for screen title, Inter for labels
-- List item styling: light border, hover opacity transition (150ms)
-- Delete action: use `var(--color-action)` (#E8532A)
-
----
-
-## Git Workflow
-
-1. **Do NOT create a new branch.** Check which branch already exists:
-   ```
-   git branch -a
-   ```
-
-2. Work on the existing feat/[task-name] branch only.
-
-3. When you finish a feature (e.g., all carousel cards), commit:
-   ```
-   git add src/components/timer/carousel/...
-   git commit -m "feat: wire carousel cards 2-6 with PEL engine"
-   ```
-
-4. Push:
-   ```
-   git push origin feat/[task-name]
-   ```
-
-5. Preston will open the PR on GitHub. CodeRabbit will review automatically.
-
-6. Read CodeRabbit feedback and fix any issues before merge.
-
----
-
-## Files You'll Touch
-
-- `src/components/timer/carousel/TimerCarousel.tsx` — add card content components
-- `src/components/timer/carousel/cards/` — create new card files (Card2.tsx, Card3.tsx, etc.)
-- `src/screens/HistoryScreen.tsx` — new file, full History tab implementation
-- `src/App.tsx` or routing file — wire HistoryScreen to Tab 2
-- Possibly: `src/store/profileStore.ts` — if you need a helper for dose stats aggregation
-
-**Do NOT modify:**
-- src/lib/perceivedEffect/ — the PEL engine files are sacred, hand-tuned, never rewrite
-- docs/HANDOFF.md or AI_CONTEXT.md unless instructed
-- Firestore security rules (they're already correct)
-- index.css color tokens (use them, don't redefine)
-
----
-
-## Testing Checklist
-
-Before you finish:
-
-1. **Carousel cards:**
-   - [ ] Cards render at correct size in carousel
-   - [ ] PEL gauge updates every second as time passes
-   - [ ] Card 4 (history) shows correct doses and times
-   - [ ] Card 5 (forecast) shows a reasonable PEL curve shape
-   - [ ] All text uses correct fonts and colors from design system
-   - [ ] Swipe navigation still works with all 6 cards
-   - [ ] Pagination dots show correct active state
-
-2. **History screen:**
-   - [ ] Tab click navigates to History (not a placeholder anymore)
-   - [ ] Dose list shows all logged doses in chronological order
-   - [ ] Delete removes dose and updates Firestore
-   - [ ] Edit modal opens, changes persist
-   - [ ] Filter by substance works
-   - [ ] Scrolling is smooth, bottom safe area respected
-   - [ ] No layout shift or overflow
-
-3. **Integration:**
-   - [ ] Timer screen still works (refresh page, doses persist, timer runs)
-   - [ ] Switching between Timer and History tabs works
-   - [ ] Logging a new dose in Timer updates immediately in History list
-   - [ ] Deleting dose in History removes it from Timer's PEL calculations
-
----
-
-## Questions to Ask Preston (If Stuck)
-
-- If PEL engine API is unclear, ask for a quick example of how to call it
-- If History screen scope seems too big, ask which features to defer
-- If design tokens feel missing, check HANDOFF.md Section 2b first, then ask
-- If Firestore query feels wrong, ask for clarification on data model
-- If you're unsure about animation/interaction details, ask for reference or spec
-
----
-
-## Success Criteria
-
-- [ ] All 6 carousel cards implemented and wired
-- [ ] History screen fully functional (list, edit, delete, filter)
-- [ ] All CodeRabbit feedback cleared
-- [ ] App tested in browser — no console errors, smooth interactions
-- [ ] PR ready to merge to main
-
-**Next after merge:** Phase 4b would be Insights screen (patterns, statistics, recommendations) and Tools screen (Dose Buddy calculator, etc.).
-
----
-
-Good luck! Read @HANDOFF.md and docs/AI_CONTEXT.md first, then jump in.
+When done, tell Preston:
+- which CodeRabbit comments were still open after refresh
+- which ones were stale versus still-live and why
+- whether the PR is merge-ready
+- which docs were updated
+- the exact merge / cleanup steps to run next
