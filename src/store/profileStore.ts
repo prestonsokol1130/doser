@@ -96,7 +96,7 @@ export async function fetchUserDocument(
 
   return {
     onboardingComplete,
-    profile: mergeProfileDefaults(profile as Profile),
+    profile: mergeProfileDefaults(profile as Partial<Profile>),
   }
 }
 
@@ -135,17 +135,17 @@ export async function saveUserProfile(
   await setDoc(userDocRef(uid), { profile }, { merge: true })
 }
 
-function mergeProfileDefaults(profile: Profile): Profile {
+function mergeProfileDefaults(profile: Partial<Profile>): Profile {
   const defaults = defaultProfile()
   return {
     ...defaults,
     ...profile,
-    gbl: { ...defaults.gbl, ...profile.gbl },
-    bdo: { ...defaults.bdo, ...profile.bdo },
-    notif: { ...defaults.notif, ...profile.notif },
-    stash: { ...defaults.stash, ...profile.stash },
-    taper: { ...defaults.taper, ...profile.taper },
-    doseBuddy: { ...defaults.doseBuddy, ...profile.doseBuddy },
+    gbl: { ...defaults.gbl, ...(profile.gbl ?? {}) },
+    bdo: { ...defaults.bdo, ...(profile.bdo ?? {}) },
+    notif: { ...defaults.notif, ...(profile.notif ?? {}) },
+    stash: { ...defaults.stash, ...(profile.stash ?? {}) },
+    taper: { ...defaults.taper, ...(profile.taper ?? {}) },
+    doseBuddy: { ...defaults.doseBuddy, ...(profile.doseBuddy ?? {}) },
   }
 }
 

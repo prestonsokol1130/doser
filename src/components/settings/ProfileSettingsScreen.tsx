@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   cmToIn,
   kgToLbs,
@@ -53,6 +53,17 @@ export function ProfileSettingsScreen({
   const [bdoDoseStr, setBdoDoseStr] = useState(
     () => String(profile.bdo.preferredDoseMl),
   )
+
+  useEffect(() => {
+    setWeightInput(formatWeightInput(profile.weightKg, profile.weightUnit))
+    setGblDoseStr(String(profile.gbl.preferredDoseMl))
+    setBdoDoseStr(String(profile.bdo.preferredDoseMl))
+  }, [
+    profile.weightKg,
+    profile.weightUnit,
+    profile.gbl.preferredDoseMl,
+    profile.bdo.preferredDoseMl,
+  ])
 
   const heightDisplay =
     profile.heightUnit === 'in' && profile.heightCm > 0
@@ -111,11 +122,11 @@ export function ProfileSettingsScreen({
             min={18}
             value={profile.age > 0 ? String(profile.age) : ''}
             onChange={(value) => {
-              const age = Number(value)
-              onProfileChange({
-                ...profile,
-                age: Number.isFinite(age) ? age : 0,
-              })
+              const trimmed = value.trim()
+              if (trimmed === '') return
+              const age = Number(trimmed)
+              if (!Number.isFinite(age) || age < 18) return
+              onProfileChange({ ...profile, age })
             }}
           />
 

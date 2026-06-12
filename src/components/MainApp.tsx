@@ -67,7 +67,6 @@ export function MainApp() {
         setProfile(profileDoc?.profile ?? defaultProfile())
         setDoses(loadedDoses)
         setDoseContexts(loadedContexts)
-        allowProfilePersistRef.current = true
       })
       .catch((error) => {
         if (!active) return
@@ -76,7 +75,9 @@ export function MainApp() {
         setDoseContexts({})
       })
       .finally(() => {
-        if (active) setLoading(false)
+        if (!active) return
+        allowProfilePersistRef.current = true
+        setLoading(false)
       })
 
     return () => {

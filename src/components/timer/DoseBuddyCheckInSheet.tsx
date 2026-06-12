@@ -27,6 +27,10 @@ type DoseBuddyCheckInSheetProps = {
   onConfirm: () => void
 }
 
+function formatSuggestedMl(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(1) : '—'
+}
+
 function toneClasses(tone: DoseBuddySuggestion['tone']) {
   if (tone === 'wait') {
     return {
@@ -123,8 +127,8 @@ export function DoseBuddyCheckInSheet({
                       className={`text-[14px] leading-snug ${palette.text}`}
                       style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
                     >
-                      Suggested dose: {suggestion.suggestedMinMl.toFixed(1)}–
-                      {suggestion.suggestedMaxMl.toFixed(1)} mL
+                      Suggested dose: {formatSuggestedMl(suggestion.suggestedMinMl)}–
+                      {formatSuggestedMl(suggestion.suggestedMaxMl)} mL
                     </p>
                   </div>
                 </div>

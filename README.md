@@ -11,5 +11,5 @@ Current repo status (branch `feat/phase-5-tools-settings`, all Phase 5 work unco
   tank moved horizontally in both directions — noticeable but not overdone — and get
   more intense when the user changes the volume with the +/- buttons.
 
-Read [docs/AI_CONTEXT.md](/C:/Users/Preston%20Sokol/Projects/doser%202.0/doser/docs/AI_CONTEXT.md)
+Read [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md)
 for the full, current project state before doing any design or implementation work.

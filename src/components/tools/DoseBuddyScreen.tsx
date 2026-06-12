@@ -144,8 +144,11 @@ export function DoseBuddyScreen({
     return splitIntoSessions(dosesWithInputs).reverse()
   }, [dosesWithInputs])
 
-  const recentSubstance: Substance =
-    doses[doses.length - 1]?.substance === 'BDO' ? 'BDO' : 'GBL'
+  const recentSubstance: Substance = useMemo(() => {
+    if (doses.length === 0) return 'GBL'
+    const latest = doses.reduce((a, b) => (a.ts >= b.ts ? a : b))
+    return latest.substance === 'BDO' ? 'BDO' : 'GBL'
+  }, [doses])
   const previewSuggestion = useMemo(
     () =>
       buildDoseBuddySuggestion({
