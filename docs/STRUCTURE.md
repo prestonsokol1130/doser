@@ -76,7 +76,9 @@ src/
 │
 ├── store/
 │   ├── appStore.ts                   preferredDoseMl(), preferredIntervalMinutes() helpers.
-│   │                                 Note: timerUtils.ts has duplicate versions — see HANDOFF §11.
+│   │                                 Intentional duplicate of timerUtils.ts helpers — deferred refactor.
+│   │                                 Consolidation waits until timerUtils.ts is fully modularized.
+│   │                                 See HANDOFF §11.
 │   ├── authStore.ts                  subscribeToAuth(callback) — Firebase Auth listener.
 │   │                                 Returns unsubscribe function. Used in App.tsx.
 │   ├── gateStore.ts                  isGateComplete() — reads from localStorage.

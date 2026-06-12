@@ -79,7 +79,9 @@ Use ONLY CSS variables from src/index.css. Never hardcode hex.
 - Buttons & labels: ALL CAPS (LOG ENTRY, WAIT, DOSE AMOUNT, INSIGHTS)
 - Descriptive text: Sentence case (First word capitalized, rest lowercase except proper nouns)
 - Always include units on numbers: "1.8 mL", not "1.8"
-- Time format: colons only, no am/pm ("01:20:00", "12:30 PM" is OK as shown in spec)
+- Time format: use the format for that surface — do not invent a third style.
+  - Countdowns/durations (timer ring center, elapsed/remaining): `HH:MM:SS` with colons only, no am/pm (e.g. "00:38:24", "01:20:00") via `formatCountdown()`.
+  - Clock times (dose timestamps, next-window label, last-entry times): locale short time with am/pm via `formatTimeShort()` (e.g. "12:30 PM", "12:20 AM" as in Section 5).
 - No emoji anywhere in the app
 - Do not introduce a casual lowercase or mixed-case convention outside the
   explicit existing brand rules.

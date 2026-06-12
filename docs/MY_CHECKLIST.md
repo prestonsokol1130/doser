@@ -4,7 +4,7 @@ Read this before every new Cursor task.
 
 ---
 
-## Step 1 — Create the branch yourself
+## Step 1 — Preston creates the branch
 
 Preston creates the feature branch before opening Cursor. The agent must not create, rename, or switch branches.
 
@@ -37,7 +37,8 @@ If the task is visual:
 - use screenshots from `docs/ai-reference/`
 - do not use screenshots from `Downloads`
 - say whether the screenshots are directional or should be copied closely
-- do not change the current app theme unless you explicitly approve that
+- never change the current app theme, typography, capitalization, or overall product feel — no exceptions unless you explicitly approve that theme change
+- if implementation starts drifting off-theme, pause and ask instead of continuing
 
 ---
 
@@ -110,9 +111,9 @@ merge the PR into `main`.
 
 ---
 
-## Step 10 — Clean up locally
+## Step 10 — Clean up locally (Preston only)
 
-After merge, run:
+After merge, Preston runs locally — not the agent during the task:
 
 ```powershell
 git checkout main
@@ -144,7 +145,7 @@ This is mandatory. Do not leave stale branch names or stale "current task" notes
 - Never approve code you did not test
 - If CodeRabbit flags something real, fix it
 - If Cursor changes files outside the task scope, stop it
-- If a visual pass drifts off-theme, correct that before continuing
+- If a visual pass drifts off-theme, pause and ask instead of continuing
 - Never let Cursor modify `src/lib/perceivedEffect/`
 
 ---
