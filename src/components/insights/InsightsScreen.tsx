@@ -717,10 +717,11 @@ const TABS: { id: Tab; label: string; disabled?: boolean }[] = [
 
 export function InsightsScreen({ doses, profile, nowMs }: InsightsScreenProps) {
   const [tab, setTab] = useState<Tab>('all')
+  const nowBucket = Math.floor(nowMs / 60_000)
 
   const data = useMemo(
-    () => (tab === 'peer' ? null : buildInsightSet(doses, profile, nowMs, tab)),
-    [doses, profile, nowMs, tab],
+    () => (tab === 'peer' ? null : buildInsightSet(doses, profile, nowBucket * 60_000, tab)),
+    [doses, profile, nowBucket, tab],
   )
 
   return (
@@ -744,7 +745,7 @@ export function InsightsScreen({ doses, profile, nowMs }: InsightsScreenProps) {
                 type="button"
                 disabled={t.disabled}
                 onClick={() => !t.disabled && setTab(t.id)}
-                className="relative flex-1 rounded-[8px] px-3 py-2 text-[13px] outline-none transition-colors duration-[150ms]"
+                className="relative flex-1 rounded-[8px] px-3 py-2 text-[13px] outline-none transition-colors duration-[150ms] focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--app-bg)]"
                 style={{
                   fontFamily: 'var(--font-body)',
                   fontWeight: 600,

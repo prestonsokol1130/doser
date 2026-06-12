@@ -87,7 +87,7 @@ Every Cursor prompt must contain these items in this order:
 
 1. Branch rule first:
 
-   ```
+   ```text
    Do not create, switch, or rename any branch. Run `git branch --show-current` first.
    Work only on the branch Preston already created for this task. If you are not on the
    expected branch, STOP and tell me.
@@ -176,7 +176,7 @@ any new design iteration.
 
 - PR `#8` is merged into `main`
 - Phase 5 core Tools and Settings work is live on `main`
-- `Insights` is still a placeholder
+- `Insights` is live on `main` (Peer Comparison tab still deferred)
 - The next likely design work is Tools / Settings hub refinement
 - New visual work must use repo-owned references, not `Downloads`
 - If a visual reference only exists outside the repo, tell Preston to move it into

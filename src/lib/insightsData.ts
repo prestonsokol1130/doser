@@ -233,11 +233,13 @@ export function buildInsightSet(
   const buildTotal = (esc + flat + tap) || 1
   const buildPattern = { escalates: esc / buildTotal, flat: flat / buildTotal, tapers: tap / buildTotal }
   const buildLabel: InsightSet['buildLabel'] =
-    buildPattern.escalates >= buildPattern.flat && buildPattern.escalates >= buildPattern.tapers
-      ? 'Escalates'
-      : buildPattern.tapers >= buildPattern.flat
-        ? 'Tapers'
-        : 'Flat'
+    esc + flat + tap === 0
+      ? 'Flat'
+      : buildPattern.escalates >= buildPattern.flat && buildPattern.escalates >= buildPattern.tapers
+        ? 'Escalates'
+        : buildPattern.tapers >= buildPattern.flat
+          ? 'Tapers'
+          : 'Flat'
 
   // Tolerance
   const tol = calculateBehavioralTolerance(doses, profile, nowMs)
@@ -300,8 +302,9 @@ export function buildInsightSet(
 
   // Share of use (by mL in last 30 days, falling back to all)
   const shareWindow = filterDoses(last30.length ? last30 : doses, 'all') // already filtered above for substance tabs
-  const gblMl = sum(allDoses.filter((d) => d.substance === 'GBL' && shareWindow.some((s) => s.id === d.id)).map((d) => d.amountMl))
-  const bdoMl = sum(allDoses.filter((d) => d.substance === 'BDO' && shareWindow.some((s) => s.id === d.id)).map((d) => d.amountMl))
+  const shareIds = new Set(shareWindow.map((d) => d.id))
+  const gblMl = sum(allDoses.filter((d) => d.substance === 'GBL' && shareIds.has(d.id)).map((d) => d.amountMl))
+  const bdoMl = sum(allDoses.filter((d) => d.substance === 'BDO' && shareIds.has(d.id)).map((d) => d.amountMl))
   const shareTotal = gblMl + bdoMl || 1
   const shareOfUse =
     filter === 'gbl' ? { gbl: 1, bdo: 0 }

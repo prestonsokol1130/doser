@@ -157,7 +157,7 @@ Phase 5 refinements that are already merged:
 - `History` — live
 - `Tools` — live
 - `Settings` — live
-- `Insights` — still placeholder only
+- `Insights` — live (Peer Comparison tab still deferred)
 
 ---
 
@@ -184,13 +184,10 @@ Priority order unless Preston changes it:
    - After Tools hub
    - Same rules: hub-only first, preserve logic, preserve theme
 
-4. Insights planning / build
-   - Biggest remaining unbuilt product surface
-   - Still placeholder in `MainApp.tsx`
-
 Still deferred:
 
 - Push notification delivery beyond settings UI
+- Insights Peer Comparison tab (opt-in anonymous comparison — UI stub only)
 - Dose Buddy peer comparison / local peer contribution feature
 - Dose Buddy contexts wiring into other analytics surfaces beyond current use
 
@@ -326,7 +323,7 @@ and behavior are intentional.
 
 - Service worker caching on localhost can make the browser show stale UI
 - Tailwind JIT can keep stale arbitrary-value utilities on long-lived dev sessions
-- `Insights` is still placeholder-only, so do not describe it as built
+- Insights Peer Comparison tab is still a deferred stub inside the live Insights screen
 - The repo's screenshot library is incomplete for current Tools / Settings state
   - existing `current-app-state` images are historical wrong-theme references, not fresh truth captures
   - fresh current UI screenshots should be added before future visual-review tasks

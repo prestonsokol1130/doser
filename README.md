@@ -9,7 +9,7 @@ Current repo status as of 2026-06-12:
   - `History` — complete
   - `Tools` — complete
   - `Settings` — complete
-  - `Insights` — still a placeholder
+  - `Insights` — live (Peer Comparison tab still deferred)
 - Phase 5 merged:
   - Tools hub plus Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference
   - Settings hub plus Account, Profile, Notifications, Themes, Install App, Legal
@@ -23,7 +23,6 @@ Immediate next likely work:
   `docs/ai-reference/goal/`
 - Refine the `Tools` hub first, then the `Settings` hub, one screen at a time
 - Keep the current app theme intact
-- Leave `Insights` planning for a separate task unless Preston explicitly reprioritizes it
 
 Read [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md) first before making any product,
 design, or implementation decision.

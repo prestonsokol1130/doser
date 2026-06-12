@@ -398,7 +398,6 @@ Current likely next work:
 - refine the Tools hub first
 - refine the Settings hub second
 - keep the existing theme intact
-- leave Insights for a separate task unless Preston reprioritizes it
 
 ---
 
@@ -502,7 +501,7 @@ Phase 5 — Tools + Settings: CORE COMPLETE (PR #8 merged)
   - Stash redesign merged, including `StashPrefs.fullMl`
   - Dose Buddy mobile cleanup merged
   - Accessibility and CodeRabbit follow-up fixes merged
-  - Insights is still placeholder-only
+  - Insights tab is live (Peer Comparison sub-tab still deferred)
 
 Next likely task:
   - refine the Tools hub using repo-owned visual references

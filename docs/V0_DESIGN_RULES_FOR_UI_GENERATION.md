@@ -31,7 +31,7 @@ Current status as of 2026-06-12:
 - `History` is live
 - `Tools` is live
 - `Settings` is live
-- `Insights` is still placeholder-only
+- `Insights` is live (Peer Comparison tab still deferred)
 
 For Tools and Settings work, preserve the existing navigation model. Improve the hub presentation, not the overall product architecture.
 

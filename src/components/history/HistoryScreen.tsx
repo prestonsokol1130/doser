@@ -29,9 +29,9 @@ function startOfDay(ts: number): number {
   return d.getTime()
 }
 
-function formatDateLabel(ts: number): string {
+function formatDateLabel(ts: number, nowMs: number): string {
   const target = startOfDay(ts)
-  const today = startOfDay(Date.now())
+  const today = startOfDay(nowMs)
   if (target === today) return 'Today'
   if (target === today - DAY_MS) return 'Yesterday'
   return new Date(ts).toLocaleDateString(undefined, {
@@ -61,7 +61,7 @@ function SubstanceBadge({ substance }: { substance: DoseSubstance }) {
 
 // ─── Summary card (only shown on the ALL filter) ───────────────────────────────
 
-function HistorySummary({ doses }: { doses: Dose[] }) {
+function HistorySummary({ doses, nowMs }: { doses: Dose[]; nowMs: number }) {
   const totalMl = doses.reduce((s, d) => s + d.amountMl, 0)
   const totalDoses = doses.length
 
@@ -72,7 +72,7 @@ function HistorySummary({ doses }: { doses: Dose[] }) {
   }, [doses])
 
   const bars = useMemo(() => {
-    const today = startOfDay(Date.now())
+    const today = startOfDay(nowMs)
     return Array.from({ length: 7 }, (_, i) => {
       const dayStart = today - (6 - i) * DAY_MS
       const dayEnd = dayStart + DAY_MS
@@ -81,7 +81,7 @@ function HistorySummary({ doses }: { doses: Dose[] }) {
         .reduce((s, d) => s + d.amountMl, 0)
       return { total, label: new Date(dayStart).toLocaleDateString(undefined, { weekday: 'short' })[0], isToday: i === 6 }
     })
-  }, [doses])
+  }, [doses, nowMs])
   const maxBar = Math.max(...bars.map((b) => b.total), 0.01)
 
   return (
@@ -191,7 +191,11 @@ function DoseRow({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-[12px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-3 transition-opacity duration-[150ms] hover:opacity-95">
-      <button type="button" onClick={onEdit} className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-[8px] text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--app-bg)]"
+      >
         <span
           className="w-14 shrink-0 text-[14px] text-[var(--app-text)]"
           style={{ fontFamily: 'var(--font-body)', fontWeight: 500 }}
@@ -217,7 +221,7 @@ function DoseRow({
         type="button"
         aria-label="Delete dose"
         onClick={onDelete}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] text-[var(--app-faint)] outline-none transition-colors duration-[150ms] hover:text-[var(--color-action)]"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] text-[var(--app-faint)] outline-none transition-colors duration-[150ms] hover:text-[var(--color-action)] focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--app-bg)]"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
           <path
@@ -319,7 +323,7 @@ export function HistoryScreen({ doses, setDoses, nowMs }: HistoryScreenProps) {
               key={option}
               type="button"
               onClick={() => setFilter(option)}
-              className="rounded-[10px] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] outline-none transition-opacity duration-[150ms]"
+              className="rounded-[10px] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] outline-none transition-opacity duration-[150ms] focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--app-bg)]"
               style={{
                 fontFamily: 'var(--font-body)',
                 fontWeight: 600,
@@ -338,7 +342,7 @@ export function HistoryScreen({ doses, setDoses, nowMs }: HistoryScreenProps) {
           <EmptyState />
         ) : (
           <>
-            {filter === 'all' && doses.length > 0 && <HistorySummary doses={doses} />}
+            {filter === 'all' && doses.length > 0 && <HistorySummary doses={doses} nowMs={nowMs} />}
 
             <div className="flex flex-col gap-4 pb-6">
               {grouped.map(([key, entries]) => {
@@ -350,7 +354,7 @@ export function HistoryScreen({ doses, setDoses, nowMs }: HistoryScreenProps) {
                         className="text-[10px] uppercase tracking-[0.16em] text-[var(--app-dim)]"
                         style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
                       >
-                        {formatDateLabel(entries[0].ts)}
+                        {formatDateLabel(entries[0].ts, nowMs)}
                       </span>
                       <span
                         className="text-[10px] tabular-nums text-[var(--app-faint)]"

@@ -63,6 +63,7 @@ src/
 ├── lib/
 │   ├── firebase.ts                   Firebase app init, exports: auth, db (Firestore).
 │   │                                 Import these — never re-initialize Firebase elsewhere.
+│   ├── insightsData.ts               Insights tab data layer — builds InsightSet from doses + profile.
 │   ├── insightsAdvanced.ts           Advanced session analysis helpers. Not yet wired to UI.
 │   ├── metabolicProfile.ts           Metabolic profile calculations. Not yet wired to UI.
 │   ├── doseBuddy.ts                  PHASE 5 — Dose Buddy suggestion engine + context map.
@@ -87,7 +88,7 @@ src/
 │
 └── components/
     │
-    ├── MainApp.tsx                   Shared app shell for Timer + History + Tools + Settings.
+    ├── MainApp.tsx                   Shared app shell for all five tabs (Insights, History, Timer, Tools, Settings).
     │                                 Owns activeTab, profile, doses, doseContexts,
     │                                 loading state, and nowMs ticker.
     │
@@ -130,7 +131,7 @@ src/
     │   ├── DoseCard.tsx              Bottom dose control: −/+ buttons, scroll ruler, LOG ENTRY btn.
     │   │                             Scroll ruler range: 0.1–10.0 mL, loops at both ends.
     │   ├── BottomNav.tsx             5-tab nav bar: Insights / History / Timer / Tools / Settings.
-    │   │                             Insights is placeholder-only. The other 4 tabs are live.
+    │   │                             All five tabs are live.
     │   ├── TimerIcons.tsx            All SVG icon components used in the timer screen.
     │   ├── timerUtils.ts             Pure utility functions and types for the timer:
     │   │                             TimerState, TimerPhase, DOSE_MIN, DOSE_MAX, DOSE_STEP,
@@ -155,8 +156,8 @@ src/
     │   ├── EditDoseModal.tsx         Edit dose amount, substance, and timestamp.
     │   └── HistoryScreen.tsx         Chronological dose list, filter, delete, edit.
     │
-    ├── insights/                     NOT STARTED
-    │   └── (empty — create files here when building)
+    ├── insights/                     LIVE — Insights tab (Peer Comparison sub-tab deferred)
+    │   └── InsightsScreen.tsx        Pattern cards from real dose logs via `src/lib/insightsData.ts`.
     │
     ├── tools/                        PHASE 5 — MERGED ON MAIN
     │   ├── ToolsScreen.tsx           Tools hub: NavRow list → 5 sub-screens.

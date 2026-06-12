@@ -166,7 +166,7 @@ This is mandatory. Do not leave stale branch names or stale "current task" notes
 ## Current project snapshot
 
 - Phase 5 core Tools and Settings work is merged into `main`
-- `Insights` is still placeholder-only
+- `Insights` is live (Peer Comparison tab still deferred)
 - Next likely refinement work:
   - Tools hub first
   - Settings hub second

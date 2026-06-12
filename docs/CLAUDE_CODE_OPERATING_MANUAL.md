@@ -62,7 +62,7 @@ Every Cursor prompt must:
 
 - `main` already contains PR `#8`
 - Phase 5 core Tools and Settings work is merged
-- `Insights` remains the only placeholder tab
+- `Insights` is live on `main` (Peer Comparison tab still deferred)
 - The next likely work is post-merge refinement, starting with the `Tools` hub
 - Repo-owned screenshot references are required for visual work
 
