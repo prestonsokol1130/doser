@@ -29,7 +29,7 @@ export function NavRow({ label, description, onClick }: NavRowProps) {
       </div>
       <span
         className="shrink-0 text-[var(--app-faint)]"
-        aria-hidden
+        aria-hidden={true}
       >
         ›
       </span>
