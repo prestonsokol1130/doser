@@ -51,9 +51,8 @@ If the task is visual, also attach the relevant screenshots from:
 - `docs/ai-reference/goal/` for the target direction
 
 Never reference screenshots from `Downloads` or another machine-specific path in a prompt.
-EVERY VISUAL PROMPT MUST PRESERVE THE CURRENT APP THEME UNLESS YOU EXPLICITLY
-AUTHORIZE A THEME CHANGE.
-NEVER DEVIATE FROM THE CURRENT APP THEME. NO EXCEPTIONS. UNDER NO CIRCUMSTANCES IS THAT EVER OKAY.
+Do not change the current app theme unless you explicitly authorize a theme change —
+no exceptions.
 Always state whether screenshots are `reference only` or `copy closely`.
 
 ---

@@ -8,7 +8,13 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { Dose, DoseContext, DoseSubstance, NotificationPrefs, Profile } from '../types'
-import { VALID_DOSE_SUBSTANCES } from '../types'
+import {
+  VALID_DOSE_SUBSTANCES,
+  VALID_FOOD_STATES,
+  VALID_HYDRATION_STATES,
+  VALID_LAST_DOSE_FEEDBACK,
+  VALID_SLEEP_LEVELS,
+} from '../types'
 
 const USERS_COLLECTION = 'users'
 
@@ -163,25 +169,12 @@ export async function fetchDoseContexts(
   for (const [doseId, value] of Object.entries(raw)) {
     if (!value || typeof value !== 'object') continue
     const ctx = value as DoseContext
-    const validFood =
-      ctx.foodState === 'empty' ||
-      ctx.foodState === 'snack' ||
-      ctx.foodState === 'full'
-    const validHydration =
-      ctx.hydrationState === 'low' ||
-      ctx.hydrationState === 'ok' ||
-      ctx.hydrationState === 'good'
-    const validSleep =
-      ctx.sleepLevel === 'poor' ||
-      ctx.sleepLevel === 'ok' ||
-      ctx.sleepLevel === 'good'
+    const validFood = VALID_FOOD_STATES.includes(ctx.foodState)
+    const validHydration = VALID_HYDRATION_STATES.includes(ctx.hydrationState)
+    const validSleep = VALID_SLEEP_LEVELS.includes(ctx.sleepLevel)
     const validFeedback =
       ctx.lastDoseFeedback == null ||
-      ctx.lastDoseFeedback === 'too_much' ||
-      ctx.lastDoseFeedback === 'not_enough' ||
-      ctx.lastDoseFeedback === 'just_right' ||
-      ctx.lastDoseFeedback === 'couldnt_feel_it' ||
-      ctx.lastDoseFeedback === 'dont_remember'
+      VALID_LAST_DOSE_FEEDBACK.includes(ctx.lastDoseFeedback)
     if (validFood && validHydration && validSleep && validFeedback) {
       result[doseId] = {
         foodState: ctx.foodState,

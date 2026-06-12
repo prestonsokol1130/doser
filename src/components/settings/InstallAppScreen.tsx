@@ -49,6 +49,10 @@ export function InstallAppScreen({ onBack }: InstallAppScreenProps) {
     const choice = await deferredPrompt.userChoice
     if (choice.outcome === 'accepted') {
       setInstalled(true)
+    } else {
+      setMessage(
+        'Install cancelled. Use the manual steps below or try again later.',
+      )
     }
     setDeferredPrompt(null)
   }

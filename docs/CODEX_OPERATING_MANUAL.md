@@ -110,6 +110,8 @@ When Preston pastes Cursor's result, check:
 - [ ] Only the intended files were changed — nothing out of scope.
 - [ ] No hardcoded hex/rgba colors; CSS variables / `color-mix` only.
 - [ ] Correct fonts, radii, capitalization; no gradients/emoji; theme intact.
+- [ ] Visual changes did not drift off-theme or bundle unrelated visual-language
+      changes; if drift is detected, rollback-first before any new work.
 - [ ] PEL engine, Firestore rules, and existing `index.css` tokens untouched.
 - [ ] `tsc --noEmit` and `npm run build` both passed (ask for the output if missing).
 

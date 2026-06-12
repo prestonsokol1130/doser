@@ -154,12 +154,15 @@ PHASE 5 — Tools + Settings: IN PROGRESS (feat/phase-5-tools-settings branch)
      (Consumed / Days left / Status), quick remove/add chip rows, a hold-to-
      accelerate stepper (AccelStepper), and 5 low-alert preset chips. Conformed to
      theme tokens (color-mix). Verified: tsc + build pass.
-  4. STASH DATA MODEL CHANGE (DONE): Added StashPrefs.fullMl — the "full container"
-     volume = the tank's 100% reference. Previously capacityMl was BOTH the current
-     amount and the 100% denominator, so the tank stayed pinned at 100% until empty.
-     Now: capacityMl = current on-hand baseline; fullMl = the 100% reference (set on
-     Refill). stashRemainingPct divides remaining by stashFullMl() (falls back to
-     capacityMl for legacy data). Touched: src/types.ts, src/lib/stash.ts (new
+  4. STASH DATA MODEL CHANGE (DONE): Added StashPrefs.fullMl — the tank visual's 100%
+     reference. Previously capacityMl was BOTH the current amount and the 100%
+     denominator, so the tank stayed pinned at 100% until empty. Now: capacityMl =
+     current on-hand baseline; fullMl = the 100% reference. Refill sets fullMl.
+     Manual +/- and stepper adjustments raise fullMl only when the new amount is
+     greater than the current fullMl; if the new amount is less than or equal to
+     fullMl, fullMl stays unchanged. Legacy profiles without fullMl fall back to
+     capacityMl via stashFullMl(). The tank visual empties as the current amount
+     drops below fullMl. Touched: src/types.ts, src/lib/stash.ts (new
      stashFullMl()), src/store/profileStore.ts (default fullMl: 0).
 
   OPEN — CURRENT PENDING TASK (needs rework):
@@ -270,10 +273,12 @@ PWA only: No app store distribution. Web-only intentionally.
 
 Stash model (Phase 5): StashPrefs separates current amount from full capacity.
   capacityMl = current on-hand baseline (doses logged after refillAt deplete it).
-  fullMl = the full container volume = the tank's 100% reference. The Stash tank
-  visual empties as the current amount drops below fullMl. fullMl is set on Refill;
-  manual +/- and the stepper only raise fullMl if the new amount exceeds it. Legacy
-  profiles without fullMl fall back to capacityMl via stashFullMl().
+  fullMl = the tank visual's 100% reference (the full container volume at refill).
+  Refill sets fullMl. Manual +/- and stepper adjustments raise fullMl only when the
+  new amount is greater than the current fullMl; if the new amount is less than or
+  equal to fullMl, fullMl stays unchanged. Legacy profiles without fullMl fall back
+  to capacityMl via stashFullMl(). The tank visual empties as the current amount
+  drops below fullMl.
 
 Accent tints use color-mix: New Phase 5 screens express translucent accent fills as
   color-mix(in srgb, var(--color-ring) N%, transparent) instead of hardcoded rgba,

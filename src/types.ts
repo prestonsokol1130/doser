@@ -47,9 +47,15 @@ export type BiologicalSex = 'male' | 'female'
 
 export type FoodState = 'empty' | 'snack' | 'full'
 
+export const VALID_FOOD_STATES = ['empty', 'snack', 'full'] as const satisfies readonly FoodState[]
+
 export type HydrationState = 'low' | 'ok' | 'good'
 
+export const VALID_HYDRATION_STATES = ['low', 'ok', 'good'] as const satisfies readonly HydrationState[]
+
 export type SleepLevel = 'poor' | 'ok' | 'good'
+
+export const VALID_SLEEP_LEVELS = ['poor', 'ok', 'good'] as const satisfies readonly SleepLevel[]
 
 export type DoseBuddyLastDoseFeedback =
   | 'too_much'
@@ -57,6 +63,14 @@ export type DoseBuddyLastDoseFeedback =
   | 'just_right'
   | 'couldnt_feel_it'
   | 'dont_remember'
+
+export const VALID_LAST_DOSE_FEEDBACK = [
+  'too_much',
+  'not_enough',
+  'just_right',
+  'couldnt_feel_it',
+  'dont_remember',
+] as const satisfies readonly DoseBuddyLastDoseFeedback[]
 
 export interface DoseContext {
   foodState: FoodState
