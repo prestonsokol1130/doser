@@ -9,9 +9,10 @@ export type AuthStep = 'login' | 'signup' | 'forgot-password' | 'recovery'
 
 type AuthLayerProps = {
   onComplete: () => void
+  onLocalOnly: () => void
 }
 
-export function AuthLayer({ onComplete }: AuthLayerProps) {
+export function AuthLayer({ onComplete, onLocalOnly }: AuthLayerProps) {
   const [step, setStep] = useState<AuthStep>('login')
   const [checkingSession, setCheckingSession] = useState(true)
 
@@ -70,6 +71,7 @@ export function AuthLayer({ onComplete }: AuthLayerProps) {
       onForgotPassword={() => setStep('forgot-password')}
       onRestoreAccount={() => setStep('recovery')}
       onSuccess={onComplete}
+      onLocalOnly={onLocalOnly}
     />
   )
 }

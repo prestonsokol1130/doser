@@ -6,29 +6,53 @@ import { MainApp } from './components/MainApp'
 import { auth } from './lib/firebase'
 import { subscribeToAuth } from './store/authStore'
 import { isGateComplete } from './store/gateStore'
+import { isLocalOnboardingComplete } from './store/localDataStore'
+import {
+  clearLocalOnlyMode,
+  isLocalOnlyMode,
+} from './store/localSessionStore'
 import { isOnboardingComplete } from './store/profileStore'
 
 type AppPhase = 'gate' | 'auth' | 'onboarding-check' | 'onboarding' | 'timer'
 
+function resolveLocalPhase(): AppPhase {
+  return isLocalOnboardingComplete() ? 'timer' : 'onboarding'
+}
+
+function getInitialPhase(): AppPhase {
+  if (!isGateComplete()) return 'gate'
+  if (isLocalOnlyMode()) return resolveLocalPhase()
+  return 'auth'
+}
+
 function App() {
   const [gateComplete, setGateComplete] = useState(() => isGateComplete())
-  const [phase, setPhase] = useState<AppPhase>(() =>
-    isGateComplete() ? 'auth' : 'gate',
-  )
+  const [phase, setPhase] = useState<AppPhase>(getInitialPhase)
   const [userId, setUserId] = useState<string | null>(null)
+  const [localOnly, setLocalOnly] = useState(() => isLocalOnlyMode())
 
   useEffect(() => {
     if (!gateComplete) return
 
     return subscribeToAuth((session) => {
-      if (!session) {
-        setUserId(null)
-        setPhase('auth')
+      if (session) {
+        clearLocalOnlyMode()
+        setLocalOnly(false)
+        setUserId(session.user.id)
+        setPhase('onboarding-check')
         return
       }
 
-      setUserId(session.user.id)
-      setPhase('onboarding-check')
+      if (isLocalOnlyMode()) {
+        setLocalOnly(true)
+        setUserId(null)
+        setPhase(resolveLocalPhase())
+        return
+      }
+
+      setLocalOnly(false)
+      setUserId(null)
+      setPhase('auth')
     })
   }, [gateComplete])
 
@@ -60,7 +84,12 @@ function App() {
       <GateLayer
         onComplete={() => {
           setGateComplete(true)
-          setPhase('auth')
+          if (isLocalOnlyMode()) {
+            setLocalOnly(true)
+            setPhase(resolveLocalPhase())
+          } else {
+            setPhase('auth')
+          }
         }}
       />
     )
@@ -70,10 +99,17 @@ function App() {
     return (
       <AuthLayer
         onComplete={() => {
+          clearLocalOnlyMode()
+          setLocalOnly(false)
           const uid = auth.currentUser?.uid ?? null
           if (!uid) return
           setUserId(uid)
           setPhase('onboarding-check')
+        }}
+        onLocalOnly={() => {
+          setLocalOnly(true)
+          setUserId(null)
+          setPhase(resolveLocalPhase())
         }}
       />
     )
@@ -96,13 +132,14 @@ function App() {
   if (phase === 'onboarding') {
     return (
       <OnboardingLayer
-        uid={userId!}
+        uid={localOnly ? undefined : userId ?? undefined}
+        localOnly={localOnly}
         onComplete={() => setPhase('timer')}
       />
     )
   }
 
-  return <MainApp />
+  return <MainApp localOnly={localOnly} />
 }
 
 export default App

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { logOut } from '@/store/authStore'
+import { isLocalOnlyMode } from '@/store/localSessionStore'
 import { SubScreenHeader } from '../tools/SubScreenHeader'
 
 type AccountScreenProps = {
@@ -8,6 +9,7 @@ type AccountScreenProps = {
 }
 
 export function AccountScreen({ userEmail, onBack }: AccountScreenProps) {
+  const localOnly = isLocalOnlyMode()
   const [signingOut, setSigningOut] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,6 +27,51 @@ export function AccountScreen({ userEmail, onBack }: AccountScreenProps) {
     } finally {
       setSigningOut(false)
     }
+  }
+
+  if (localOnly) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <SubScreenHeader
+          title="Account"
+          subtitle="Device-only storage"
+          onBack={onBack}
+        />
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          <div className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] p-4">
+            <p
+              className="text-[10px] uppercase tracking-[0.14em] text-[var(--app-faint)]"
+              style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+            >
+              Storage mode
+            </p>
+            <p
+              className="mt-1 text-[14px] text-[var(--app-text)]"
+              style={{ fontFamily: 'var(--font-body)' }}
+            >
+              This device only
+            </p>
+          </div>
+
+          <div className="mt-3 rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] p-4">
+            <p
+              className="text-[10px] uppercase tracking-[0.14em] text-[var(--app-faint)]"
+              style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+            >
+              Cloud sync
+            </p>
+            <p
+              className="mt-1 text-[14px] leading-relaxed text-[var(--app-dim)]"
+              style={{ fontFamily: 'var(--font-body)' }}
+            >
+              Your profile and doses stay on this device. Sign in or create an
+              account from the log in screen when you want cloud backup.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

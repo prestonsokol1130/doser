@@ -1,6 +1,7 @@
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { useState } from 'react'
 import { auth } from '../../lib/firebase'
+import { enableLocalOnlyMode } from '../../store/localSessionStore'
 import { AuthField } from './AuthField'
 import { AuthLayout } from './AuthLayout'
 import { AuthLink } from './AuthLink'
@@ -10,6 +11,7 @@ type LogInProps = {
   onForgotPassword: () => void
   onRestoreAccount: () => void
   onSuccess: () => void
+  onLocalOnly: () => void
 }
 
 export function LogIn({
@@ -17,6 +19,7 @@ export function LogIn({
   onForgotPassword,
   onRestoreAccount,
   onSuccess,
+  onLocalOnly,
 }: LogInProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -50,6 +53,15 @@ export function LogIn({
       error={error}
       footer={
         <div className="flex flex-col gap-3 text-[var(--color-text-dim)]">
+          <p>
+            <AuthLink
+              label="Continue on this device"
+              onClick={() => {
+                enableLocalOnlyMode()
+                onLocalOnly()
+              }}
+            />
+          </p>
           <p>
             Need an account? <AuthLink label="Sign Up" onClick={onSignUp} />
           </p>

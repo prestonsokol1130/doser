@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { auth } from '../lib/firebase'
 import {
+  fetchLocalDoseContexts,
+  fetchLocalDoses,
+  fetchLocalProfile,
+  saveLocalDoseContexts,
+  saveLocalDoses,
+  saveLocalProfile,
+} from '../store/localDataStore'
+import {
   defaultProfile,
   fetchDoseContexts,
   fetchDoses,
@@ -19,14 +27,20 @@ import { ToolsScreen } from './tools/ToolsScreen'
 
 type NavTab = 'insights' | 'history' | 'timer' | 'tools' | 'settings'
 
-export function MainApp() {
+type MainAppProps = {
+  localOnly?: boolean
+}
+
+export function MainApp({ localOnly = false }: MainAppProps) {
   const [activeTab, setActiveTab] = useState<NavTab>('timer')
   const [profile, setProfile] = useState<Profile>(defaultProfile())
   const [doses, setDoses] = useState<Dose[]>([])
   const [doseContexts, setDoseContexts] = useState<
     Record<string, DoseContext>
   >({})
-  const [loading, setLoading] = useState(() => !!auth.currentUser?.uid)
+  const [loading, setLoading] = useState(() =>
+    localOnly ? true : !!auth.currentUser?.uid,
+  )
   const [nowMs, setNowMs] = useState(() => Date.now())
   const isInitialDoseLoadRef = useRef(true)
   const isInitialProfileLoadRef = useRef(true)
@@ -34,6 +48,15 @@ export function MainApp() {
   const allowProfilePersistRef = useRef(false)
 
   useEffect(() => {
+    if (localOnly) {
+      setProfile(fetchLocalProfile())
+      setDoses(fetchLocalDoses())
+      setDoseContexts(fetchLocalDoseContexts())
+      allowProfilePersistRef.current = true
+      setLoading(false)
+      return
+    }
+
     const uid = auth.currentUser?.uid
     if (!uid) return
 
@@ -65,9 +88,26 @@ export function MainApp() {
     return () => {
       active = false
     }
-  }, [])
+  }, [localOnly])
 
   useEffect(() => {
+    if (localOnly) {
+      if (isInitialDoseLoadRef.current) {
+        isInitialDoseLoadRef.current = false
+        return
+      }
+
+      const timeoutId = setTimeout(() => {
+        try {
+          saveLocalDoses(doses)
+        } catch (error) {
+          console.error('Failed to save local doses:', error)
+        }
+      }, 500)
+
+      return () => clearTimeout(timeoutId)
+    }
+
     const uid = auth.currentUser?.uid
     if (!uid) return
 
@@ -83,9 +123,28 @@ export function MainApp() {
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [doses])
+  }, [doses, localOnly])
 
   useEffect(() => {
+    if (localOnly) {
+      if (isInitialProfileLoadRef.current) {
+        isInitialProfileLoadRef.current = false
+        return
+      }
+
+      if (!allowProfilePersistRef.current) return
+
+      const timeoutId = setTimeout(() => {
+        try {
+          saveLocalProfile(profile)
+        } catch (error) {
+          console.error('Failed to save local profile:', error)
+        }
+      }, 500)
+
+      return () => clearTimeout(timeoutId)
+    }
+
     const uid = auth.currentUser?.uid
     if (!uid) return
 
@@ -103,9 +162,26 @@ export function MainApp() {
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [profile])
+  }, [profile, localOnly])
 
   useEffect(() => {
+    if (localOnly) {
+      if (isInitialContextsLoadRef.current) {
+        isInitialContextsLoadRef.current = false
+        return
+      }
+
+      const timeoutId = setTimeout(() => {
+        try {
+          saveLocalDoseContexts(doseContexts)
+        } catch (error) {
+          console.error('Failed to save local dose contexts:', error)
+        }
+      }, 500)
+
+      return () => clearTimeout(timeoutId)
+    }
+
     const uid = auth.currentUser?.uid
     if (!uid) return
 
@@ -121,7 +197,7 @@ export function MainApp() {
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [doseContexts])
+  }, [doseContexts, localOnly])
 
   useEffect(() => {
     const id = window.setInterval(() => setNowMs(Date.now()), 1000)
@@ -136,7 +212,7 @@ export function MainApp() {
     )
   }
 
-  const userEmail = auth.currentUser?.email ?? null
+  const userEmail = localOnly ? null : (auth.currentUser?.email ?? null)
 
   return (
     <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[var(--color-bg)]">

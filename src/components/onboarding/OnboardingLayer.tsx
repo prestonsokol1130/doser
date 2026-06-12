@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { saveLocalOnboardingProfile } from '../../store/localDataStore'
 import {
   defaultProfile,
   saveOnboardingProfile,
@@ -16,11 +17,16 @@ export type OnboardingStep =
   | 'finish'
 
 type OnboardingLayerProps = {
-  uid: string
+  uid?: string
+  localOnly?: boolean
   onComplete: () => void
 }
 
-export function OnboardingLayer({ uid, onComplete }: OnboardingLayerProps) {
+export function OnboardingLayer({
+  uid,
+  localOnly = false,
+  onComplete,
+}: OnboardingLayerProps) {
   const [step, setStep] = useState<OnboardingStep>('profile')
   const [profile, setProfile] = useState<Profile>(() => defaultProfile())
   const [loading, setLoading] = useState(false)
@@ -36,7 +42,14 @@ export function OnboardingLayer({ uid, onComplete }: OnboardingLayerProps) {
     setLoading(true)
 
     try {
-      await saveOnboardingProfile(uid, profile)
+      if (localOnly) {
+        await saveLocalOnboardingProfile(profile)
+      } else {
+        if (!uid) {
+          throw new Error('Missing account session.')
+        }
+        await saveOnboardingProfile(uid, profile)
+      }
       onComplete()
     } catch (saveError) {
       setError(
