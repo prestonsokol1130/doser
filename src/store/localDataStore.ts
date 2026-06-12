@@ -58,6 +58,7 @@ function sanitizeDoseContexts(
   return result
 }
 
+// readJson returns null on missing or invalid stored data so callers can fall back gracefully.
 function readJson<T>(key: string): T | null {
   try {
     const raw = localStorage.getItem(key)
@@ -68,6 +69,30 @@ function readJson<T>(key: string): T | null {
   }
 }
 
+function readStoredValue(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function restoreStoredValue(key: string, previous: string | null): void {
+  try {
+    if (previous === null) {
+      localStorage.removeItem(key)
+    } else {
+      localStorage.setItem(key, previous)
+    }
+  } catch (rollbackError) {
+    console.error(
+      `Failed to roll back ${key} after onboarding save failure:`,
+      rollbackError,
+    )
+  }
+}
+
+// writeJson logs and rethrows on failure because a failed persist is critical and must reach callers.
 function writeJson(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value))
@@ -90,7 +115,6 @@ function mergeProfileDefaults(profile: Partial<Profile>): Profile {
     doseBuddy: { ...defaults.doseBuddy, ...(profile.doseBuddy ?? {}) },
   }
 }
-
 export function isLocalOnboardingComplete(): boolean {
   try {
     return localStorage.getItem(ONBOARDING_KEY) === 'true'
@@ -105,11 +129,14 @@ export function fetchLocalProfile(): Profile {
   return mergeProfileDefaults(raw)
 }
 
-export async function saveLocalOnboardingProfile(profile: Profile): Promise<void> {
+export function saveLocalOnboardingProfile(profile: Profile): void {
+  const previousProfile = readStoredValue(PROFILE_KEY)
+
   writeJson(PROFILE_KEY, profile)
   try {
     localStorage.setItem(ONBOARDING_KEY, 'true')
   } catch (error) {
+    restoreStoredValue(PROFILE_KEY, previousProfile)
     console.error('Failed to mark local onboarding complete:', error)
     throw error
   }

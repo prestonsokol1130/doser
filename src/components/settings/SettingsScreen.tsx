@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isLocalOnlyMode } from '@/store/localSessionStore'
 import type { Profile } from '@/types'
 import { NavRow } from '../tools/NavRow'
 import { SubScreenHeader } from '../tools/SubScreenHeader'
@@ -22,17 +23,26 @@ type SettingsScreenProps = {
   profile: Profile
   onProfileChange: (profile: Profile) => void
   userEmail: string | null
+  onExitLocalOnly?: () => void
 }
 
 export function SettingsScreen({
   profile,
   onProfileChange,
   userEmail,
+  onExitLocalOnly,
 }: SettingsScreenProps) {
   const [screen, setScreen] = useState<SettingsScreenId>('hub')
+  const localOnly = isLocalOnlyMode()
 
   if (screen === 'account') {
-    return <AccountScreen userEmail={userEmail} onBack={() => setScreen('hub')} />
+    return (
+      <AccountScreen
+        userEmail={userEmail}
+        onBack={() => setScreen('hub')}
+        onExitLocalOnly={onExitLocalOnly}
+      />
+    )
   }
 
   if (screen === 'profile') {
@@ -78,7 +88,7 @@ export function SettingsScreen({
           <li>
             <NavRow
               label="Account"
-              description={userEmail ?? 'Signed in'}
+              description={localOnly ? 'This device only' : (userEmail ?? 'Signed in')}
               onClick={() => setScreen('account')}
             />
           </li>

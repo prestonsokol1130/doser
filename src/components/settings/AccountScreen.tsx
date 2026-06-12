@@ -6,9 +6,14 @@ import { SubScreenHeader } from '../tools/SubScreenHeader'
 type AccountScreenProps = {
   userEmail: string | null
   onBack: () => void
+  onExitLocalOnly?: () => void
 }
 
-export function AccountScreen({ userEmail, onBack }: AccountScreenProps) {
+export function AccountScreen({
+  userEmail,
+  onBack,
+  onExitLocalOnly,
+}: AccountScreenProps) {
   const localOnly = isLocalOnlyMode()
   const [signingOut, setSigningOut] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -65,10 +70,20 @@ export function AccountScreen({ userEmail, onBack }: AccountScreenProps) {
               className="mt-1 text-[14px] leading-relaxed text-[var(--app-dim)]"
               style={{ fontFamily: 'var(--font-body)' }}
             >
-              Your profile and doses stay on this device. Sign in or create an
-              account from the log in screen when you want cloud backup.
+              Your profile and doses stay on this device. If you go back to the
+              log in screen, the app will switch to account-backed storage.
+              Local-only data stays on this device until a migration flow is built.
             </p>
           </div>
+
+          <button
+            type="button"
+            onClick={onExitLocalOnly}
+            className="mt-6 h-12 w-full rounded-[14px] bg-[var(--color-action)] text-[13px] uppercase tracking-[0.14em] text-black outline-none transition-opacity duration-[150ms] disabled:opacity-40"
+            style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+          >
+            Log In or Create Account
+          </button>
         </div>
       </div>
     )

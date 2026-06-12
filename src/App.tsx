@@ -139,7 +139,17 @@ function App() {
     )
   }
 
-  return <MainApp localOnly={localOnly} />
+  return (
+    <MainApp
+      localOnly={localOnly}
+      onExitLocalOnly={() => {
+        clearLocalOnlyMode()
+        setLocalOnly(false)
+        setUserId(null)
+        setPhase('auth')
+      }}
+    />
+  )
 }
 
 export default App

@@ -44,7 +44,8 @@ Code review:
 Current git state when this file was last updated:
 
 - `main` contains PR `#8`
-- Latest merged commit: `a2f9938 feat: complete phase 5 tools and settings (#8)`
+- The latest completed follow-up after Phase 5 is `feat/local-only-access`
+- Do not assume that a local-only branch has already been merged without checking live git state
 - No active feature branch should be assumed from this file alone
 
 ---
@@ -151,6 +152,23 @@ Phase 5 refinements that are already merged:
    - Shared validation constants moved into `src/types.ts`
    - `MainApp.tsx` profile persistence guard fixed so profile saving is enabled only after a successful load
 
+### Post-Phase-5 Follow-up — Local-Only Access: COMPLETE
+
+Latest validated branch: `feat/local-only-access`
+
+Delivered behavior:
+
+- Log in screen offers `Continue on this device`
+- Device-only mode can complete onboarding without Firebase auth
+- Profile, doses, and dose contexts persist locally in `localStorage`
+- Main app reads and writes local state when device-only mode is active
+- `Settings` -> `Account` shows device-only status and a path back to the auth screen
+- Local onboarding save now rolls back the profile write if the onboarding-complete flag fails to persist
+
+Current limitation:
+
+- There is still no migration/import flow from local-only data into a signed-in Firebase account
+
 ### Live tab state right now
 
 - `Timer` — live
@@ -163,24 +181,29 @@ Phase 5 refinements that are already merged:
 
 ## Immediate Next Work
 
-There is no active core-phase rebuild right now. The next likely work is refinement.
+There is no active core-phase rebuild right now. The next likely work is a storage-upgrade follow-up, then refinement.
 
 Priority order unless Preston changes it:
 
-1. Tools / Settings redesign intake
+1. Local-only -> account upgrade flow
+   - A device-only user can now get back to auth, but there is no import/migration flow yet
+   - Do not silently merge local data into cloud data
+   - The next implementation should make the upgrade path explicit and reversible
+
+2. Tools / Settings redesign intake
    - Preston has external reference material from `Doser Scroll Animations.zip`
    - Those references are not yet safely normalized into the repo
    - Before any visual Cursor task, approved screenshots or mockups must be copied into:
      - `docs/ai-reference/goal/`
    - Do not rely on `Downloads` paths in prompts
 
-2. Tools hub refinement
+3. Tools hub refinement
    - Start with `src/components/tools/ToolsScreen.tsx`
    - Keep the existing theme
    - Keep sub-screen logic intact
    - Treat this as a hub-layout / presentation pass, not a rewrite of Stash, Dose Buddy, or Taper
 
-3. Settings hub refinement
+4. Settings hub refinement
    - After Tools hub
    - Same rules: hub-only first, preserve logic, preserve theme
 
@@ -190,6 +213,17 @@ Still deferred:
 - Insights Peer Comparison tab (opt-in anonymous comparison — UI stub only)
 - Dose Buddy peer comparison / local peer contribution feature
 - Dose Buddy contexts wiring into other analytics surfaces beyond current use
+
+Validation snapshot from the latest local-only wrap-up:
+
+- `npx tsc --noEmit -p tsconfig.app.json` passes
+- `npm run build` passes
+- `npm run lint` still fails on pre-existing repo-wide issues in:
+  - `src/components/settings/InstallAppScreen.tsx`
+  - `src/components/settings/ProfileSettingsScreen.tsx`
+  - `src/components/tools/DoseBuddyControls.tsx`
+  - `src/components/tools/DoseBuddyScreen.tsx`
+  - `src/components/tools/StashScreen.tsx`
 
 ---
 

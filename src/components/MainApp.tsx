@@ -29,33 +29,64 @@ type NavTab = 'insights' | 'history' | 'timer' | 'tools' | 'settings'
 
 type MainAppProps = {
   localOnly?: boolean
+  onExitLocalOnly?: () => void
 }
 
-export function MainApp({ localOnly = false }: MainAppProps) {
+function getInitialLocalProfile(localOnly: boolean): Profile {
+  if (!localOnly) return defaultProfile()
+  try {
+    return fetchLocalProfile()
+  } catch (error) {
+    console.error('Failed to load local profile:', error)
+    return defaultProfile()
+  }
+}
+
+function getInitialLocalDoses(localOnly: boolean): Dose[] {
+  if (!localOnly) return []
+  try {
+    return fetchLocalDoses()
+  } catch (error) {
+    console.error('Failed to load local doses:', error)
+    return []
+  }
+}
+
+function getInitialLocalDoseContexts(
+  localOnly: boolean,
+): Record<string, DoseContext> {
+  if (!localOnly) return {}
+  try {
+    return fetchLocalDoseContexts()
+  } catch (error) {
+    console.error('Failed to load local dose contexts:', error)
+    return {}
+  }
+}
+
+export function MainApp({
+  localOnly = false,
+  onExitLocalOnly,
+}: MainAppProps) {
   const [activeTab, setActiveTab] = useState<NavTab>('timer')
-  const [profile, setProfile] = useState<Profile>(defaultProfile())
-  const [doses, setDoses] = useState<Dose[]>([])
+  const [profile, setProfile] = useState<Profile>(() =>
+    getInitialLocalProfile(localOnly),
+  )
+  const [doses, setDoses] = useState<Dose[]>(() => getInitialLocalDoses(localOnly))
   const [doseContexts, setDoseContexts] = useState<
     Record<string, DoseContext>
-  >({})
+  >(() => getInitialLocalDoseContexts(localOnly))
   const [loading, setLoading] = useState(() =>
-    localOnly ? true : !!auth.currentUser?.uid,
+    localOnly ? false : !!auth.currentUser?.uid,
   )
   const [nowMs, setNowMs] = useState(() => Date.now())
   const isInitialDoseLoadRef = useRef(true)
   const isInitialProfileLoadRef = useRef(true)
   const isInitialContextsLoadRef = useRef(true)
-  const allowProfilePersistRef = useRef(false)
+  const allowProfilePersistRef = useRef(localOnly)
 
   useEffect(() => {
-    if (localOnly) {
-      setProfile(fetchLocalProfile())
-      setDoses(fetchLocalDoses())
-      setDoseContexts(fetchLocalDoseContexts())
-      allowProfilePersistRef.current = true
-      setLoading(false)
-      return
-    }
+    if (localOnly) return
 
     const uid = auth.currentUser?.uid
     if (!uid) return
@@ -252,6 +283,7 @@ export function MainApp({ localOnly = false }: MainAppProps) {
           profile={profile}
           onProfileChange={setProfile}
           userEmail={userEmail}
+          onExitLocalOnly={onExitLocalOnly}
         />
       )}
 

@@ -397,6 +397,7 @@ Tools: Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference.
 Settings: Account, Profile, Notifications, Themes, Install App, Legal.
 
 Current likely next work:
+- build the explicit local-only -> account upgrade path first
 - refine the Tools hub first
 - refine the Settings hub second
 - keep the existing theme intact
@@ -505,8 +506,16 @@ Phase 5 — Tools + Settings: CORE COMPLETE (PR #8 merged)
   - Accessibility and CodeRabbit follow-up fixes merged
   - Insights tab is live (Peer Comparison sub-tab still deferred)
 
+Post-Phase-5 follow-up — Local-only access: COMPLETE
+  - `Continue on this device` added to the log in screen
+  - Device-only onboarding path merged on the feature branch
+  - Local profile, doses, and dose contexts persist through `localStorage`
+  - `Settings` -> `Account` now reflects device-only status and can return the user to auth
+  - Local-only -> Firebase migration/import flow is still not built
+
 Next likely task:
-  - refine the Tools hub using repo-owned visual references
+  - build the explicit local-only -> account upgrade flow
+  - then refine the Tools hub using repo-owned visual references
   - then refine the Settings hub
   - do not start visual work from `Downloads`; move approved references into
     `docs/ai-reference/goal/` first

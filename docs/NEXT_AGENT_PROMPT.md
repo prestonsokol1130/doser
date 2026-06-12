@@ -1,4 +1,4 @@
-# Next Task — Refine the Tools Hub Only
+# Next Task — Build the Local-Only to Account Upgrade Flow
 
 @HANDOFF.md
 @STRUCTURE.md
@@ -12,64 +12,61 @@ Read before writing any code:
 - `docs/AI_CONTEXT.md`
 - `docs/HANDOFF.md` — especially Section `2b`
 - `docs/STRUCTURE.md`
-- `docs/ai-reference/README.md`
-
-If the approved Tools hub goal screenshots are not present inside
-`docs/ai-reference/goal/`, STOP and tell me before changing any code.
 
 ---
 
 ## Status
 
 PR `#8` is merged. Phase 5 core Tools and Settings screens are already on `main`.
-This is a refinement task, not a rebuild.
-
-The next visual work should start with the `Tools` hub only.
+The local-only access follow-up is now in place on the current branch.
+Device-only users can reach the auth screen again, but there is still no explicit
+upgrade/import path for moving from local-only use into an account-backed flow.
 
 ---
 
 ## The task
 
-Refine the `Tools` hub screen only so it better matches the approved direction from
-the repo-owned goal references while staying fully inside the existing Doser theme.
+Implement the next safe step for local-only mode: when a user leaves device-only mode
+and signs in or creates an account, the app must present an explicit upgrade decision
+instead of silently switching storage models with no explanation.
 
-Change only the hub-level presentation for:
+The minimum acceptable product behavior is:
 
-- `src/components/tools/ToolsScreen.tsx`
+- If local-only data exists and the user completes auth, the app must stop and explain
+  that device-only data and cloud account data are currently separate.
+- The user must get an explicit choice before continuing into the signed-in app.
+- Do not silently merge local data into Firestore.
+- Do not silently delete local-only data.
+- Keep the current app theme intact.
 
-You may also adjust only these shared presentation files if needed:
+Use the live codebase to decide the cleanest implementation, but keep the scope tight.
+This task is about the upgrade handoff, not a full sync engine.
 
-- `src/components/tools/NavRow.tsx`
-- `src/components/tools/SubScreenHeader.tsx`
-- `src/index.css` — add tokens only if truly necessary, never remove or rename existing ones
+Expected touched areas will likely include:
 
-Do not change:
+- `src/App.tsx`
+- `src/components/auth/*` only if required for the handoff path
+- `src/components/onboarding/*` only if required
+- `src/components/settings/AccountScreen.tsx` only if required
+- new small components/helpers if they fit the existing structure cleanly
+- `src/store/localDataStore.ts`
+- `src/store/localSessionStore.ts`
 
-- `src/components/tools/StashScreen.tsx`
-- `src/components/tools/DoseBuddyScreen.tsx`
-- `src/components/tools/TaperScreen.tsx`
-- `src/components/tools/EmergencyResourcesScreen.tsx`
-- `src/components/tools/SafetyReferenceScreen.tsx`
-- any Firestore logic
-- any PEL logic
+Do not touch:
+
+- `src/lib/perceivedEffect/*`
+- visual redesign work unrelated to this flow
+- unrelated Tools / Settings screens
+- Firebase schema unless absolutely necessary
 
 ---
 
-## Design rules
+## Product rules
 
-- CSS variables only: `--color-ring`, `--color-action`, `--color-load`, `--app-*`
-- Use `color-mix(...)` for translucent accent treatments
-- Fonts only through `--font-display`, `--font-heading`, `--font-body`
-- Card radius `16px`
-- Icon button radius `10px`
-- Primary button radius `14px`
-- No gradients
-- No shadows
-- No emoji
-- Only `doser` is lowercase
-- Keep the existing app theme intact
-
-This is a refinement, not permission to invent a different product feel.
+- Be explicit about what happens to local-only data
+- Do not claim cloud backup exists for local-only history if it does not
+- Prefer a clear decision screen over background magic
+- If you introduce copy, keep it direct and serious
 
 ---
 
@@ -82,10 +79,10 @@ This is a refinement, not permission to invent a different product feel.
 
 ## Acceptance criteria
 
-- The `Tools` hub looks more intentional and polished than the current list pass
+- A local-only user who signs in is not silently dropped into a different storage model
+- The upgrade path is explicit and understandable
+- Local-only data is neither silently deleted nor silently merged
 - The current theme is preserved
-- Navigation behavior is unchanged
-- Only the allowed files were touched
 - Validation commands pass
 
 ---
@@ -96,8 +93,8 @@ When finished, tell me:
 
 1. current branch name
 2. exact files changed
-3. what visual changes were made
-4. whether any repo-owned goal screenshots were used, and which ones
+3. what the upgrade path does now, step by step
+4. whether local-only data is preserved, discarded, or queued for later import
 5. results of:
    - `npx tsc --noEmit -p tsconfig.app.json`
    - `npm run build`

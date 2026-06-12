@@ -43,7 +43,7 @@ export function OnboardingLayer({
 
     try {
       if (localOnly) {
-        await saveLocalOnboardingProfile(profile)
+        saveLocalOnboardingProfile(profile)
       } else {
         if (!uid) {
           throw new Error('Missing account session.')

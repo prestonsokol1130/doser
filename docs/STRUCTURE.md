@@ -26,7 +26,8 @@ main.tsx
 
 Phases advance linearly on first launch: gate → auth → onboarding → timer.
 On return visits: gate is skipped through localStorage and onboarding is skipped if
-the Firestore profile already exists.
+the Firestore profile already exists. In device-only mode, auth is bypassed and
+onboarding/profile data come from local storage instead of Firestore.
 
 ---
 
@@ -83,6 +84,10 @@ src/
 │   │                                 Returns unsubscribe function. Used in App.tsx.
 │   ├── gateStore.ts                  isGateComplete() — reads from localStorage.
 │   │                                 markGateComplete() — writes to localStorage.
+│   ├── localDataStore.ts             Device-only profile/dose/dose-context storage.
+│   │                                 Includes onboarding-complete flag helpers and validation.
+│   ├── localSessionStore.ts          Device-only session mode flag (`doser.localOnly`).
+│   │                                 Lets the app route back into auth or local mode.
 │   └── profileStore.ts               fetchUserDocument(uid) — reads Firestore users/{uid}.
 │                                     saveUserDocument(uid, data) — writes profile to Firestore.
 │                                     isOnboardingComplete(uid) — checks if profile exists.
@@ -92,7 +97,7 @@ src/
     │
     ├── MainApp.tsx                   Shared app shell for all five tabs (Insights, History, Timer, Tools, Settings).
     │                                 Owns activeTab, profile, doses, doseContexts,
-    │                                 loading state, and nowMs ticker.
+    │                                 loading state, nowMs ticker, and local-only persistence routing.
     │
     ├── gate/                         PHASE 2 — COMPLETE (PR #1 merged)
     │   ├── GateLayer.tsx             Orchestrates gate screens in sequence.
@@ -108,12 +113,14 @@ src/
     │   ├── AuthField.tsx             Reusable text input for auth forms.
     │   ├── AuthLink.tsx              Reusable link/button used in auth footers.
     │   ├── LogIn.tsx                 Email + password login screen. Firebase signInWithEmailAndPassword.
+    │   │                             Also exposes `Continue on this device` for local-only mode.
     │   ├── SignUp.tsx                Email + password registration. Firebase createUserWithEmailAndPassword.
     │   ├── ForgotPassword.tsx        Password reset email screen. Firebase sendPasswordResetEmail.
     │   └── RecoveryAccount.tsx       Account recovery screen.
     │
     ├── onboarding/                   PHASE 2 — COMPLETE (PR #3 merged)
     │   ├── OnboardingLayer.tsx       Orchestrates onboarding screens in sequence.
+    │   │                             Saves either to Firestore or local storage depending on mode.
     │   ├── OnboardingLayout.tsx      Shared layout wrapper for onboarding screens.
     │   ├── OnboardingField.tsx       Reusable input/select field for onboarding forms.
     │   ├── ProfileSetup.tsx          Screen 1: name, age, height, weight, biological sex.
@@ -178,6 +185,7 @@ src/
     └── settings/                     PHASE 5 — MERGED ON MAIN
         ├── SettingsScreen.tsx        Settings hub: NavRow list → 6 sub-screens.
         ├── AccountScreen.tsx         Account + sign-out (authStore.logOut()).
+        │                             In local-only mode, shows device-only status and exits back to auth.
         ├── ProfileSettingsScreen.tsx Edit profile fields.
         ├── NotificationsScreen.tsx   Notification preferences.
         ├── ThemesScreen.tsx          Theme selection (dark only for now).
@@ -204,6 +212,12 @@ from the shared dose state instead of creating a second source of truth.
 `fetchUserDocument(uid)` from `src/store/profileStore.ts` returns the Firestore
 `users/{uid}` document. The `profile` field contains the full `Profile` object.
 Always read the existing Firestore schema before assuming field names.
+
+**How local-only mode works:**
+`src/store/localSessionStore.ts` tracks whether the app should run in device-only mode.
+When that flag is active, `App.tsx` routes around auth, `OnboardingLayer.tsx` saves into
+`src/store/localDataStore.ts`, and `MainApp.tsx` persists profile/dose state locally.
+Returning to the auth screen is supported; migration from local-only data into Firebase is not yet built.
 
 **How PEL is calculated:**
 Import from `src/lib/perceivedEffect/perceivedEffectModel.ts`.
