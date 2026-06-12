@@ -9,7 +9,7 @@ export function NavRow({ label, description, onClick }: NavRowProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-4 text-left outline-none transition-opacity duration-[150ms] hover:opacity-90"
+      className="flex w-full items-center justify-between gap-3 rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-4 text-left outline-none transition-opacity duration-[150ms] hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--color-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--app-bg)]"
     >
       <div className="min-w-0">
         <p
