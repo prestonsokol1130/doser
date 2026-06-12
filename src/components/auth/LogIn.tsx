@@ -57,8 +57,11 @@ export function LogIn({
             <AuthLink
               label="Continue on this device"
               onClick={() => {
-                enableLocalOnlyMode()
-                onLocalOnly()
+                if (enableLocalOnlyMode()) {
+                  onLocalOnly()
+                } else {
+                  setError('Unable to save local-only preference on this device.')
+                }
               }}
             />
           </p>

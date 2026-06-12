@@ -13,6 +13,51 @@ const PROFILE_KEY = 'doser.local.profile'
 const DOSES_KEY = 'doser.local.doses'
 const DOSE_CONTEXTS_KEY = 'doser.local.doseContexts'
 
+const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
+function isUnsafeObjectKey(key: string): boolean {
+  return UNSAFE_OBJECT_KEYS.has(key)
+}
+
+function emptyDoseContextMap(): Record<string, DoseContext> {
+  return Object.create(null) as Record<string, DoseContext>
+}
+
+function parseDoseContext(value: unknown): DoseContext | null {
+  if (!value || typeof value !== 'object') return null
+  const ctx = value as DoseContext
+  const validFood = VALID_FOOD_STATES.includes(ctx.foodState)
+  const validHydration = VALID_HYDRATION_STATES.includes(ctx.hydrationState)
+  const validSleep = VALID_SLEEP_LEVELS.includes(ctx.sleepLevel)
+  const validFeedback =
+    ctx.lastDoseFeedback == null ||
+    VALID_LAST_DOSE_FEEDBACK.includes(ctx.lastDoseFeedback)
+  if (!validFood || !validHydration || !validSleep || !validFeedback) {
+    return null
+  }
+
+  return {
+    foodState: ctx.foodState,
+    hydrationState: ctx.hydrationState,
+    sleepLevel: ctx.sleepLevel,
+    lastDoseFeedback: ctx.lastDoseFeedback ?? null,
+  }
+}
+
+function sanitizeDoseContexts(
+  raw: Record<string, unknown>,
+): Record<string, DoseContext> {
+  const result = emptyDoseContextMap()
+  for (const [doseId, value] of Object.entries(raw)) {
+    if (isUnsafeObjectKey(doseId)) continue
+    const parsed = parseDoseContext(value)
+    if (parsed) {
+      result[doseId] = parsed
+    }
+  }
+  return result
+}
+
 function readJson<T>(key: string): T | null {
   try {
     const raw = localStorage.getItem(key)
@@ -123,32 +168,12 @@ export function saveLocalDoses(doses: Dose[]): void {
 
 export function fetchLocalDoseContexts(): Record<string, DoseContext> {
   const raw = readJson<Record<string, unknown>>(DOSE_CONTEXTS_KEY)
-  if (!raw || typeof raw !== 'object') return {}
-
-  const result: Record<string, DoseContext> = {}
-  for (const [doseId, value] of Object.entries(raw)) {
-    if (!value || typeof value !== 'object') continue
-    const ctx = value as DoseContext
-    const validFood = VALID_FOOD_STATES.includes(ctx.foodState)
-    const validHydration = VALID_HYDRATION_STATES.includes(ctx.hydrationState)
-    const validSleep = VALID_SLEEP_LEVELS.includes(ctx.sleepLevel)
-    const validFeedback =
-      ctx.lastDoseFeedback == null ||
-      VALID_LAST_DOSE_FEEDBACK.includes(ctx.lastDoseFeedback)
-    if (validFood && validHydration && validSleep && validFeedback) {
-      result[doseId] = {
-        foodState: ctx.foodState,
-        hydrationState: ctx.hydrationState,
-        sleepLevel: ctx.sleepLevel,
-        lastDoseFeedback: ctx.lastDoseFeedback ?? null,
-      }
-    }
-  }
-  return result
+  if (!raw || typeof raw !== 'object') return emptyDoseContextMap()
+  return sanitizeDoseContexts(raw)
 }
 
 export function saveLocalDoseContexts(
   contexts: Record<string, DoseContext>,
 ): void {
-  writeJson(DOSE_CONTEXTS_KEY, contexts)
+  writeJson(DOSE_CONTEXTS_KEY, sanitizeDoseContexts(contexts))
 }

@@ -8,11 +8,13 @@ export function isLocalOnlyMode(): boolean {
   }
 }
 
-export function enableLocalOnlyMode(): void {
+export function enableLocalOnlyMode(): boolean {
   try {
     localStorage.setItem(LOCAL_ONLY_KEY, 'true')
+    return true
   } catch (error) {
     console.error('Failed to enable local-only mode:', error)
+    return false
   }
 }
 
