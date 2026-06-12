@@ -39,7 +39,7 @@ export function DoseCard({
   const scaleOffset = (activeRenderIndex + 0.5) * TICK_WIDTH
 
   return (
-    <div className="shrink-0 px-3 pb-2">
+    <div className="shrink-0 pb-2">
       <div className="rounded-[22px] border border-[var(--app-divider)] bg-[var(--app-surface)] p-4">
         <div className="flex items-center justify-between gap-2">
           <button

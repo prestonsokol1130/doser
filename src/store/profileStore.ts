@@ -7,7 +7,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { Dose, DoseSubstance, NotificationPrefs, Profile } from '../types'
+import type { Dose, DoseContext, DoseSubstance, NotificationPrefs, Profile } from '../types'
 import { VALID_DOSE_SUBSTANCES } from '../types'
 
 const USERS_COLLECTION = 'users'
@@ -54,6 +54,23 @@ export function defaultProfile(): Profile {
     accentHex: '#9b9ba3',
     glowHex: '#c4c4cc',
     notif: defaultNotificationPrefs(),
+    stash: { capacityMl: 0, fullMl: 0, refillAt: 0 },
+    taper: {
+      active: false,
+      substance: 'GBL',
+      startDoseMl: 1.8,
+      targetDoseMl: 1.0,
+      stepIntervalDays: 7,
+      reductionMlPerStep: 0.1,
+      startedAt: Date.now(),
+    },
+    doseBuddy: {
+      enabled: false,
+      checkInBeforeDose: true,
+      showRecommendation: true,
+      localPeerContribution: false,
+    },
+    themeId: 'dark',
   }
 }
 
@@ -79,7 +96,7 @@ export async function fetchUserDocument(
 
   return {
     onboardingComplete,
-    profile: profile as Profile,
+    profile: mergeProfileDefaults(profile as Profile),
   }
 }
 
@@ -109,6 +126,79 @@ export async function saveOnboardingProfile(
     },
     { merge: true },
   )
+}
+
+export async function saveUserProfile(
+  uid: string,
+  profile: Profile,
+): Promise<void> {
+  await setDoc(userDocRef(uid), { profile }, { merge: true })
+}
+
+function mergeProfileDefaults(profile: Profile): Profile {
+  const defaults = defaultProfile()
+  return {
+    ...defaults,
+    ...profile,
+    gbl: { ...defaults.gbl, ...profile.gbl },
+    bdo: { ...defaults.bdo, ...profile.bdo },
+    notif: { ...defaults.notif, ...profile.notif },
+    stash: { ...defaults.stash, ...profile.stash },
+    taper: { ...defaults.taper, ...profile.taper },
+    doseBuddy: { ...defaults.doseBuddy, ...profile.doseBuddy },
+  }
+}
+
+export async function fetchDoseContexts(
+  uid: string,
+): Promise<Record<string, DoseContext>> {
+  const snapshot = await getDoc(userDocRef(uid))
+  if (!snapshot.exists()) return {}
+
+  const data = snapshot.data()
+  const raw = data?.doseContexts
+  if (!raw || typeof raw !== 'object') return {}
+
+  const result: Record<string, DoseContext> = {}
+  for (const [doseId, value] of Object.entries(raw)) {
+    if (!value || typeof value !== 'object') continue
+    const ctx = value as DoseContext
+    const validFood =
+      ctx.foodState === 'empty' ||
+      ctx.foodState === 'snack' ||
+      ctx.foodState === 'full'
+    const validHydration =
+      ctx.hydrationState === 'low' ||
+      ctx.hydrationState === 'ok' ||
+      ctx.hydrationState === 'good'
+    const validSleep =
+      ctx.sleepLevel === 'poor' ||
+      ctx.sleepLevel === 'ok' ||
+      ctx.sleepLevel === 'good'
+    const validFeedback =
+      ctx.lastDoseFeedback == null ||
+      ctx.lastDoseFeedback === 'too_much' ||
+      ctx.lastDoseFeedback === 'not_enough' ||
+      ctx.lastDoseFeedback === 'just_right' ||
+      ctx.lastDoseFeedback === 'couldnt_feel_it' ||
+      ctx.lastDoseFeedback === 'dont_remember'
+    if (validFood && validHydration && validSleep && validFeedback) {
+      result[doseId] = {
+        foodState: ctx.foodState,
+        hydrationState: ctx.hydrationState,
+        sleepLevel: ctx.sleepLevel,
+        lastDoseFeedback: ctx.lastDoseFeedback ?? null,
+      }
+    }
+  }
+  return result
+}
+
+export async function saveDoseContexts(
+  uid: string,
+  contexts: Record<string, DoseContext>,
+): Promise<void> {
+  await setDoc(userDocRef(uid), { doseContexts: contexts }, { merge: true })
 }
 
 export async function saveDoses(uid: string, doses: Dose[]): Promise<void> {

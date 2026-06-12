@@ -1,12 +1,14 @@
 # Doser 2.0 — Codebase Structure Reference
 
-Last updated: 2026-06-07
+Last updated: 2026-06-11
 
 **BEFORE BUILDING ANYTHING: Read HANDOFF.md Section 2b (Design System Rules).**
 That section defines all the colors, fonts, layout rules, copy rules, and animation rules
 that every new screen must follow. It is the authoritative reference.
 
 This file provides the file tree and folder structure. Read this alongside HANDOFF.md and AI_CONTEXT.md before building any new screen.
+`docs/ai-reference/` stores screenshots and mockups, but the current app theme and
+design rules remain the source of truth.
 
 ---
 
@@ -31,6 +33,13 @@ On return visits: gate is skipped (persisted in localStorage), onboarding is ski
 ## Full File Tree
 
 ```
+docs/
+├── ai-reference/
+│   ├── current-app-state/           Current UI screenshots for comparison.
+│   ├── goal/                        Directional references only, not authorization
+│   │                                for a new visual system.
+│   └── archive/                     Older screenshots and superseded references.
+│
 src/
 │
 ├── main.tsx                          Entry point. Mounts App into #root.
@@ -43,7 +52,8 @@ src/
 │                                     Dose, Profile, SubstancePrefs, DoseContext, Substance,
 │                                     WeightUnit, HeightUnit, BiologicalSex, FoodState,
 │                                     HydrationState, SleepLevel, NotificationPrefs,
-│                                     TaperPrefs, DoseBuddyPrefs, ToleranceEstimate.
+│                                     StashPrefs (capacityMl + fullMl + refillAt),
+│                                     TaperPrefs, DoseBuddyPrefs, ThemeId, ToleranceEstimate.
 │
 ├── assets/
 │   ├── hero.png                      Used in gate/onboarding screens.
@@ -55,6 +65,9 @@ src/
 │   │                                 Import these — never re-initialize Firebase elsewhere.
 │   ├── insightsAdvanced.ts           Advanced session analysis helpers. Not yet wired to UI.
 │   ├── metabolicProfile.ts           Metabolic profile calculations. Not yet wired to UI.
+│   ├── doseBuddy.ts                  PHASE 5 — Dose Buddy suggestion engine + context map.
+│   ├── stash.ts                      PHASE 5 — stash remaining/consumed/pct + stashFullMl().
+│   ├── taper.ts                      PHASE 5 — taper step-down schedule calculations.
 │   └── perceivedEffect/              PEL engine — DO NOT MODIFY ANY FILE IN THIS FOLDER.
 │       ├── effectCurves.ts           GBL/BDO curve constants and shape math.
 │       ├── perceivedEffectModel.ts   computePerceivedEffectLevelAt() and related exports.
@@ -104,6 +117,7 @@ src/
     │   └── FinishIntoTimer.tsx       Screen 4: completion screen, advances to TimerScreen.
     │
     ├── timer/                        PHASE 3 — COMPLETE (PR #4 merged)
+    │   ├── DoseBuddyCheckInSheet.tsx PHASE 5 — pre-dose Dose Buddy check-in overlay.
     │   ├── TimerScreen.tsx           Root of the main app shell. Owns all state:
     │   │                             doses[], profile, substance, doseAmount, carouselIndex, nowMs.
     │   │                             Loads profile from Firestore on mount via fetchUserDocument.
@@ -143,11 +157,28 @@ src/
     ├── insights/                     PHASE 5 — NOT STARTED
     │   └── (empty — create files here when building)
     │
-    ├── tools/                        PHASE 5 — NOT STARTED
-    │   └── (empty — create files here when building)
+    ├── tools/                        PHASE 5 — IN PROGRESS (uncommitted on branch)
+    │   ├── ToolsScreen.tsx           Tools hub: NavRow list → 5 sub-screens.
+    │   ├── StashScreen.tsx           Stash: liquid-tank hero, inline refill, stat
+    │   │                             pills, quick remove/add chips, AccelStepper,
+    │   │                             low-alert presets. (Water animation = redo.)
+    │   ├── DoseBuddyScreen.tsx       Dose Buddy: Setup + Previous Inputs tabs.
+    │   ├── DoseBuddyControls.tsx     Shared Dose Buddy selectors + option constants.
+    │   ├── TaperScreen.tsx           Taper: step-down schedule form.
+    │   ├── EmergencyResourcesScreen.tsx  Crisis lines / urgent help.
+    │   ├── SafetyReferenceScreen.tsx Timing + harm-reduction basics.
+    │   ├── SubScreenHeader.tsx       Shared sub-screen header (title/subtitle/back).
+    │   ├── NavRow.tsx                Shared hub list row.
+    │   └── FormField.tsx             Shared text input + ToggleField.
     │
-    └── settings/                     PHASE 5 — NOT STARTED
-        └── (empty — create files here when building)
+    └── settings/                     PHASE 5 — IN PROGRESS (uncommitted on branch)
+        ├── SettingsScreen.tsx        Settings hub: NavRow list → 6 sub-screens.
+        ├── AccountScreen.tsx         Account + sign-out (authStore.logOut()).
+        ├── ProfileSettingsScreen.tsx Edit profile fields.
+        ├── NotificationsScreen.tsx   Notification preferences.
+        ├── ThemesScreen.tsx          Theme selection (dark only for now).
+        ├── InstallAppScreen.tsx      PWA install guidance.
+        └── LegalScreen.tsx           Legal / acknowledgments.
 ```
 
 ---

@@ -2,6 +2,9 @@
 
 ## How to use this file
 At the start of every Cursor task, type @HANDOFF.md to give the agent full context before it writes a single line of code.
+If the task is visual, pair this with screenshots from `docs/ai-reference/current-app-state/`
+and `docs/ai-reference/goal/`. Do not rely on `Downloads` or other machine-specific paths.
+NEVER DEVIATE FROM THE CURRENT APP THEME. NO EXCEPTIONS. UNDER NO CIRCUMSTANCES IS THAT EVER OKAY.
 
 ---
 
@@ -21,6 +24,8 @@ Purpose: Harm reduction tool for GBL, BDO, and GHB users. Safe interval timing, 
 - Flat design. No decorative drop shadows. No glassmorphism.
 - Clinical-adjacent minimalism. References: Apple Health, Oura, Whoop. Serious and data-trustworthy.
 - No design flourishes. Every element earns its place through function.
+- Current app theme is the source of truth. Reference screenshots do not authorize
+  a new theme, new fonts, a new capitalization style, or a different product feel.
 
 ### Capitalization Rule
 - "doser" (the wordmark) is the ONLY word in the app that is intentionally lowercase. Brand decision, not a style pattern.
@@ -76,6 +81,8 @@ Use ONLY CSS variables from src/index.css. Never hardcode hex.
 - Always include units on numbers: "1.8 mL", not "1.8"
 - Time format: colons only, no am/pm ("01:20:00", "12:30 PM" is OK as shown in spec)
 - No emoji anywhere in the app
+- Do not introduce a casual lowercase or mixed-case convention outside the
+  explicit existing brand rules.
 
 ### Animation
 - Prefer opacity transitions over color shifts on hover
@@ -280,7 +287,17 @@ Dose: { id: string, substance: DoseSubstance, amountMl: number, ts: number, upda
 
 Profile: { nickname, age, heightCm, heightUnit, weightKg, weightUnit, biologicalSex,
            gbl: SubstancePrefs, bdo: SubstancePrefs, avatarId, accentHex, glowHex,
-           notif: NotificationPrefs, taper: TaperPrefs, doseBuddy: DoseBuddyPrefs }
+           notif: NotificationPrefs, stash: StashPrefs, taper: TaperPrefs,
+           doseBuddy: DoseBuddyPrefs, themeId: ThemeId }
+
+StashPrefs: { capacityMl, fullMl?, refillAt }
+  capacityMl = current on-hand baseline; doses logged after refillAt deplete it.
+  fullMl     = full container volume = the Stash tank's 100% reference. Set on Refill.
+               The tank empties as the current amount drops below fullMl. Optional;
+               legacy data without it falls back to capacityMl (see stashFullMl()).
+  refillAt   = timestamp; doses logged after this count toward consumption.
+  Helpers in src/lib/stash.ts: stashRemainingMl, stashConsumedMl, stashRemainingPct,
+  stashFullMl, isStashLow.
 
 DoseContextMap = Map<string, DoseContext>
 Built via: buildDoseContextMap(checkIns) in src/lib/doseBuddy.ts
@@ -319,6 +336,10 @@ ToleranceConfidence = "calibrating" | "partial" | "full"
 Before writing any code:
 1. Read the relevant files in the codebase first. Do not assume paths, names, or class names.
 2. Read this entire document before starting any task.
+2a. If the task references screenshots or mockups, read `docs/ai-reference/README.md`
+    and use the repo-owned files there as the visual source of truth.
+2b. Screenshot references are directional unless the user explicitly asks for a
+    close copy. They do not justify a new visual system.
 
 While working:
 3. If unsure about any detail not in this spec — STOP. Do not guess. Ask.
@@ -327,6 +348,9 @@ While working:
 6. Do not resolve errors silently — stop and report them exactly as they appear.
 7. Do not simplify or refactor working code unless explicitly told to.
 8. Do not invent a solution if the spec already defines how to build it.
+9. Do not change the current app theme, typography conventions, capitalization
+   conventions, or overall product feel unless the user explicitly approves that
+   theme change.
 
 On styling:
 9. Never hardcode hex values in components. Use CSS variables from src/index.css only.
@@ -427,7 +451,7 @@ Never create, rename, or switch branches.
 
 ## 16. Current Build Status
 
-Last updated: 2026-06-07
+Last updated: 2026-06-11
 
 Phase 1 — Foundation: COMPLETE
 Phase 2 — Gate + Auth + Onboarding: COMPLETE
@@ -458,10 +482,21 @@ Phase 4 — History + Carousel + 3D Cube: COMPLETE
   - 3D cube transition done
   - Phase 4 review fixes applied
 
-Phase 5 — Tools + Settings: NOT STARTED
-  First task: Build Tools screens and supporting shell wiring
-  Then: Build Settings screens
-  Then: Update AI_CONTEXT.md and any other reference docs as phase 5 lands
+Phase 5 — Tools + Settings: IN PROGRESS (feat/phase-5-tools-settings, all uncommitted)
+  DONE: Tools tab (Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference)
+        + Settings tab (Account, Profile, Notifications, Themes, Install App, Legal),
+        MainApp wiring, libs (stash/taper/doseBuddy), StashPrefs/TaperPrefs/
+        DoseBuddyPrefs types, authStore logOut().
+  DONE (2026-06-11): Stash + Dose Buddy theme rollback; Stash screen redesigned
+        (Claude Design handoff: liquid-tank hero, inline refill, stat pills, quick
+        remove/add chips, hold-to-accelerate stepper, low-alert presets); StashPrefs
+        gained fullMl (tank 100% reference).
+  CURRENT PENDING TASK: redesign the Stash tank WATER ANIMATION (the existing "slosh"
+        was rejected — looks bad). Lives in src/index.css (@keyframes stashSlosh /
+        stashRipple) and src/components/tools/StashScreen.tsx (StashVessel, BASE_SLOSH,
+        WAVE_A, the requestAnimationFrame boost effect).
+  STILL DEFERRED: Insights tab; Dose Buddy peer comparison; push notification delivery.
+  See docs/AI_CONTEXT.md for the full, current Phase 5 status before doing anything.
 
 Firebase project: doser-e389f
 Auth methods enabled: Email/Password, Google

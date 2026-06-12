@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquid Fill Animation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #131313;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .container {
+      padding: 40px;
+    }
+
+    .tank-wrapper {
+      position: relative;
+      width: 280px;
+      height: 400px;
+      background: #181a1e;
+      border: 0.5px solid #2d3139;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .liquid-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 0%;
+      background: linear-gradient(to top, #C8E84029 0%, #C8E84015 100%);
+      transition: height 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 1;
+    }
+
+    .glow-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: #C8E840;
+      opacity: 0.55;
+      box-shadow: 0 0 10px 2px rgba(200, 232, 64, 0.28);
+      transition: bottom 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .wave {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 14px;
+      overflow: hidden;
+      transition: bottom 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .wave svg {
+      animation: waveDrift 3.6s linear infinite;
+      opacity: 0.5;
+    }
+
+    @keyframes waveDrift {
+      from {
+        transform: translateX(0);
+      }
+      to {
+        transform: translateX(-50%);
+      }
+    }
+
+    .content {
+      position: relative;
+      z-index: 10;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #edf0f4;
+      text-align: center;
+      padding: 20px;
+      pointer-events: none;
+    }
+
+    .value {
+      font-size: 48px;
+      font-weight: 300;
+      letter-spacing: -2px;
+      margin-bottom: 8px;
+    }
+
+    .label {
+      font-size: 12px;
+      color: #c8cdd4;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .controls {
+      margin-top: 40px;
+      display: flex;
+      gap: 10px;
+      flex-direction: column;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      background: #C8E840;
+      color: #131313;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.85;
+    }
+
+    button:active {
+      opacity: 0.7;
+    }
+
+    .info {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #3e454e;
+      max-width: 300px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="tank-wrapper">
+      <div class="liquid-fill"></div>
+      <div class="glow-line"></div>
+      <div class="wave">
+        <svg viewBox="0 0 1440 14" width="2880" height="14" preserveAspectRatio="none">
+          <path d="M0,7 C90,0 90,14 180,7 C270,0 270,14 360,7 C450,0 450,14 540,7 C630,0 630,14 720,7 C810,0 810,14 900,7 C990,0 990,14 1080,7 C1170,0 1170,14 1260,7 C1350,0 1350,14 1440,7 C810,0 810,14 900,7 C990,0 990,14 1080,7 C1170,0 1170,14 1260,7 C1350,0 1350,14 1440,7" fill="none" stroke="#C8E840" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="content">
+        <div class="value" id="displayValue">0</div>
+        <div class="label">mL Remaining</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button onclick="setFill(25)">25%</button>
+      <button onclick="setFill(50)">50%</button>
+      <button onclick="setFill(75)">75%</button>
+      <button onclick="setFill(100)">100%</button>
+      <button onclick="setFill(0)">Empty</button>
+    </div>
+
+    <div class="info">
+      <strong>How it works:</strong> The liquid fill, glow line, and wave all animate together using cubic-bezier timing. The wave SVG drifts continuously at the liquid surface.
+    </div>
+  </div>
+
+  <script>
+    const liquidFill = document.querySelector('.liquid-fill');
+    const glowLine = document.querySelector('.glow-line');
+    const wave = document.querySelector('.wave');
+    const displayValue = document.getElementById('displayValue');
+
+    function setFill(percentage) {
+      const clampedPct = Math.max(0, Math.min(100, percentage));
+      
+      // Update fill height
+      liquidFill.style.height = clampedPct + '%';
+      
+      // Update glow position (sits at surface, -1px for line height)
+      glowLine.style.bottom = `calc(${clampedPct}% - 1px)`;
+      
+      // Update wave position (offset by half wave height = 7px)
+      wave.style.bottom = `calc(${clampedPct}% - 7px)`;
+      
+      // Show/hide wave based on fill
+      if (clampedPct > 4 && clampedPct < 97) {
+        wave.style.opacity = '1';
+      } else {
+        wave.style.opacity = '0';
+      }
+      
+      // Show/hide glow based on fill
+      if (clampedPct > 3) {
+        glowLine.style.opacity = '0.55';
+      } else {
+        glowLine.style.opacity = '0';
+      }
+      
+      // Update display value (assuming 50mL capacity)
+      const remaining = (clampedPct / 100) * 50;
+      displayValue.textContent = remaining.toFixed(1);
+    }
+
+    // Initialize at 45%
+    setFill(45);
+  </script>
+</body>
+</html>

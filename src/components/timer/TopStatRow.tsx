@@ -61,7 +61,7 @@ export function TopStatRow({ doses, substance }: TopStatRowProps) {
   const sessionTotalValue = `${total.toFixed(1)} mL`
 
   return (
-    <div className="flex shrink-0 gap-3 px-3 pt-3">
+    <div className="flex shrink-0 gap-3 pt-3">
       <StatCard
         icon={<ClockIcon className="h-5 w-5" />}
         label="LAST ENTRY"

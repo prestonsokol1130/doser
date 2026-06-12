@@ -1,13 +1,16 @@
 import { useCallback, useState } from 'react'
-import type { Dose, Profile, Substance } from '../../types'
+import type { Dose, DoseContext, Profile, Substance } from '../../types'
 import {
   CAROUSEL_CARD_COUNT,
   PaginationDots,
   TimerCarousel,
 } from './carousel/TimerCarousel'
+import { DoseBuddyCheckInSheet } from './DoseBuddyCheckInSheet'
 import { DoseCard } from './DoseCard'
 import { TimerHeader } from './TimerHeader'
 import { TopStatRow } from './TopStatRow'
+import { DEFAULT_DOSE_CONTEXT } from '@/lib/doseBuddy'
+import { currentSession } from '@/lib/sessionStats'
 import {
   computeTimerState,
   createDoseId,
@@ -18,6 +21,10 @@ import {
 type TimerScreenProps = {
   profile: Profile
   doses: Dose[]
+  doseContexts: Record<string, DoseContext>
+  onDoseContextsChange: React.Dispatch<
+    React.SetStateAction<Record<string, DoseContext>>
+  >
   setDoses: React.Dispatch<React.SetStateAction<Dose[]>>
   nowMs: number
 }
@@ -25,6 +32,8 @@ type TimerScreenProps = {
 export function TimerScreen({
   profile,
   doses,
+  doseContexts,
+  onDoseContextsChange,
   setDoses,
   nowMs,
 }: TimerScreenProps) {
@@ -33,19 +42,43 @@ export function TimerScreen({
     snapDoseToStep(preferredDoseForSubstance(profile, 'GBL')),
   )
   const [carouselIndex, setCarouselIndex] = useState(0)
+  const [checkInOpen, setCheckInOpen] = useState(false)
+  const [draftContext, setDraftContext] = useState<DoseContext>(DEFAULT_DOSE_CONTEXT)
 
   const timer = computeTimerState(doses, substance, profile, nowMs)
+  const activeSession = currentSession(doses, substance, nowMs)
+  const isRedose = activeSession.length > 0
+
+  const commitDose = useCallback(
+    (context: DoseContext | null) => {
+      const amount = snapDoseToStep(doseAmount)
+      const dose: Dose = {
+        id: createDoseId(),
+        substance,
+        amountMl: amount,
+        ts: Date.now(),
+      }
+      setDoses((prev) => [...prev, dose])
+      if (context) {
+        onDoseContextsChange((prev) => ({
+          ...prev,
+          [dose.id]: context,
+        }))
+      }
+      setDraftContext(DEFAULT_DOSE_CONTEXT)
+      setCheckInOpen(false)
+    },
+    [doseAmount, onDoseContextsChange, setDoses, substance],
+  )
 
   const handleLogEntry = useCallback(() => {
-    const amount = snapDoseToStep(doseAmount)
-    const dose: Dose = {
-      id: createDoseId(),
-      substance,
-      amountMl: amount,
-      ts: Date.now(),
+    if (!profile.doseBuddy.enabled || !profile.doseBuddy.checkInBeforeDose) {
+      commitDose(null)
+      return
     }
-    setDoses((prev) => [...prev, dose])
-  }, [doseAmount, substance, setDoses])
+    setDraftContext(DEFAULT_DOSE_CONTEXT)
+    setCheckInOpen(true)
+  }, [commitDose, profile.doseBuddy.checkInBeforeDose, profile.doseBuddy.enabled])
 
   const handleSubstanceToggle = useCallback(() => {
     setSubstance((prev) => {
@@ -66,7 +99,9 @@ export function TimerScreen({
   }, [])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div
+      className="flex min-h-0 flex-1 flex-col overflow-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))]"
+    >
       <TimerHeader substance={substance} onSubstanceClick={handleSubstanceToggle} />
 
       <TopStatRow doses={doses} substance={substance} />
@@ -92,6 +127,23 @@ export function TimerScreen({
         onDoseAmountChange={setDoseAmount}
         onLogEntry={handleLogEntry}
       />
+
+      {checkInOpen ? (
+        <DoseBuddyCheckInSheet
+          profile={profile}
+          doses={doses}
+          doseContexts={doseContexts}
+          substance={substance}
+          amountMl={snapDoseToStep(doseAmount)}
+          nowMs={nowMs}
+          isRedose={isRedose}
+          context={draftContext}
+          onContextChange={setDraftContext}
+          onSkip={() => commitDose(null)}
+          onBack={() => setCheckInOpen(false)}
+          onConfirm={() => commitDose(draftContext)}
+        />
+      ) : null}
     </div>
   )
 }

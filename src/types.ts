@@ -51,10 +51,47 @@ export type HydrationState = 'low' | 'ok' | 'good'
 
 export type SleepLevel = 'poor' | 'ok' | 'good'
 
+export type DoseBuddyLastDoseFeedback =
+  | 'too_much'
+  | 'not_enough'
+  | 'just_right'
+  | 'couldnt_feel_it'
+  | 'dont_remember'
+
 export interface DoseContext {
   foodState: FoodState
   hydrationState: HydrationState
   sleepLevel: SleepLevel
+  lastDoseFeedback?: DoseBuddyLastDoseFeedback | null
+}
+
+export type ThemeId = 'dark'
+
+export interface StashPrefs {
+  /** Current on-hand baseline volume; doses logged after refillAt deplete from this. */
+  capacityMl: number
+  /** Full reference volume = the 100% tank level. Set on refill; tank empties as the
+   *  current amount drops below it. Falls back to capacityMl when unset (legacy data). */
+  fullMl?: number
+  /** Timestamp of the last refill; doses logged after this count toward consumption. */
+  refillAt: number
+}
+
+export interface TaperPrefs {
+  active: boolean
+  substance: Substance
+  startDoseMl: number
+  targetDoseMl: number
+  stepIntervalDays: number
+  reductionMlPerStep: number
+  startedAt: number
+}
+
+export interface DoseBuddyPrefs {
+  enabled: boolean
+  checkInBeforeDose: boolean
+  showRecommendation: boolean
+  localPeerContribution: boolean
 }
 
 export interface Profile {
@@ -75,6 +112,10 @@ export interface Profile {
   accentHex: string
   glowHex: string
   notif: NotificationPrefs
+  stash: StashPrefs
+  taper: TaperPrefs
+  doseBuddy: DoseBuddyPrefs
+  themeId: ThemeId
 }
 
 export interface Dose {
