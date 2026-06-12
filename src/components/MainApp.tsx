@@ -11,31 +11,13 @@ import {
 } from '../store/profileStore'
 import type { Dose, DoseContext, Profile } from '../types'
 import { HistoryScreen } from './history/HistoryScreen'
+import { InsightsScreen } from './insights/InsightsScreen'
 import { SettingsScreen } from './settings/SettingsScreen'
 import { BottomNav } from './timer/BottomNav'
 import { TimerScreen } from './timer/TimerScreen'
 import { ToolsScreen } from './tools/ToolsScreen'
 
 type NavTab = 'insights' | 'history' | 'timer' | 'tools' | 'settings'
-
-function PlaceholderTab({ title }: { title: string }) {
-  return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
-      <p
-        className="text-[14px] uppercase tracking-[0.18em] text-[var(--app-faint)]"
-        style={{ fontFamily: 'var(--font-heading)', fontWeight: 600 }}
-      >
-        {title}
-      </p>
-      <p
-        className="mt-2 text-center text-[12px] text-[var(--app-dim)]"
-        style={{ fontFamily: 'var(--font-body)' }}
-      >
-        Coming in a future phase.
-      </p>
-    </div>
-  )
-}
 
 export function MainApp() {
   const [activeTab, setActiveTab] = useState<NavTab>('timer')
@@ -176,7 +158,9 @@ export function MainApp() {
           nowMs={nowMs}
         />
       )}
-      {activeTab === 'insights' && <PlaceholderTab title="Insights" />}
+      {activeTab === 'insights' && (
+        <InsightsScreen doses={doses} profile={profile} nowMs={nowMs} />
+      )}
       {activeTab === 'tools' && (
         <ToolsScreen
           profile={profile}
