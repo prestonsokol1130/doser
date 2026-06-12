@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildInsightSet,
   fmtMin,
@@ -19,15 +19,30 @@ type Tab = InsightFilter | 'peer'
 
 const DOW = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
-// Subtle mount reveal (replaces the v0 framer-motion entrance). Flips true one
-// frame after mount so CSS transitions animate bars/gauges in from zero.
-function useReveal(): boolean {
-  const [on, setOn] = useState(false)
+// Scroll-triggered reveal (mirrors the v0 framer-motion whileInView). Each element
+// animates from its zero state to its value the first time it scrolls into view.
+function useInView<T extends Element>(amount = 0.3) {
+  const ref = useRef<T>(null)
+  const [inView, setInView] = useState(false)
   useEffect(() => {
-    const id = requestAnimationFrame(() => setOn(true))
-    return () => cancelAnimationFrame(id)
-  }, [])
-  return on
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setInView(true)
+            io.disconnect()
+            break
+          }
+        }
+      },
+      { threshold: amount },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [amount])
+  return { ref, inView }
 }
 
 // ─── card shell ────────────────────────────────────────────────────────────────
@@ -77,8 +92,17 @@ function InsightCard({
   hint?: string
   children: React.ReactNode
 }) {
+  const { ref, inView } = useInView<HTMLElement>(0.2)
   return (
-    <section className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] p-4">
+    <section
+      ref={ref}
+      className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] p-4"
+      style={{
+        opacity: inView ? 1 : 0,
+        transform: inView ? 'none' : 'translateY(14px)',
+        transition: 'opacity 0.5s ease, transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+      }}
+    >
       <p
         className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-load)]"
         style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
@@ -129,13 +153,13 @@ function BigStat({ value, unit, caption }: { value: string | number; unit?: stri
 }
 
 function RadialGauge({ value, label, sublabel }: { value: number; label: string; sublabel: string }) {
-  const on = useReveal()
+  const { ref, inView } = useInView<HTMLDivElement>(0.5)
   const size = 128, stroke = 8
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
   const arc = c * 0.75 // 270deg
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+    <div ref={ref} className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-[135deg]">
         <circle
           cx={size / 2} cy={size / 2} r={r} fill="none"
@@ -146,7 +170,7 @@ function RadialGauge({ value, label, sublabel }: { value: number; label: string;
           cx={size / 2} cy={size / 2} r={r} fill="none"
           stroke="var(--color-ring)" strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={c}
-          strokeDashoffset={c - arc * (on ? value : 0)}
+          strokeDashoffset={c - arc * (inView ? value : 0)}
           style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.22,1,0.36,1)' }}
         />
       </svg>
@@ -163,15 +187,15 @@ function RadialGauge({ value, label, sublabel }: { value: number; label: string;
 }
 
 function SegmentedBar({ segments }: { segments: { value: number; color: string; label: string }[] }) {
-  const on = useReveal()
+  const { ref, inView } = useInView<HTMLDivElement>(0.5)
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={ref} className="flex flex-col gap-3">
       <div className="flex h-3 w-full overflow-hidden rounded-full bg-[var(--app-bg)]">
         {segments.map((s) => (
           <div
             key={s.label}
             style={{
-              width: on ? `${s.value * 100}%` : '0%',
+              width: inView ? `${s.value * 100}%` : '0%',
               backgroundColor: s.color,
               transition: 'width 0.7s cubic-bezier(0.22,1,0.36,1)',
             }}
@@ -196,17 +220,17 @@ function SegmentedBar({ segments }: { segments: { value: number; color: string; 
 }
 
 function MiniBars({ data, labels, highlight, color }: { data: number[]; labels: string[]; highlight: number; color: string }) {
-  const on = useReveal()
+  const { ref, inView } = useInView<HTMLDivElement>(0.4)
   const max = Math.max(...data, 0.0001)
   return (
-    <div className="flex h-28 items-end justify-between gap-1.5">
+    <div ref={ref} className="flex h-28 items-end justify-between gap-1.5">
       {data.map((d, i) => (
         <div key={i} className="flex flex-1 flex-col items-center gap-2">
           <div className="flex h-full w-full items-end">
             <div
               className="w-full rounded-[3px]"
               style={{
-                height: on ? `${(d / max) * 100}%` : '0%',
+                height: inView ? `${(d / max) * 100}%` : '0%',
                 backgroundColor: i === highlight ? color : 'var(--app-faint)',
                 transition: `height 0.6s cubic-bezier(0.22,1,0.36,1) ${i * 0.04}s`,
               }}
@@ -222,16 +246,16 @@ function MiniBars({ data, labels, highlight, color }: { data: number[]; labels: 
 }
 
 function DotMatrix({ data, cols = 10 }: { data: number[]; cols?: number }) {
-  const on = useReveal()
+  const { ref, inView } = useInView<HTMLDivElement>(0.3)
   return (
-    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+    <div ref={ref} className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
       {data.map((v, i) => (
         <div
           key={i}
           className="aspect-square w-full rounded-[3px]"
           style={{
             backgroundColor: v > 0.12 ? 'var(--color-ring)' : 'var(--app-faint)',
-            opacity: on ? (v > 0.12 ? 0.35 + v * 0.65 : 0.5) : 0,
+            opacity: inView ? (v > 0.12 ? 0.35 + v * 0.65 : 0.5) : 0,
             transition: `opacity 0.35s ease ${i * 0.012}s`,
           }}
         />
@@ -241,10 +265,10 @@ function DotMatrix({ data, cols = 10 }: { data: number[]; cols?: number }) {
 }
 
 function IntervalLadder({ gaps, preferred }: { gaps: number[]; preferred: number }) {
-  const on = useReveal()
+  const { ref, inView } = useInView<HTMLDivElement>(0.3)
   const max = Math.max(...gaps, preferred) * 1.1 || 1
   return (
-    <div className="flex flex-col gap-1.5">
+    <div ref={ref} className="flex flex-col gap-1.5">
       {gaps.map((g, i) => {
         const ok = g >= preferred * 0.85
         return (
@@ -252,7 +276,7 @@ function IntervalLadder({ gaps, preferred }: { gaps: number[]; preferred: number
             <div
               className="h-2 rounded-full"
               style={{
-                width: on ? `${(g / max) * 100}%` : '0%',
+                width: inView ? `${(g / max) * 100}%` : '0%',
                 backgroundColor: ok ? 'var(--color-ring)' : 'var(--color-action)',
                 transition: `width 0.5s cubic-bezier(0.22,1,0.36,1) ${i * 0.05}s`,
               }}
@@ -268,43 +292,53 @@ function IntervalLadder({ gaps, preferred }: { gaps: number[]; preferred: number
 }
 
 function SessionShape({ shape, color }: { shape: number[]; color: string }) {
+  const { ref, inView } = useInView<SVGSVGElement>(0.5)
   const w = 100, h = 40
   const step = shape.length > 1 ? w / (shape.length - 1) : w
   const pts = shape.map((v, i) => [i * step, h - v * h] as const)
   const line = pts.map((p) => `${p[0]},${p[1]}`).join(' ')
   const area = `0,${h} ${line} ${w},${h}`
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-12 w-full" preserveAspectRatio="none">
-      <polygon points={area} fill={color} opacity={0.16} />
-      <polyline points={line} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    <svg ref={ref} viewBox={`0 0 ${w} ${h}`} className="h-12 w-full" preserveAspectRatio="none">
+      <polygon points={area} fill={color} opacity={inView ? 0.16 : 0} style={{ transition: 'opacity 0.6s ease' }} />
+      <polyline
+        points={line} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"
+        pathLength={1} strokeDasharray={1} strokeDashoffset={inView ? 0 : 1}
+        style={{ transition: 'stroke-dashoffset 0.9s ease' }}
+      />
     </svg>
   )
 }
 
 function TrendLine({ data, color }: { data: number[]; color: string }) {
+  const { ref, inView } = useInView<SVGSVGElement>(0.5)
   const w = 100, h = 36
   const max = Math.max(...data), min = Math.min(...data)
   const range = max - min || 1
   const step = data.length > 1 ? w / (data.length - 1) : w
   const line = data.map((v, i) => `${i * step},${h - ((v - min) / range) * h}`).join(' ')
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-10 w-full" preserveAspectRatio="none">
-      <polyline points={line} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    <svg ref={ref} viewBox={`0 0 ${w} ${h}`} className="h-10 w-full" preserveAspectRatio="none">
+      <polyline
+        points={line} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"
+        pathLength={1} strokeDasharray={1} strokeDashoffset={inView ? 0 : 1}
+        style={{ transition: 'stroke-dashoffset 1s ease' }}
+      />
     </svg>
   )
 }
 
 function DensityBand({ data }: { data: number[] }) {
-  const on = useReveal()
+  const { ref, inView } = useInView<HTMLDivElement>(0.4)
   return (
-    <div className="flex h-10 w-full gap-px overflow-hidden rounded-[6px]">
+    <div ref={ref} className="flex h-10 w-full gap-px overflow-hidden rounded-[6px]">
       {data.map((v, i) => (
         <div
           key={i}
           className="h-full flex-1"
           style={{
             backgroundColor: 'var(--color-ring)',
-            opacity: on ? 0.12 + v * 0.88 : 0,
+            opacity: inView ? 0.12 + v * 0.88 : 0,
             transition: `opacity 0.5s ease ${i * 0.015}s`,
           }}
         />
@@ -314,14 +348,14 @@ function DensityBand({ data }: { data: number[] }) {
 }
 
 function ComparisonBars({ now, prev, unit, nowLabel, prevLabel }: { now: number; prev: number; unit: string; nowLabel: string; prevLabel: string }) {
-  const on = useReveal()
+  const { ref, inView } = useInView<HTMLDivElement>(0.4)
   const max = Math.max(now, prev) || 1
   const rows = [
     { label: nowLabel, value: now, color: 'var(--color-ring)' },
     { label: prevLabel, value: prev, color: 'var(--app-faint)' },
   ]
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={ref} className="flex flex-col gap-3">
       {rows.map((r) => (
         <div key={r.label} className="flex flex-col gap-1.5">
           <div className="flex justify-between text-[12px]" style={{ fontFamily: 'var(--font-body)' }}>
@@ -331,7 +365,7 @@ function ComparisonBars({ now, prev, unit, nowLabel, prevLabel }: { now: number;
           <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--app-bg)]">
             <div
               className="h-full rounded-full"
-              style={{ width: on ? `${(r.value / max) * 100}%` : '0%', backgroundColor: r.color, transition: 'width 0.7s cubic-bezier(0.22,1,0.36,1)' }}
+              style={{ width: inView ? `${(r.value / max) * 100}%` : '0%', backgroundColor: r.color, transition: 'width 0.7s cubic-bezier(0.22,1,0.36,1)' }}
             />
           </div>
         </div>
@@ -341,17 +375,17 @@ function ComparisonBars({ now, prev, unit, nowLabel, prevLabel }: { now: number;
 }
 
 function WeightedBars({ items, color }: { items: { label: string; weight: number }[]; color: string }) {
-  const on = useReveal()
+  const { ref, inView } = useInView<HTMLDivElement>(0.4)
   if (items.length === 0) {
     return <p className="text-[13px] text-[var(--app-dim)]" style={{ fontFamily: 'var(--font-body)' }}>Not enough data yet.</p>
   }
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={ref} className="flex flex-col gap-3">
       {items.map((it) => (
         <div key={it.label} className="flex flex-col gap-1.5">
           <span className="text-[13px] text-[var(--app-text)]" style={{ fontFamily: 'var(--font-body)' }}>{it.label}</span>
           <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--app-bg)]">
-            <div className="h-full rounded-full" style={{ width: on ? `${it.weight * 100}%` : '0%', backgroundColor: color, transition: 'width 0.7s cubic-bezier(0.22,1,0.36,1)' }} />
+            <div className="h-full rounded-full" style={{ width: inView ? `${it.weight * 100}%` : '0%', backgroundColor: color, transition: 'width 0.7s cubic-bezier(0.22,1,0.36,1)' }} />
           </div>
         </div>
       ))}
