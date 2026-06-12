@@ -1,4 +1,4 @@
-import { onAuthStateChanged } from 'firebase/auth'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 
 export type AuthSession = {
@@ -25,4 +25,8 @@ export function subscribeToAuth(
   return onAuthStateChanged(auth, (user) => {
     onChange(toSession(user))
   })
+}
+
+export async function logOut(): Promise<void> {
+  await signOut(auth)
 }

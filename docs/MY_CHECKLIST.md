@@ -45,6 +45,16 @@ If anything is unclear, stop and ask before writing code.
 
 Then below that, describe what you want built.
 
+If the task is visual, also attach the relevant screenshots from:
+
+- `docs/ai-reference/current-app-state/` for what exists now
+- `docs/ai-reference/goal/` for the target direction
+
+Never reference screenshots from `Downloads` or another machine-specific path in a prompt.
+Do not change the current app theme unless you explicitly authorize a theme change —
+no exceptions.
+Always state whether screenshots are `reference only` or `copy closely`.
+
 ---
 
 ## Step 4 — Answer any questions Cursor asks
@@ -110,6 +120,8 @@ Run these in the terminal after merging:
 - Never approve code you have not tested in the browser first
 - If CodeRabbit flags something, fix it — do not dismiss it
 - If Cursor changes files outside the scope of the task, tell it to stop and revert
+- If a visual pass drifts off-theme, make the next task rollback-first before any
+  new redesign work
 
 ---
 
@@ -120,9 +132,13 @@ Phase 4 — History + Carousel + 3D Cube: COMPLETE
   - History screen is built and live
   - Phase 4 review fixes were applied and merged
 
-Phase 5 — Tools + Settings: NEXT
-  - Tools: Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference
-  - Settings: Account, Profile, Notifications, Themes, Install App, Legal
+Phase 5 — Tools + Settings: IN PROGRESS (branch feat/phase-5-tools-settings, uncommitted)
+  - Tools (BUILT): Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference
+  - Settings (BUILT): Account, Profile, Notifications, Themes, Install App, Legal
+  - 2026-06-11: Stash + Dose Buddy theme rollback done; Stash screen redesigned
+    (liquid-tank hero) with new fullMl stash model.
+  - CURRENT TASK: redo the Stash tank water animation (the "slosh" was rejected —
+    looks bad). See docs/AI_CONTEXT.md for the exact files and what's wanted.
 
 
 ---
@@ -138,3 +154,6 @@ After every merged PR, before closing the session, update docs/AI_CONTEXT.md:
 
 This keeps any AI (Claude, ChatGPT, Gemini, Cursor) able to pick up exactly
 where you left off by reading this one file.
+
+Also update `docs/ai-reference/` when the current UI or design goal changes so the
+next prompt uses the latest screenshots.

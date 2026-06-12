@@ -68,6 +68,30 @@
   60%  { transform: scale(1.04); opacity: 1; }
   100% { transform: scale(1);    opacity: 1; }
 }
+/* Stash tank liquid — calm surface drift inside the vessel.
+   --liquid-agitation scales motion (idle ~0.28; spikes to 1 on volume adjust, then eases back). */
+@keyframes stash-wave-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes stash-surface-idle {
+  0%, 100% {
+    transform: translateY(calc(var(--liquid-agitation, 0.28) * -0.6px));
+  }
+  50% {
+    transform: translateY(calc(var(--liquid-agitation, 0.28) * 0.6px));
+  }
+}
+.stash-liquid-surface {
+  animation: stash-surface-idle calc(5.2s - var(--liquid-agitation, 0.28) * 2.4s) ease-in-out infinite;
+}
+.stash-wave-drift {
+  width: 200%;
+  height: 100%;
+  display: block;
+  animation: stash-wave-drift calc(4.8s - var(--liquid-agitation, 0.28) * 2.8s) linear infinite;
+  opacity: calc(0.32 + var(--liquid-agitation, 0.28) * 0.38);
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

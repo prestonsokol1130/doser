@@ -8,7 +8,7 @@ type TimerHeaderProps = {
 
 export function TimerHeader({ substance, onSubstanceClick }: TimerHeaderProps) {
   return (
-    <header className="flex shrink-0 items-start justify-between px-3 pt-3.5">
+    <header className="flex shrink-0 items-start justify-between pt-3.5">
       <div className="flex flex-col">
         <h1
           className="font-display text-[38px] font-light lowercase leading-[1.05] tracking-[0.16em] text-[var(--app-text)]"

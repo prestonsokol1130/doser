@@ -1,98 +1,63 @@
-# Prompt for Next Codex Agent - Phase 5 Tools + Settings
+# Next Task — Redesign the Stash Tank Water Animation
 
 @HANDOFF.md
 @STRUCTURE.md
 
-Do not create a new branch. Run `git branch --show-current` first and work only on the existing branch.
+Do not create a new branch. Run `git branch --show-current` first and work only on
+the existing branch. You must be on `feat/phase-5-tools-settings`. If you are not,
+STOP and tell Preston. Never create, switch, or rename branches.
 
-Verify you are on `main`. If not, stop and tell me. Do not switch branches yourself unless I explicitly tell you to do so.
+Read before writing any code:
+- docs/AI_CONTEXT.md  (full current state — read the Phase 5 section in full)
+- docs/HANDOFF.md     (especially Section 2b — Design System Rules)
+- docs/STRUCTURE.md
 
-Read `docs/AI_CONTEXT.md` before writing any code.
-Read `docs/HANDOFF.md` before writing any code.
+NEVER DEVIATE FROM THE CURRENT APP THEME. NO EXCEPTIONS.
 
-Read the handoff document fully before writing any code.
-Pay special attention to HANDOFF.md Section 2b (Design System Rules).
+## Status
 
-Read the existing codebase before assuming anything.
-If anything is unclear, stop and ask before writing code.
+Phase 5 Tools + Settings screens are built and the Stash screen was redesigned on
+2026-06-11 (liquid-tank hero, inline refill, hold-to-accelerate stepper, low-alert
+presets) with a new `fullMl` stash model. All Phase 5 work is UNCOMMITTED on
+`feat/phase-5-tools-settings`.
 
-## Current State
+## The task
 
-- Branch: `main`
-- Phase 4 is complete and merged
-- PR #7 was merged to main
-- The repository docs were updated to reflect the Phase 4 merge and the move to Phase 5
-- The existing timer/history behavior must remain intact
+Redesign the **Stash tank water animation**. The current "slosh" animation was
+rejected by Preston — it looks bad.
 
-## What Phase 4 Delivered
+What it must look like:
+- Water sloshing inside a tank that is being moved horizontally, in BOTH directions
+  (oscillating back and forth), not drifting one way.
+- Clearly noticeable, but not overdone or distracting.
+- The slosh intensity INCREASES when the user changes the volume with the +/-
+  buttons (and the quick chips / stepper), then settles back to a calm idle.
+- Still turns the app's orange (`var(--color-action)`) when the stash is low, and
+  respects `prefers-reduced-motion`.
 
-- Carousel cards 2-6 are built and wired to real data
-- The 3D cube carousel transition is working
-- History screen is live with list, filter, delete, and edit
-- `EditDoseModal` validation feedback was fixed
-- `currentSession()` has a defensive empty-session guard
-- `dosesPast7Days()` is chronologically sorted
-- `dist/` is removed from git tracking and ignored
-- The CodeRabbit review cleanup is complete
-
-## Phase 5 Scope
-
-Build the remaining Tools and Settings surfaces without breaking the existing Timer or History flows.
-
-### Tools
-
-1. Stash
-2. Dose Buddy
-3. Taper
-4. Emergency Resources
-5. Safety Reference
-
-### Settings
-
-1. Account
-2. Profile
-3. Notifications
-4. Themes
-5. Install App
-6. Legal
+Where the current (rejected) animation lives — replace/redo only this:
+- `src/index.css` → `@keyframes stashSlosh`, `@keyframes stashRipple`
+- `src/components/tools/StashScreen.tsx` → the `StashVessel` component, the
+  `BASE_SLOSH` constant, the `WAVE_A` mask string, and the `requestAnimationFrame`
+  "boost" effect driven by the `boostSignal` prop.
 
 ## Constraints
 
-- Do NOT modify `src/lib/perceivedEffect/`
-- Do NOT remove `translateZ(-depthPx)` from the carousel stage
-- Do NOT convert the inline timer ring clamp sizing back to Tailwind
-- Do NOT hardcode colors; use the CSS variables from `src/index.css`
-- Do NOT rewrite Phase 4 work
-- Do NOT create a new branch
-
-## Files Likely To Change
-
-- `src/components/tools/*`
-- `src/components/settings/*`
-- `src/components/timer/BottomNav.tsx`
-- `src/components/MainApp.tsx`
-- `src/App.tsx` if any route wiring needs to change
-- `docs/AI_CONTEXT.md` after the phase lands
+- Colors: CSS variables only (`--color-ring`, `--color-action`, `--app-*`); use
+  `color-mix(...)` for accent tints. Never hardcode hex/rgba for colors.
+- Do not change the stash data model, the `fullMl` logic, `src/lib/stash.ts`, or any
+  other screen. This is an animation-only change to the tank visual.
+- Do not modify `src/lib/perceivedEffect/`.
+- Keep the `StashScreen` props interface and all existing functionality intact.
 
 ## Validation
 
-If you make any code change, re-run:
 - `npx tsc --noEmit -p tsconfig.app.json`
 - `npm run build`
 
-## Success Criteria
+## Report back
 
-- Tools screens render and navigate correctly
-- Settings screens render and navigate correctly
-- Existing Timer and History behavior still works
-- No PEL engine changes were made
-- No stale Phase 4 wording remains in the active docs once Phase 5 work starts
-
-## Report Back
-
-When done, tell Preston:
-- what Phase 4 already delivered
-- what you built for Phase 5
-- any files that needed route or tab wiring
-- any validation or build issues you found
-- which docs were updated to stay aligned with Phase 5
+- What animation approach you used and why it reads as horizontal sloshing.
+- How the intensity boost on volume change works.
+- Confirm only the animation files above were touched.
+- Paste the results of the two validation commands.

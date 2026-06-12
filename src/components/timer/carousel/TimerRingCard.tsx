@@ -94,12 +94,12 @@ export function TimerRingCard({ timer }: TimerRingCardProps) {
 
   return (
     <CarouselCardShell>
-      <div className="flex min-h-0 flex-1 items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center py-2">
         <div
-          className="relative mx-auto"
+          className="relative mx-auto aspect-square max-h-full max-w-full"
           style={{
-            width: 'clamp(260px, 40vh, 350px)',
-            height: 'clamp(260px, 40vh, 350px)',
+            width:
+              'min(calc(100% - 1.5rem), clamp(200px, min(40dvh, calc(100vw - 3.5rem)), 350px))',
           }}
         >
           <ProgressRing
