@@ -126,17 +126,17 @@ Branch naming:
 - style/[task-name] — visual/CSS only
 - chore/[task-name] — deps, config, tooling
 
+Branch rule: Preston creates the feature branch before the Cursor task starts. The agent must not create, rename, or switch branches — see Section 15.
+
 Per-task steps:
-1. git checkout main && git pull origin main
-2. git checkout -b feat/[task-name]
-3. Cursor works ONLY on this branch — never on main
-4. git add -p (review changes before committing)
-5. git commit -m "feat: short description"
-6. git push origin feat/[task-name]
-7. Open Pull Request on GitHub — CodeRabbit reviews automatically
-8. Read all CodeRabbit comments, fix anything flagged
-9. Merge PR to main only after review passes
-10. git checkout main && git pull && git branch -d feat/[task-name]
+1. Agent runs `git branch --show-current`, confirms the branch Preston specified, and works only on that branch — never on main.
+2. Agent implements the scoped task.
+3. Preston tests in the browser.
+4. After approval: `git add -p`, then commit and push the feature branch.
+5. Open a Pull Request on GitHub — CodeRabbit reviews automatically.
+6. Read all CodeRabbit comments and fix anything flagged.
+7. Preston merges to main only after review passes and local testing is clean.
+8. Preston pulls main locally and deletes the feature branch.
 
 Commit format: feat: / fix: / refactor: / style: / chore: followed by short description.
 Never push directly to main. One branch per Cursor task.

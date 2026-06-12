@@ -21,10 +21,15 @@ const SUBSTANCE_COLOR: Record<DoseSubstance, string> = {
   GHB: 'var(--color-action)',
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000
-
 function startOfDay(ts: number): number {
   const d = new Date(ts)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
+function addCalendarDays(ts: number, days: number): number {
+  const d = new Date(ts)
+  d.setDate(d.getDate() + days)
   d.setHours(0, 0, 0, 0)
   return d.getTime()
 }
@@ -33,7 +38,7 @@ function formatDateLabel(ts: number, nowMs: number): string {
   const target = startOfDay(ts)
   const today = startOfDay(nowMs)
   if (target === today) return 'Today'
-  if (target === today - DAY_MS) return 'Yesterday'
+  if (target === addCalendarDays(today, -1)) return 'Yesterday'
   return new Date(ts).toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
@@ -71,15 +76,20 @@ function HistorySummary({ doses, nowMs }: { doses: Dose[]; nowMs: number }) {
     return acc
   }, [doses])
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- calendar-day buckets keyed on nowMs
   const bars = useMemo(() => {
     const today = startOfDay(nowMs)
     return Array.from({ length: 7 }, (_, i) => {
-      const dayStart = today - (6 - i) * DAY_MS
-      const dayEnd = dayStart + DAY_MS
+      const dayStart = addCalendarDays(today, i - 6)
+      const dayEnd = addCalendarDays(dayStart, 1)
       const total = doses
         .filter((d) => d.ts >= dayStart && d.ts < dayEnd)
         .reduce((s, d) => s + d.amountMl, 0)
-      return { total, label: new Date(dayStart).toLocaleDateString(undefined, { weekday: 'short' })[0], isToday: i === 6 }
+      return {
+        total,
+        label: new Date(dayStart).toLocaleDateString(undefined, { weekday: 'short' }),
+        isToday: i === 6,
+      }
     })
   }, [doses, nowMs])
   const maxBar = Math.max(...bars.map((b) => b.total), 0.01)

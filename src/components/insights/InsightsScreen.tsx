@@ -720,7 +720,9 @@ export function InsightsScreen({ doses, profile, nowMs }: InsightsScreenProps) {
   const nowBucket = Math.floor(nowMs / 60_000)
 
   const data = useMemo(
-    () => (tab === 'peer' ? null : buildInsightSet(doses, profile, nowBucket * 60_000, tab)),
+    () => (tab === 'peer' ? null : buildInsightSet(doses, profile, nowMs, tab)),
+    // nowBucket gates once-per-minute invalidation; nowMs supplies the real-time cutoff
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: nowMs read inside, nowBucket in deps
     [doses, profile, nowBucket, tab],
   )
 

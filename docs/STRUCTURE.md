@@ -21,7 +21,7 @@ main.tsx
         ├── AuthLayer       (phase: 'auth')
         ├── loading spinner (phase: 'onboarding-check')
         ├── OnboardingLayer (phase: 'onboarding')
-        └── MainApp         (phase: 'timer')  ← live app shell for Timer / History / Tools / Settings
+        └── MainApp         (phase: 'timer')  ← live app shell for Insights / History / Timer / Tools / Settings
 ```
 
 Phases advance linearly on first launch: gate → auth → onboarding → timer.

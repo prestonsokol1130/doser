@@ -6,23 +6,9 @@ Read this before every new Cursor task.
 
 ## Step 1 — Create the branch yourself
 
-Open the terminal in the repo folder and run:
+Preston creates the feature branch before opening Cursor. The agent must not create, rename, or switch branches.
 
-```powershell
-git checkout main
-git pull origin main
-git checkout -b feat/[task-name]
-```
-
-Replace `[task-name]` with a short name for the task.
-
-Example:
-
-```powershell
-git checkout -b feat/tools-hub-refine
-```
-
-Do not let Cursor create the branch.
+Example branch name: `feat/tools-hub-refine`
 
 ---
 
