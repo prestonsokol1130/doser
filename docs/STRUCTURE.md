@@ -1,6 +1,6 @@
 # Doser 2.0 — Codebase Structure Reference
 
-Last updated: 2026-06-11
+Last updated: 2026-06-12
 
 **BEFORE BUILDING ANYTHING: Read HANDOFF.md Section 2b (Design System Rules).**
 That section defines all the colors, fonts, layout rules, copy rules, and animation rules
@@ -21,12 +21,12 @@ main.tsx
         ├── AuthLayer       (phase: 'auth')
         ├── loading spinner (phase: 'onboarding-check')
         ├── OnboardingLayer (phase: 'onboarding')
-        └── TimerScreen     (phase: 'timer')  ← main app shell, currently the only built tab
+        └── MainApp         (phase: 'timer')  ← live app shell for Timer / History / Tools / Settings
 ```
 
 Phases advance linearly on first launch: gate → auth → onboarding → timer.
-On return visits: gate is skipped (persisted in localStorage), onboarding is skipped
-(Firestore doc checked), lands directly on auth → timer.
+On return visits: gate is skipped through localStorage and onboarding is skipped if
+the Firestore profile already exists.
 
 ---
 
@@ -43,7 +43,7 @@ docs/
 src/
 │
 ├── main.tsx                          Entry point. Mounts App into #root.
-├── App.tsx                           Phase router. Gate → Auth → Onboarding → Timer.
+├── App.tsx                           Phase router. Gate → Auth → Onboarding → MainApp.
 ├── App.css                           Unused boilerplate. Do not add styles here.
 ├── index.css                         Global styles, CSS variables, Google Fonts import.
 │                                     DO NOT remove existing variables — other screens use them.
@@ -87,7 +87,9 @@ src/
 │
 └── components/
     │
-    ├── MainApp.tsx                   Shared app shell for Timer + History.
+    ├── MainApp.tsx                   Shared app shell for Timer + History + Tools + Settings.
+    │                                 Owns activeTab, profile, doses, doseContexts,
+    │                                 loading state, and nowMs ticker.
     │
     ├── gate/                         PHASE 2 — COMPLETE (PR #1 merged)
     │   ├── GateLayer.tsx             Orchestrates gate screens in sequence.
@@ -118,18 +120,17 @@ src/
     │
     ├── timer/                        PHASE 3 — COMPLETE (PR #4 merged)
     │   ├── DoseBuddyCheckInSheet.tsx PHASE 5 — pre-dose Dose Buddy check-in overlay.
-    │   ├── TimerScreen.tsx           Root of the main app shell. Owns all state:
-    │   │                             doses[], profile, substance, doseAmount, carouselIndex, nowMs.
-    │   │                             Loads profile from Firestore on mount via fetchUserDocument.
-    │   │                             Ticks nowMs every 1000ms via setInterval.
-    │   │                             Passes timer state down to carousel and the
-    │   │                             shared MainApp shell used by Timer + History.
+    │   ├── TimerScreen.tsx           Timer tab screen.
+    │   │                             Receives shared state from MainApp:
+    │   │                             doses[], profile, doseContexts, setDoses(), nowMs.
+    │   │                             Owns timer-tab-specific UI state such as
+    │   │                             substance, doseAmount, and carousel position.
     │   ├── TimerHeader.tsx           Header row: "doser" wordmark + flashlight btn + substance pill.
     │   ├── TopStatRow.tsx            Two stat cards: LAST ENTRY + SESSION TOTAL.
     │   ├── DoseCard.tsx              Bottom dose control: −/+ buttons, scroll ruler, LOG ENTRY btn.
     │   │                             Scroll ruler range: 0.1–10.0 mL, loops at both ends.
     │   ├── BottomNav.tsx             5-tab nav bar: Insights / History / Timer / Tools / Settings.
-    │   │                             Timer tab is the only active screen. Other tabs are placeholders.
+    │   │                             Insights is placeholder-only. The other 4 tabs are live.
     │   ├── TimerIcons.tsx            All SVG icon components used in the timer screen.
     │   ├── timerUtils.ts             Pure utility functions and types for the timer:
     │   │                             TimerState, TimerPhase, DOSE_MIN, DOSE_MAX, DOSE_STEP,
@@ -154,14 +155,14 @@ src/
     │   ├── EditDoseModal.tsx         Edit dose amount, substance, and timestamp.
     │   └── HistoryScreen.tsx         Chronological dose list, filter, delete, edit.
     │
-    ├── insights/                     PHASE 5 — NOT STARTED
+    ├── insights/                     NOT STARTED
     │   └── (empty — create files here when building)
     │
-    ├── tools/                        PHASE 5 — IN PROGRESS (uncommitted on branch)
+    ├── tools/                        PHASE 5 — MERGED ON MAIN
     │   ├── ToolsScreen.tsx           Tools hub: NavRow list → 5 sub-screens.
     │   ├── StashScreen.tsx           Stash: liquid-tank hero, inline refill, stat
     │   │                             pills, quick remove/add chips, AccelStepper,
-    │   │                             low-alert presets. (Water animation = redo.)
+    │   │                             low-alert presets, live stash visualization.
     │   ├── DoseBuddyScreen.tsx       Dose Buddy: Setup + Previous Inputs tabs.
     │   ├── DoseBuddyControls.tsx     Shared Dose Buddy selectors + option constants.
     │   ├── TaperScreen.tsx           Taper: step-down schedule form.
@@ -171,7 +172,7 @@ src/
     │   ├── NavRow.tsx                Shared hub list row.
     │   └── FormField.tsx             Shared text input + ToggleField.
     │
-    └── settings/                     PHASE 5 — IN PROGRESS (uncommitted on branch)
+    └── settings/                     PHASE 5 — MERGED ON MAIN
         ├── SettingsScreen.tsx        Settings hub: NavRow list → 6 sub-screens.
         ├── AccountScreen.tsx         Account + sign-out (authStore.logOut()).
         ├── ProfileSettingsScreen.tsx Edit profile fields.
@@ -186,10 +187,10 @@ src/
 ## Key Wiring Facts
 
 **How a new tab screen gets connected:**
-1. Create the screen component in the correct folder (e.g. `src/components/history/HistoryScreen.tsx`)
-2. Import it in `App.tsx` and add it to the phase router
-3. Wire the corresponding BottomNav tab's `onTabSelect` callback in `TimerScreen.tsx`
-   (BottomNav accepts an optional `onTabSelect?: (tab: string) => void` prop)
+1. Create the screen component in the correct folder
+2. Import it into `src/components/MainApp.tsx`
+3. Add or update the render branch keyed off `activeTab`
+4. Make sure the tab id is represented in `BottomNav.tsx`
 
 **How doses are stored:**
 Doses live in shared React state in the main app shell and are persisted to
@@ -225,9 +226,10 @@ Defined in `src/index.css`. Two sets exist:
 ## Build Commands
 
 ```
-npm run dev      Start dev server (localhost:5173)
-npm run build    Production build (must pass before committing)
-npm run lint     ESLint check (must pass before committing)
+npm run dev                            Start dev server (usually localhost:5173)
+npx tsc --noEmit -p tsconfig.app.json  Required validation check
+npm run build                          Required production build check
+npm run lint                           Optional lint check if the task calls for it
 ```
 
 ---

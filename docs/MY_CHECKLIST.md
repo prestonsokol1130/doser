@@ -1,159 +1,173 @@
 # Doser — My Task Checklist
 
-Read this every time before starting a new Cursor task.
+Read this before every new Cursor task.
 
 ---
 
-## Step 1 — Create the branch YOURSELF in Cursor terminal
+## Step 1 — Create the branch yourself
 
-Run these three commands in order. Change [task-name] to something descriptive.
+Open the terminal in the repo folder and run:
 
-  git checkout main
-  git pull origin main
-  git checkout -b feat/[task-name]
+```powershell
+git checkout main
+git pull origin main
+git checkout -b feat/[task-name]
+```
 
-Example: git checkout -b feat/auth-screens
+Replace `[task-name]` with a short name for the task.
 
-DO NOT let Cursor create the branch. You always create it first.
+Example:
 
----
+```powershell
+git checkout -b feat/tools-hub-refine
+```
 
-## Step 2 — Open a NEW Cursor Agent chat
-
-Start a fresh chat every time. Never continue an old one for a new task.
-
----
-
-## Step 3 — Paste this at the top of EVERY prompt
-
-Copy this block and put it before anything else you type:
-
-------------------------------------------------------------
-@HANDOFF.md
-@STRUCTURE.md
-
-Do not create a new branch. Run git branch first to confirm
-which branch you are on, then work only on that branch.
-
-Read the handoff document fully before writing any code.
-Pay special attention to HANDOFF.md Section 2b (Design System Rules) —
-all new screens must follow those rules for colors, fonts, layout, copy, and animations.
-
-Read the existing codebase before assuming anything.
-If anything is unclear, stop and ask before writing code.
-------------------------------------------------------------
-
-Then below that, describe what you want built.
-
-If the task is visual, also attach the relevant screenshots from:
-
-- `docs/ai-reference/current-app-state/` for what exists now
-- `docs/ai-reference/goal/` for the target direction
-
-Never reference screenshots from `Downloads` or another machine-specific path in a prompt.
-Do not change the current app theme unless you explicitly authorize a theme change —
-no exceptions.
-Always state whether screenshots are `reference only` or `copy closely`.
+Do not let Cursor create the branch.
 
 ---
 
-## Step 4 — Answer any questions Cursor asks
+## Step 2 — Open a brand-new Cursor chat
 
-If Cursor stops and asks questions before building — that is correct behavior.
-Answer them, then let it proceed.
-
----
-
-## Step 5 — Test it yourself before approving
-
-Run npm run dev in the terminal and check the browser.
-Make sure it looks right before you tell Cursor it's done.
+Never reuse an old Cursor chat for a new task.
 
 ---
 
-## Step 6 — Tell Cursor to commit and push
+## Step 3 — Paste the prompt from your advisor
 
-Once you are happy with it, tell Cursor:
+Your advisor should give you one focused prompt.
 
-  Looks good. Commit and push.
+Before you send it, make sure it:
+
+- starts with the branch rule
+- includes `@HANDOFF.md`
+- includes `@STRUCTURE.md`
+- says to read `docs/AI_CONTEXT.md`
+- says to read `docs/HANDOFF.md` Section `2b`
+- uses exact file paths
+- covers one task only
+
+If the task is visual:
+
+- use screenshots from `docs/ai-reference/`
+- do not use screenshots from `Downloads`
+- say whether the screenshots are directional or should be copied closely
+- do not change the current app theme unless you explicitly approve that
 
 ---
 
-## Step 7 — Open a Pull Request on GitHub
+## Step 4 — Answer Cursor's questions
 
-Go to github.com/prestonsokol1130/doser
-GitHub will show a banner for your branch — click Compare & pull request
-Title it the same as your branch name
-Click Create pull request
+If Cursor asks questions before coding, that is normal.
+
+Paste the questions to your advisor.
+Paste the advisor's answers back into Cursor.
+
+---
+
+## Step 5 — Test it yourself
+
+In the repo terminal, run:
+
+```powershell
+npm run dev
+```
+
+Then open the browser and test the exact thing that changed.
+
+Do not approve code you have not tested yourself.
+
+---
+
+## Step 6 — Have Cursor commit and push
+
+When the change is correct and tested, tell Cursor:
+
+```text
+Looks good. Commit and push.
+```
+
+---
+
+## Step 7 — Open the Pull Request
+
+Go to:
+
+- `https://github.com/prestonsokol1130/doser`
+
+Then:
+
+1. click the banner for your branch
+2. click `Compare & pull request`
+3. confirm the base branch is `main`
+4. create the PR
 
 ---
 
 ## Step 8 — Wait for CodeRabbit
 
-CodeRabbit will automatically review the PR within a few minutes.
-Read every comment it leaves.
-If it flags something, fix it before merging.
+Do not merge immediately.
+
+Wait for CodeRabbit.
+If CodeRabbit finds issues, fix them before merging.
 
 ---
 
 ## Step 9 — Merge
 
-Once CodeRabbit is happy and you have reviewed it — click Merge pull request on GitHub.
+After:
+
+- your own browser test passed
+- CodeRabbit is clean
+- the PR checks passed
+
+merge the PR into `main`.
 
 ---
 
-## Step 10 — Clean up
+## Step 10 — Clean up locally
 
-Run these in the terminal after merging:
+After merge, run:
 
-  git checkout main
-  git pull origin main
-  git branch -d feat/[task-name]
+```powershell
+git checkout main
+git pull origin main
+git branch -d feat/[task-name]
+git fetch origin --prune
+```
+
+---
+
+## Step 11 — Update the docs
+
+After every merged PR, update:
+
+- `docs/AI_CONTEXT.md`
+- `docs/NEXT_AGENT_PROMPT.md`
+- any other docs that became stale
+- `docs/ai-reference/` if the visual source of truth changed
+
+This is mandatory. Do not leave stale branch names or stale "current task" notes in the repo.
 
 ---
 
 ## Rules to never break
 
-- Never push directly to main
-- Never let Cursor create a branch
-- One task per Cursor chat — never combine multiple things
-- Never approve code you have not tested in the browser first
-- If CodeRabbit flags something, fix it — do not dismiss it
-- If Cursor changes files outside the scope of the task, tell it to stop and revert
-- If a visual pass drifts off-theme, make the next task rollback-first before any
-  new redesign work
+- Never push directly to `main`
+- Never let Cursor create the branch
+- One task per Cursor chat
+- Never approve code you did not test
+- If CodeRabbit flags something real, fix it
+- If Cursor changes files outside the task scope, stop it
+- If a visual pass drifts off-theme, correct that before continuing
+- Never let Cursor modify `src/lib/perceivedEffect/`
 
 ---
 
-## Phases still to build
+## Current project snapshot
 
-Phase 4 — History + Carousel + 3D Cube: COMPLETE
-  - Carousel cards 2–6 are built and wired
-  - History screen is built and live
-  - Phase 4 review fixes were applied and merged
-
-Phase 5 — Tools + Settings: IN PROGRESS (branch feat/phase-5-tools-settings, uncommitted)
-  - Tools (BUILT): Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference
-  - Settings (BUILT): Account, Profile, Notifications, Themes, Install App, Legal
-  - 2026-06-11: Stash + Dose Buddy theme rollback done; Stash screen redesigned
-    (liquid-tank hero) with new fullMl stash model.
-  - CURRENT TASK: redo the Stash tank water animation (the "slosh" was rejected —
-    looks bad). See docs/AI_CONTEXT.md for the exact files and what's wanted.
-
-
----
-
-## Final Step — Update AI_CONTEXT.md
-
-After every merged PR, before closing the session, update docs/AI_CONTEXT.md:
-
-1. Change the phase status to reflect what just merged
-2. Update "Next task" to the next thing in the phase
-3. Add any new tech decisions or known issues discovered this session
-4. Commit it: git add docs/AI_CONTEXT.md && git commit -m "chore: update AI context" && git push origin main
-
-This keeps any AI (Claude, ChatGPT, Gemini, Cursor) able to pick up exactly
-where you left off by reading this one file.
-
-Also update `docs/ai-reference/` when the current UI or design goal changes so the
-next prompt uses the latest screenshots.
+- Phase 5 core Tools and Settings work is merged into `main`
+- `Insights` is still placeholder-only
+- Next likely refinement work:
+  - Tools hub first
+  - Settings hub second
+  - only after approved screenshots are in `docs/ai-reference/goal/`

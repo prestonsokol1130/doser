@@ -1,63 +1,103 @@
-# Next Task — Redesign the Stash Tank Water Animation
+# Next Task — Refine the Tools Hub Only
 
 @HANDOFF.md
 @STRUCTURE.md
 
-Do not create a new branch. Run `git branch --show-current` first and work only on
-the existing branch. You must be on `feat/phase-5-tools-settings`. If you are not,
-STOP and tell Preston. Never create, switch, or rename branches.
+Do not create, switch, or rename any branch. Run `git branch --show-current` first.
+Work only on the branch Preston already created for this task. If you are not on the
+expected branch, STOP and tell me.
 
 Read before writing any code:
-- docs/AI_CONTEXT.md  (full current state — read the Phase 5 section in full)
-- docs/HANDOFF.md     (especially Section 2b — Design System Rules)
-- docs/STRUCTURE.md
 
-NEVER DEVIATE FROM THE CURRENT APP THEME. NO EXCEPTIONS.
+- `docs/AI_CONTEXT.md`
+- `docs/HANDOFF.md` — especially Section `2b`
+- `docs/STRUCTURE.md`
+- `docs/ai-reference/README.md`
+
+If the approved Tools hub goal screenshots are not present inside
+`docs/ai-reference/goal/`, STOP and tell me before changing any code.
+
+---
 
 ## Status
 
-Phase 5 Tools + Settings screens are built and the Stash screen was redesigned on
-2026-06-11 (liquid-tank hero, inline refill, hold-to-accelerate stepper, low-alert
-presets) with a new `fullMl` stash model. All Phase 5 work is UNCOMMITTED on
-`feat/phase-5-tools-settings`.
+PR `#8` is merged. Phase 5 core Tools and Settings screens are already on `main`.
+This is a refinement task, not a rebuild.
+
+The next visual work should start with the `Tools` hub only.
+
+---
 
 ## The task
 
-Redesign the **Stash tank water animation**. The current "slosh" animation was
-rejected by Preston — it looks bad.
+Refine the `Tools` hub screen only so it better matches the approved direction from
+the repo-owned goal references while staying fully inside the existing Doser theme.
 
-What it must look like:
-- Water sloshing inside a tank that is being moved horizontally, in BOTH directions
-  (oscillating back and forth), not drifting one way.
-- Clearly noticeable, but not overdone or distracting.
-- The slosh intensity INCREASES when the user changes the volume with the +/-
-  buttons (and the quick chips / stepper), then settles back to a calm idle.
-- Still turns the app's orange (`var(--color-action)`) when the stash is low, and
-  respects `prefers-reduced-motion`.
+Change only the hub-level presentation for:
 
-Where the current (rejected) animation lives — replace/redo only this:
-- `src/index.css` → `@keyframes stashSlosh`, `@keyframes stashRipple`
-- `src/components/tools/StashScreen.tsx` → the `StashVessel` component, the
-  `BASE_SLOSH` constant, the `WAVE_A` mask string, and the `requestAnimationFrame`
-  "boost" effect driven by the `boostSignal` prop.
+- `src/components/tools/ToolsScreen.tsx`
 
-## Constraints
+You may also adjust only these shared presentation files if needed:
 
-- Colors: CSS variables only (`--color-ring`, `--color-action`, `--app-*`); use
-  `color-mix(...)` for accent tints. Never hardcode hex/rgba for colors.
-- Do not change the stash data model, the `fullMl` logic, `src/lib/stash.ts`, or any
-  other screen. This is an animation-only change to the tank visual.
-- Do not modify `src/lib/perceivedEffect/`.
-- Keep the `StashScreen` props interface and all existing functionality intact.
+- `src/components/tools/NavRow.tsx`
+- `src/components/tools/SubScreenHeader.tsx`
+- `src/index.css` — add tokens only if truly necessary, never remove or rename existing ones
+
+Do not change:
+
+- `src/components/tools/StashScreen.tsx`
+- `src/components/tools/DoseBuddyScreen.tsx`
+- `src/components/tools/TaperScreen.tsx`
+- `src/components/tools/EmergencyResourcesScreen.tsx`
+- `src/components/tools/SafetyReferenceScreen.tsx`
+- any Firestore logic
+- any PEL logic
+
+---
+
+## Design rules
+
+- CSS variables only: `--color-ring`, `--color-action`, `--color-load`, `--app-*`
+- Use `color-mix(...)` for translucent accent treatments
+- Fonts only through `--font-display`, `--font-heading`, `--font-body`
+- Card radius `16px`
+- Icon button radius `10px`
+- Primary button radius `14px`
+- No gradients
+- No shadows
+- No emoji
+- Only `doser` is lowercase
+- Keep the existing app theme intact
+
+This is a refinement, not permission to invent a different product feel.
+
+---
 
 ## Validation
 
 - `npx tsc --noEmit -p tsconfig.app.json`
 - `npm run build`
 
+---
+
+## Acceptance criteria
+
+- The `Tools` hub looks more intentional and polished than the current list pass
+- The current theme is preserved
+- Navigation behavior is unchanged
+- Only the allowed files were touched
+- Validation commands pass
+
+---
+
 ## Report back
 
-- What animation approach you used and why it reads as horizontal sloshing.
-- How the intensity boost on volume change works.
-- Confirm only the animation files above were touched.
-- Paste the results of the two validation commands.
+When finished, tell me:
+
+1. current branch name
+2. exact files changed
+3. what visual changes were made
+4. whether any repo-owned goal screenshots were used, and which ones
+5. results of:
+   - `npx tsc --noEmit -p tsconfig.app.json`
+   - `npm run build`

@@ -1,15 +1,29 @@
 # doser
 
-Current repo status (branch `feat/phase-5-tools-settings`, all Phase 5 work uncommitted):
+Current repo status as of 2026-06-12:
 
-- Phase 5 (Tools + Settings) screens are built. On 2026-06-11 the rejected
-  Stash + Dose Buddy theme drift was rolled back to the app theme, and the Stash
-  screen was redesigned (liquid-tank hero, inline refill, hold-to-accelerate
-  stepper) with a new `fullMl` stash model so the tank depletes correctly.
-- CURRENT PENDING TASK: redesign the Stash tank **water animation**. The existing
-  "slosh" animation was rejected (looks bad). It must look like water sloshing in a
-  tank moved horizontally in both directions — noticeable but not overdone — and get
-  more intense when the user changes the volume with the +/- buttons.
+- `main` includes PR `#8` (`a2f9938 feat: complete phase 5 tools and settings (#8)`).
+- Phases 1 through 5 core work are merged.
+- Live main-app tabs:
+  - `Timer` — complete
+  - `History` — complete
+  - `Tools` — complete
+  - `Settings` — complete
+  - `Insights` — still a placeholder
+- Phase 5 merged:
+  - Tools hub plus Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference
+  - Settings hub plus Account, Profile, Notifications, Themes, Install App, Legal
+  - Stash `fullMl` model so the tank can visually deplete correctly
+  - Dose Buddy check-in sheet cleanup and mobile sizing refinements
+  - CodeRabbit follow-up fixes and accessibility/persistence cleanups
 
-Read [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md)
-for the full, current project state before doing any design or implementation work.
+Immediate next likely work:
+
+- Import approved visual references for the Tools / Settings redesign into
+  `docs/ai-reference/goal/`
+- Refine the `Tools` hub first, then the `Settings` hub, one screen at a time
+- Keep the current app theme intact
+- Leave `Insights` planning for a separate task unless Preston explicitly reprioritizes it
+
+Read [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md) first before making any product,
+design, or implementation decision.

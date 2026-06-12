@@ -12,7 +12,7 @@ NEVER DEVIATE FROM THE CURRENT APP THEME. NO EXCEPTIONS. UNDER NO CIRCUMSTANCES 
 
 App name: Doser | URL: usedoser.com
 Type: PWA — intentionally distributed outside app stores
-Stack: React + TypeScript + Vite + Tailwind CSS v3 + Supabase
+Stack: React + TypeScript + Vite + Tailwind CSS v3 + Firebase Auth + Firestore
 Purpose: Harm reduction tool for GBL, BDO, and GHB users. Safe interval timing, dosing pattern tracking, perceived effect level calculation. Not a medical device. Not a guarantee of safety.
 
 ---
@@ -314,11 +314,15 @@ ToleranceConfidence = "calibrating" | "partial" | "full"
 
 ## 9. Persistence
 
-- Supabase: auth and optional cloud sync
-- Local state via app store
+- Firebase Auth handles sign-in state
+- Firestore stores:
+  - `users/{uid}` profile data
+  - `users/{uid}/doses` dose entries
+  - `doseContexts` on the user document
+- Local React state is owned by `MainApp.tsx` and persisted through
+  `src/store/profileStore.ts`
 - PEL calculations are stateless — inputs only: doses + profile + timestamp
-- RLS must be enabled on all user data tables
-- Read existing Supabase schema before assuming column names
+- Read the live Firestore helpers before assuming field names or write shape
 
 ---
 
@@ -386,9 +390,15 @@ History: list, filter, delete, edit.
 Carousel: cards 2–6 wired to real data + PEL engine.
 3D cube transition: working and merged.
 
-Phase 5 — Tools + Settings:
-Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference.
-Account, Profile, Notifications, Themes, Install App, Legal.
+Phase 5 — Tools + Settings: CORE COMPLETE.
+Tools: Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference.
+Settings: Account, Profile, Notifications, Themes, Install App, Legal.
+
+Current likely next work:
+- refine the Tools hub first
+- refine the Settings hub second
+- keep the existing theme intact
+- leave Insights for a separate task unless Preston reprioritizes it
 
 ---
 
@@ -440,10 +450,14 @@ src/
 ## 15. Branch Rule
 
 You do not create branches. Ever.
-The branch is always created by the developer before the Cursor task starts.
-Your first action in any task is to run: git branch
+The branch is always created by Preston before the Cursor task starts.
+Your first action in any task is to run:
+
+`git branch --show-current`
+
 Confirm which branch you are on, then work only on that branch.
-Never run git checkout -b under any circumstances.
+If you are not on the branch Preston said to use, stop and tell him.
+Never run `git checkout -b` under any circumstances.
 Never create, rename, or switch branches.
 
 
@@ -451,7 +465,7 @@ Never create, rename, or switch branches.
 
 ## 16. Current Build Status
 
-Last updated: 2026-06-11
+Last updated: 2026-06-12
 
 Phase 1 — Foundation: COMPLETE
 Phase 2 — Gate + Auth + Onboarding: COMPLETE
@@ -466,14 +480,11 @@ Phase 3 — Timer Screen: COMPLETE
   - PEL engine files: copied into src/lib/perceivedEffect/
   - Firestore security rules: updated with {document=**} wildcard
 
-Phase 3b — Dose Persistence: IN REVIEW (feat/dose-persistence branch)
-  - Firestore dose persistence implemented
-  - Security rules fixed (allow read/write on subcollections)
-  - Tested: doses persist on reload
-  - CodeRabbit flagged 5 issues (2 critical, 3 polish) — needs fixing before merge
-    Critical: isInitialLoadRef check order, delete support missing
-    Polish: batch limit, no validation on write, hardcoded substance list
-  - Next: Fix all 5 issues, merge to main
+Phase 3b — Dose Persistence: COMPLETE
+  - Firestore dose persistence merged
+  - Validation on load and save merged
+  - Differential sync and batch chunking merged
+  - Shared validation constants merged
 
 Phase 4 — History + Carousel + 3D Cube: COMPLETE
   - PR #7 merged to main
@@ -482,21 +493,24 @@ Phase 4 — History + Carousel + 3D Cube: COMPLETE
   - 3D cube transition done
   - Phase 4 review fixes applied
 
-Phase 5 — Tools + Settings: IN PROGRESS (feat/phase-5-tools-settings, all uncommitted)
-  DONE: Tools tab (Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference)
-        + Settings tab (Account, Profile, Notifications, Themes, Install App, Legal),
-        MainApp wiring, libs (stash/taper/doseBuddy), StashPrefs/TaperPrefs/
-        DoseBuddyPrefs types, authStore logOut().
-  DONE (2026-06-11): Stash + Dose Buddy theme rollback; Stash screen redesigned
-        (Claude Design handoff: liquid-tank hero, inline refill, stat pills, quick
-        remove/add chips, hold-to-accelerate stepper, low-alert presets); StashPrefs
-        gained fullMl (tank 100% reference).
-  CURRENT PENDING TASK: redesign the Stash tank WATER ANIMATION (the existing "slosh"
-        was rejected — looks bad). Lives in src/index.css (@keyframes stashSlosh /
-        stashRipple) and src/components/tools/StashScreen.tsx (StashVessel, BASE_SLOSH,
-        WAVE_A, the requestAnimationFrame boost effect).
-  STILL DEFERRED: Insights tab; Dose Buddy peer comparison; push notification delivery.
-  See docs/AI_CONTEXT.md for the full, current Phase 5 status before doing anything.
+Phase 5 — Tools + Settings: CORE COMPLETE (PR #8 merged)
+  - Tools hub merged
+  - Settings hub merged
+  - Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference merged
+  - Account, Profile, Notifications, Themes, Install App, Legal merged
+  - Theme rollback merged after the rejected off-theme pass
+  - Stash redesign merged, including `StashPrefs.fullMl`
+  - Dose Buddy mobile cleanup merged
+  - Accessibility and CodeRabbit follow-up fixes merged
+  - Insights is still placeholder-only
+
+Next likely task:
+  - refine the Tools hub using repo-owned visual references
+  - then refine the Settings hub
+  - do not start visual work from `Downloads`; move approved references into
+    `docs/ai-reference/goal/` first
+
+See `docs/AI_CONTEXT.md` for the full current state before doing anything.
 
 Firebase project: doser-e389f
 Auth methods enabled: Email/Password, Google
