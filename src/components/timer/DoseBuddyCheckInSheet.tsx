@@ -149,14 +149,14 @@ export function DoseBuddyCheckInSheet({
                     <span
                       className="text-[20px] leading-none text-[var(--app-dim)]"
                       style={{ fontFamily: 'var(--font-body)' }}
-                      aria-hidden
+                      aria-hidden={true}
                     >
                       {showWhy ? '−' : '+'}
                     </span>
                   </button>
 
                   {showWhy ? (
-                    <div className="max-h-[28vh] overflow-y-auto border-t border-[var(--app-divider)] px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="max-h-[200px] overflow-y-auto border-t border-[var(--app-divider)] px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       <div className="flex flex-col gap-2.5">
                         <div>
                           <p
