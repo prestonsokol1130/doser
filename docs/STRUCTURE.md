@@ -2,13 +2,12 @@
 
 Last updated: 2026-06-13
 
-**BEFORE BUILDING ANYTHING: Read HANDOFF.md Section 2b (Design System Rules).**
-That section defines all the colors, fonts, layout rules, copy rules, and animation rules
-that every new screen must follow. It is the authoritative reference.
+Read this alongside:
 
-This file provides the file tree and folder structure. Read this alongside HANDOFF.md and AI_CONTEXT.md before building any new screen.
-`docs/ai-reference/` stores screenshots and mockups, but the current app theme and
-design rules remain the source of truth.
+- `docs/AI_CONTEXT.md`
+- `docs/HANDOFF.md`
+
+`docs/HANDOFF.md` Section `2b` is the design authority.
 
 ---
 
@@ -16,251 +15,330 @@ design rules remain the source of truth.
 
 ```
 main.tsx
-  └── App.tsx  ← controls which phase renders based on gate/auth/onboarding state
-        ├── GateLayer       (phase: 'gate')
-        ├── AuthLayer       (phase: 'auth')
-        ├── loading spinner (phase: 'onboarding-check')
-        ├── OnboardingLayer (phase: 'onboarding')
-        └── MainApp         (phase: 'timer')  ← live app shell for Insights / History / Timer / Tools / Settings
+  └── App.tsx
+        ├── GateLayer
+        ├── AuthLayer
+        ├── loading spinner
+        ├── OnboardingLayer
+        └── MainApp
 ```
 
-Phases advance linearly on first launch: gate → auth → onboarding → timer.
-On return visits: gate is skipped through localStorage and onboarding is skipped if
-the Firestore profile already exists. In device-only mode, auth is bypassed and
-onboarding/profile data come from local storage instead of Firestore.
+Flow:
+
+- gate -> auth -> onboarding -> timer shell on first use
+- gate skipped on return visits
+- onboarding skipped if Firestore profile already exists
+- local-only mode bypasses auth and uses local storage instead of Firestore
+
+Important live gap on `main`:
+
+- `App.tsx` still routes a local-only user straight into signed-in mode once auth appears
+- explicit upgrade decision is still missing on `main`
 
 ---
 
-## Full File Tree
+## Key Top-Level Files
+
+### `src/main.tsx`
+
+- app entry point
+- mounts React app
+- explicitly registers the PWA service worker
+
+### `src/App.tsx`
+
+- phase router
+- gate/auth/onboarding/main-app chooser
+- owns local-only/auth handoff behavior
+
+### `src/index.css`
+
+- global CSS variables
+- existing variables must not be removed or renamed
+
+### `src/types.ts`
+
+- shared TypeScript types
+- add only, do not rename existing types without explicit instruction
+
+---
+
+## Important Folders
+
+### `src/components/`
+
+- `gate/`
+- `auth/`
+- `onboarding/`
+- `timer/`
+- `history/`
+- `insights/`
+- `tools/`
+- `settings/`
+
+### `src/lib/`
+
+- `firebase.ts`
+- `notifications.ts`
+- `pushRegistration.ts`
+- `stash.ts`
+- `doseBuddy.ts`
+- `taper.ts`
+- `perceivedEffect/` ← do not touch
+
+### `src/store/`
+
+- `authStore.ts`
+- `gateStore.ts`
+- `localDataStore.ts`
+- `localSessionStore.ts`
+- `profileStore.ts`
+
+### `functions/`
+
+Branch-local notifications backend package.
+
+- `functions/src/index.ts`
+- `functions/package.json`
+- `functions/tsconfig.json`
+
+### `docs/`
+
+- `AI_CONTEXT.md`
+- `HANDOFF.md`
+- `STRUCTURE.md`
+- `CODEX_OPERATING_MANUAL.md`
+- `CLAUDE_CODE_OPERATING_MANUAL.md`
+- `MY_CHECKLIST.md`
+- `NEXT_AGENT_PROMPT.md`
+
+---
+
+## File Tree (Practical Map)
 
 ```
-docs/
-├── ai-reference/
-│   ├── current-app-state/           Current UI screenshots for comparison.
-│   ├── goal/                        Directional references only, not authorization
-│   │                                for a new visual system.
-│   └── archive/                     Older screenshots and superseded references.
-│
 src/
+├── main.tsx
+├── App.tsx
+├── index.css
+├── types.ts
 │
-├── main.tsx                          Entry point. Mounts App into #root.
-├── App.tsx                           Phase router. Gate → Auth → Onboarding → MainApp.
-│                                     Also owns the local-only/auth handoff.
-│                                     Current gap: auth success still routes forward
-│                                     immediately instead of stopping for an explicit
-│                                     local-only upgrade decision.
-├── App.css                           Unused boilerplate. Do not add styles here.
-├── index.css                         Global styles, CSS variables, Google Fonts import.
-│                                     DO NOT remove existing variables — other screens use them.
-│                                     Add new variables here when a new design token is needed.
-├── types.ts                          All shared TypeScript types. Source of truth for:
-│                                     Dose, Profile, SubstancePrefs, DoseContext, Substance,
-│                                     WeightUnit, HeightUnit, BiologicalSex, FoodState,
-│                                     HydrationState, SleepLevel, NotificationPrefs,
-│                                     StashPrefs (capacityMl + fullMl + refillAt),
-│                                     TaperPrefs, DoseBuddyPrefs, ThemeId, ToleranceEstimate.
-│
-├── assets/
-│   ├── hero.png                      Used in gate/onboarding screens.
-│   ├── react.svg                     Unused boilerplate.
-│   └── vite.svg                      Unused boilerplate.
+├── components/
+│   ├── MainApp.tsx
+│   ├── gate/
+│   ├── auth/
+│   ├── onboarding/
+│   │   ├── OnboardingLayer.tsx
+│   │   ├── NotificationBasics.tsx
+│   │   └── ...
+│   ├── timer/
+│   │   ├── TimerScreen.tsx
+│   │   ├── timerUtils.ts
+│   │   └── carousel/
+│   │       ├── SessionCompareCard.tsx
+│   │       └── ...
+│   ├── history/
+│   ├── insights/
+│   ├── tools/
+│   └── settings/
+│       ├── SettingsScreen.tsx
+│       ├── NotificationsScreen.tsx
+│       └── ...
 │
 ├── lib/
-│   ├── firebase.ts                   Firebase app init, exports: auth, db (Firestore).
-│   │                                 Import these — never re-initialize Firebase elsewhere.
-│   ├── insightsData.ts               Insights tab data layer — builds InsightSet from doses + profile.
-│   ├── insightsAdvanced.ts           Advanced session analysis helpers. Not yet wired to UI.
-│   ├── metabolicProfile.ts           Metabolic profile calculations. Not yet wired to UI.
-│   ├── doseBuddy.ts                  PHASE 5 — Dose Buddy suggestion engine + context map.
-│   ├── stash.ts                      PHASE 5 — stash remaining/consumed/pct + stashFullMl().
-│   ├── taper.ts                      PHASE 5 — taper step-down schedule calculations.
-│   └── perceivedEffect/              PEL engine — DO NOT MODIFY ANY FILE IN THIS FOLDER.
-│       ├── effectCurves.ts           GBL/BDO curve constants and shape math.
-│       ├── perceivedEffectModel.ts   computePerceivedEffectLevelAt() and related exports.
-│       └── toleranceModel.ts         9-factor behavioral tolerance model.
+│   ├── firebase.ts
+│   ├── notifications.ts
+│   ├── pushRegistration.ts
+│   ├── sessionStats.ts
+│   ├── stash.ts
+│   ├── doseBuddy.ts
+│   ├── taper.ts
+│   └── perceivedEffect/
 │
-├── store/
-│   ├── appStore.ts                   preferredDoseMl(), preferredIntervalMinutes() helpers.
-│   │                                 Intentional duplicate of timerUtils.ts helpers — deferred refactor.
-│   │                                 Consolidation waits until timerUtils.ts is fully modularized.
-│   │                                 See HANDOFF §11.
-│   ├── authStore.ts                  subscribeToAuth(callback) — Firebase Auth listener.
-│   │                                 Returns unsubscribe function. Used in App.tsx.
-│   ├── gateStore.ts                  isGateComplete() — reads from localStorage.
-│   │                                 markGateComplete() — writes to localStorage.
-│   ├── localDataStore.ts             Device-only profile/dose/dose-context storage.
-│   │                                 Includes onboarding-complete flag helpers and validation.
-│   ├── localSessionStore.ts          Device-only session mode flag (`doser.localOnly`).
-│   │                                 Lets the app route back into auth or local mode.
-│   └── profileStore.ts               fetchUserDocument(uid) — reads Firestore users/{uid}.
-│                                     saveUserDocument(uid, data) — writes profile to Firestore.
-│                                     isOnboardingComplete(uid) — checks if profile exists.
-│                                     defaultProfile() — returns a zero-state Profile object.
-│
-└── components/
-    │
-    ├── MainApp.tsx                   Shared app shell for all five tabs (Insights, History, Timer, Tools, Settings).
-    │                                 Owns activeTab, profile, doses, doseContexts,
-    │                                 loading state, nowMs ticker, and local-only persistence routing.
-    │
-    ├── gate/                         PHASE 2 — COMPLETE (PR #1 merged)
-    │   ├── GateLayer.tsx             Orchestrates gate screens in sequence.
-    │   ├── GateLayout.tsx            Shared layout wrapper for gate screens.
-    │   ├── AgeGate.tsx               Screen 1: age confirmation.
-    │   ├── LegalGate.tsx             Screen 2: legal acknowledgment.
-    │   ├── HarmReductionGate.tsx     Screen 3: harm reduction acknowledgment.
-    │   └── Wordmark.tsx              "doser" wordmark component used in gate screens.
-    │
-    ├── auth/                         PHASE 2 — COMPLETE (PR #2 merged)
-    │   ├── AuthLayer.tsx             Orchestrates auth screens. Routes between log in / sign up.
-    │   ├── AuthLayout.tsx            Shared layout wrapper for auth screens.
-    │   ├── AuthField.tsx             Reusable text input for auth forms.
-    │   ├── AuthLink.tsx              Reusable link/button used in auth footers.
-    │   ├── LogIn.tsx                 Email + password login screen. Firebase signInWithEmailAndPassword.
-    │   │                             Also exposes `Continue on this device` for local-only mode.
-    │   ├── SignUp.tsx                Email + password registration. Firebase createUserWithEmailAndPassword.
-    │   ├── ForgotPassword.tsx        Password reset email screen. Firebase sendPasswordResetEmail.
-    │   └── RecoveryAccount.tsx       Account recovery screen.
-    │
-    ├── onboarding/                   PHASE 2 — COMPLETE (PR #3 merged)
-    │   ├── OnboardingLayer.tsx       Orchestrates onboarding screens in sequence.
-    │   │                             Saves either to Firestore or local storage depending on mode.
-    │   ├── OnboardingLayout.tsx      Shared layout wrapper for onboarding screens.
-    │   ├── OnboardingField.tsx       Reusable input/select field for onboarding forms.
-    │   ├── ProfileSetup.tsx          Screen 1: name, age, height, weight, biological sex.
-    │   ├── SubstanceDefaults.tsx     Screen 2: GBL/BDO preferred dose + interval.
-    │   ├── NotificationBasics.tsx    Screen 3: notification preferences.
-    │   └── FinishIntoTimer.tsx       Screen 4: completion screen, advances to TimerScreen.
-    │
-    ├── timer/                        PHASE 3 — COMPLETE (PR #4 merged)
-    │   ├── DoseBuddyCheckInSheet.tsx PHASE 5 — pre-dose Dose Buddy check-in overlay.
-    │   ├── TimerScreen.tsx           Timer tab screen.
-    │   │                             Receives shared state from MainApp:
-    │   │                             doses[], profile, doseContexts, setDoses(), nowMs.
-    │   │                             Owns timer-tab-specific UI state such as
-    │   │                             substance, doseAmount, and carousel position.
-    │   ├── TimerHeader.tsx           Header row: "doser" wordmark + flashlight btn + substance pill.
-    │   ├── TopStatRow.tsx            Two stat cards: LAST ENTRY + SESSION TOTAL.
-    │   ├── DoseCard.tsx              Bottom dose control: −/+ buttons, scroll ruler, LOG ENTRY btn.
-    │   │                             Scroll ruler range: 0.1–10.0 mL, loops at both ends.
-    │   ├── BottomNav.tsx             5-tab nav bar: Insights / History / Timer / Tools / Settings.
-    │   │                             All five tabs are live.
-    │   ├── TimerIcons.tsx            All SVG icon components used in the timer screen.
-    │   ├── timerUtils.ts             Pure utility functions and types for the timer:
-    │   │                             TimerState, TimerPhase, DOSE_MIN, DOSE_MAX, DOSE_STEP,
-    │   │                             computeTimerState(), formatCountdown(), formatTimeShort(),
-    │   │                             clampDoseAmount() (wraps at boundaries by design),
-    │   │                             snapDoseToStep(), formatDoseAmount(), formatLastEntry(),
-    │   │                             preferredDoseForSubstance(), preferredIntervalForSubstance(),
-    │   │                             lastDose(), sessionTotalMl(), dosesForSubstance().
-    │   └── carousel/
-    │       ├── TimerCarousel.tsx     Horizontal scroll carousel + PaginationDots component.
-    │       │                         6 cards. Swipe or dot-tap to navigate.
-    │       ├── CarouselCardShell.tsx Shared card container (border, bg, radius) for all carousel cards.
-    │       ├── TimerRingCard.tsx     Card 1 — BUILT. SVG stroke ring, countdown, WAIT/SAFE state.
-    │       │                         Fill animation on LOG ENTRY (4s), then decays with remaining time.
-    │       ├── TodayCard.tsx         Card 2 — BUILT. Today summary stats.
-    │       ├── CurrentStateCard.tsx  Card 3 — BUILT. PEL gauge + tolerance state.
-    │       ├── Past12HoursCard.tsx   Card 4 — BUILT. Dose history timeline.
-    │       ├── ForecastCard.tsx      Card 5 — BUILT. PEL forecast curve.
-    │       └── SessionCompareCard.tsx Card 6 — BUILT. Session compare vs average.
-    │
-    ├── history/                      PHASE 4 — COMPLETE (PR #7 merged)
-    │   ├── EditDoseModal.tsx         Edit dose amount, substance, and timestamp.
-    │   └── HistoryScreen.tsx         Chronological dose list, filter, delete, edit.
-    │
-    ├── insights/                     LIVE — Insights tab (Peer Comparison sub-tab deferred)
-    │   └── InsightsScreen.tsx        Pattern cards from real dose logs via `src/lib/insightsData.ts`.
-    │
-    ├── tools/                        PHASE 5 — MERGED ON MAIN
-    │   ├── ToolsScreen.tsx           Tools hub: NavRow list → 5 sub-screens.
-    │   ├── StashScreen.tsx           Stash: liquid-tank hero, inline refill, stat
-    │   │                             pills, quick remove/add chips, AccelStepper,
-    │   │                             low-alert presets, live stash visualization.
-    │   ├── DoseBuddyScreen.tsx       Dose Buddy: Setup + Previous Inputs tabs.
-    │   ├── DoseBuddyControls.tsx     Shared Dose Buddy selectors + option constants.
-    │   ├── TaperScreen.tsx           Taper: step-down schedule form.
-    │   ├── EmergencyResourcesScreen.tsx  Crisis lines / urgent help.
-    │   ├── SafetyReferenceScreen.tsx Timing + harm-reduction basics.
-    │   ├── SubScreenHeader.tsx       Shared sub-screen header (title/subtitle/back).
-    │   ├── NavRow.tsx                Shared hub list row.
-    │   └── FormField.tsx             Shared text input + ToggleField.
-    │
-    └── settings/                     PHASE 5 — MERGED ON MAIN
-        ├── SettingsScreen.tsx        Settings hub: NavRow list → 6 sub-screens.
-        ├── AccountScreen.tsx         Account + sign-out (authStore.logOut()).
-        │                             In local-only mode, shows device-only status and exits back to auth.
-        ├── ProfileSettingsScreen.tsx Edit profile fields.
-        ├── NotificationsScreen.tsx   Notification preferences.
-        ├── ThemesScreen.tsx          Theme selection (dark only for now).
-        ├── InstallAppScreen.tsx      PWA install guidance.
-        └── LegalScreen.tsx           Legal / acknowledgments.
+└── store/
+    ├── authStore.ts
+    ├── gateStore.ts
+    ├── localDataStore.ts
+    ├── localSessionStore.ts
+    └── profileStore.ts
+
+firebase.json
+functions/
+├── package.json
+├── tsconfig.json
+└── src/
+    └── index.ts
 ```
 
 ---
 
-## Key Wiring Facts
+## Main App State Ownership
 
-**How a new tab screen gets connected:**
-1. Create the screen component in the correct folder
-2. Import it into `src/components/MainApp.tsx`
-3. Add or update the render branch keyed off `activeTab`
-4. Make sure the tab id is represented in `BottomNav.tsx`
+### `src/components/MainApp.tsx`
 
-**How doses are stored:**
-Doses live in shared React state in the main app shell and are persisted to
-Firestore through `saveDoses()` / `fetchDoses()` helpers. New features should read
-from the shared dose state instead of creating a second source of truth.
+This is the shared live app shell.
 
-**How profile data is accessed:**
-`fetchUserDocument(uid)` from `src/store/profileStore.ts` returns the Firestore
-`users/{uid}` document. The `profile` field contains the full `Profile` object.
-Always read the existing Firestore schema before assuming field names.
+It owns:
 
-**How local-only mode works:**
-`src/store/localSessionStore.ts` tracks whether the app should run in device-only mode.
-When that flag is active, `App.tsx` routes around auth, `OnboardingLayer.tsx` saves into
-`src/store/localDataStore.ts`, and `MainApp.tsx` persists profile/dose state locally.
-Returning to the auth screen is supported; migration from local-only data into Firebase is not yet built.
-The next task should likely intercept the auth-session transition in `App.tsx`, because
-that is where local-only mode is currently cleared and cloud-backed routing resumes.
+- active tab
+- profile state
+- dose state
+- dose context state
+- loading state
+- ticking `nowMs`
+- local-only persistence routing
+- signed-in browser push registration sync on the notifications branch
 
-**How PEL is calculated:**
-Import from `src/lib/perceivedEffect/perceivedEffectModel.ts`.
-Key function: `computePerceivedEffectLevelAt(doses, profile, atMs, contextByDoseId?)`
-Never duplicate this logic. Never rewrite these files.
-
-**CSS variables:**
-Defined in `src/index.css`. Two sets exist:
-- Original set: `--color-accent`, `--color-cta`, `--color-purple`, `--color-surface`, etc.
-  Used by gate, auth, onboarding screens — do not rename or remove.
-- New design system set: `--color-ring`, `--color-action`, `--color-load`, `--app-surface`,
-  `--app-divider`, `--app-text`, `--app-dim`, `--app-faint`, etc.
-  Used by timer screen and all future screens.
-
-**Font families (CSS variables):**
-`--font-display`: Antonio 200 — timer digits, dose numbers
-`--font-heading`: Montserrat 600/700 — card headers, section titles
-`--font-body`: Inter 400/500/600 — labels, nav, body text
-`--font-mono` / Unbounded: wordmark "doser" only
+If a feature needs access to shared doses/profile, start here before inventing a new
+source of truth.
 
 ---
 
-## Build Commands
+## Notification Branch Structure
 
-```
-npm run dev                            Start dev server (usually localhost:5173)
-npx tsc --noEmit -p tsconfig.app.json  Required validation check
-npm run build                          Required production build check
-npm run lint                           Optional lint check if the task calls for it
-```
+If the current branch is `feat/real-notifications-v1`, these files are the main seams.
+
+### Client notification UI
+
+- `src/components/settings/NotificationsScreen.tsx`
+  - permission state card
+  - real notification toggles
+  - honest blocked/missing/account-required states
+
+- `src/components/onboarding/NotificationBasics.tsx`
+  - simplified onboarding notification settings
+  - local-only limitation copy
+
+### Shared notification logic
+
+- `src/lib/notifications.ts`
+  - next dose window calculation
+  - due reminder time
+  - missed-dose time
+  - session auto-end time
+
+### Browser push registration
+
+- `src/lib/pushRegistration.ts`
+  - browser support check
+  - permission check
+  - permission request
+  - Firebase web token retrieval
+  - Firestore device registration
+
+### Service worker
+
+- `src/sw.ts`
+  - Workbox worker
+  - Firebase Messaging initialization
+
+### Firebase backend
+
+- `functions/src/index.ts`
+  - scheduled Firebase notification sender
+  - due reminder
+  - missed-dose alert
+  - daily summary
+  - stash low alert
+  - session auto-end markers
+
+### Supporting persistence seams
+
+- `src/lib/firebase.ts`
+- `src/store/profileStore.ts`
+- `src/store/authStore.ts`
 
 ---
 
-## What NOT to Touch
+## Local-Only Mode Structure
 
-- `src/lib/perceivedEffect/` — hand-tuned, never modify
-- `src/index.css` — only ADD variables, never remove or rename existing ones
-- `src/types.ts` — only ADD types, never rename existing ones
-- `.env` — never commit, gitignored
-- Tailwind v3 — do not upgrade to v4
+### `src/store/localSessionStore.ts`
+
+- stores whether device-only mode is active
+
+### `src/store/localDataStore.ts`
+
+- stores local-only profile
+- stores local-only doses
+- stores local-only dose contexts
+- stores local onboarding complete flag
+
+### `src/App.tsx`
+
+- decides whether user goes through auth or local-only path
+- current merged gap:
+  - no explicit upgrade decision after local-only user signs in
+
+### `src/components/settings/AccountScreen.tsx`
+
+- device-only users can go back to auth from here
+
+---
+
+## Firestore Shape That Matters
+
+Current important collections/documents:
+
+- `users/{uid}`
+  - `profile`
+  - `doseContexts`
+- `users/{uid}/doses/{doseId}`
+
+Notifications branch adds:
+
+- `users/{uid}/notificationDevices/{deviceId}`
+
+Do not assume more exists without reading the live code first.
+
+---
+
+## Validation Map
+
+Web app validation:
+
+- `npx tsc --noEmit -p tsconfig.app.json`
+- `npm run build`
+
+Notifications backend validation:
+
+- in `functions/`: `npm run build`
+
+Manual verification still required on notifications branch:
+
+- signed-in browser permission flow
+- real device/PWA delivery
+- function deploy-backed end-to-end testing
+
+---
+
+## High-Risk Files
+
+Do not modify casually:
+
+- `src/lib/perceivedEffect/*`
+- `src/index.css` existing variables
+- `src/types.ts` existing types
+
+Be careful with:
+
+- `src/App.tsx`
+- `src/components/MainApp.tsx`
+- `src/store/profileStore.ts`
+- `src/lib/sessionStats.ts`
+- `src/sw.ts`
+- `functions/src/index.ts`
+
+---
+
+## Reality Check For Future Agents
+
+The notifications branch has real architecture now, but not full real-world proof.
+
+If you are continuing `feat/real-notifications-v1`, your first questions should be:
+
+1. Is the Firebase Functions package deployed?
+2. Is `VITE_FIREBASE_VAPID_KEY` present locally?
+3. Has a signed-in real-device test been completed?
+4. Which exact flows have actually been observed arriving on device?
+
+If those answers are missing, do not tell Preston the feature is working.

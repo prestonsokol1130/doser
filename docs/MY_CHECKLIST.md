@@ -1,28 +1,58 @@
 # Doser — My Task Checklist
 
-Read this before every new Cursor task.
+Read this before every new coding-agent task.
+
+This checklist assumes:
+
+- you are Preston
+- you do not code directly
+- your advisor tells you what to do
+- Cursor is the default coding agent unless you intentionally switch
 
 ---
 
-## Step 1 — Preston creates the branch
+## Step 1 — Know who is doing what
 
-Preston creates the feature branch before opening Cursor. The agent must not create, rename, or switch branches.
+Three roles:
 
-Example branch name: `feat/tools-hub-refine`
+- You
+  - product owner
+  - middle man
+  - tester
+- Advisor
+  - reads docs
+  - decides the next step
+  - writes the exact prompt
+- Coding agent
+  - reads code
+  - edits files
+  - runs validation
+
+Do not mix those up unless you intentionally want a different workflow.
 
 ---
 
-## Step 2 — Open a brand-new Cursor chat
+## Step 2 — Create the branch yourself
 
-Never reuse an old Cursor chat for a new task.
+You create the branch before opening the coding-agent chat.
+
+The coding agent must not:
+
+- create branches
+- switch branches
+- rename branches
 
 ---
 
-## Step 3 — Paste the prompt from your advisor
+## Step 3 — Open a brand-new coding-agent chat
 
-Your advisor should give you one focused prompt.
+Never reuse an old coding-agent chat for a new task.
 
-Before you send it, make sure it:
+---
+
+## Step 4 — Paste the advisor prompt
+
+Before sending the prompt, make sure it:
 
 - starts with the branch rule
 - includes `@HANDOFF.md`
@@ -36,84 +66,69 @@ If the task is visual:
 
 - use screenshots from `docs/ai-reference/`
 - do not use screenshots from `Downloads`
-- say whether the screenshots are directional or should be copied closely
-- never change the current app theme, typography, capitalization, or overall product feel — no exceptions unless you explicitly approve that theme change
-- if implementation starts drifting off-theme, pause and ask instead of continuing
+- keep the current theme
 
 ---
 
-## Step 4 — Answer Cursor's questions
+## Step 5 — Relay questions back to the advisor
 
-If Cursor asks questions before coding, that is normal.
+If the coding agent asks questions:
 
-Paste the questions to your advisor.
-Paste the advisor's answers back into Cursor.
+1. copy the question back to your advisor
+2. get the answer
+3. paste that answer back to the coding agent
 
----
-
-## Step 5 — Test it yourself
-
-In the repo terminal, run:
-
-```powershell
-npm run dev
-```
-
-Then open the browser and test the exact thing that changed.
-
-Do not approve code you have not tested yourself.
+Do not guess technical answers yourself.
 
 ---
 
-## Step 6 — Have Cursor commit and push
+## Step 6 — Test it yourself
 
-When the change is correct and tested, tell Cursor:
+When the coding agent says the change is ready:
 
-```text
-Looks good. Commit and push.
-```
+1. run the local app
+2. test the exact feature that changed
+3. do not approve untested work
 
----
+For notifications work, remember:
 
-## Step 7 — Open the Pull Request
-
-Go to:
-
-- `https://github.com/prestonsokol1130/doser`
-
-Then:
-
-1. click the banner for your branch
-2. click `Compare & pull request`
-3. confirm the base branch is `main`
-4. create the PR
+- a successful build does not prove notifications work
+- real background notification delivery must be tested on a real signed-in browser/PWA
 
 ---
 
-## Step 8 — Wait for CodeRabbit
+## Step 7 — Have the coding agent commit and push only after approval
+
+When the change is correct and tested, tell the coding agent to commit and push.
+
+---
+
+## Step 8 — Open the Pull Request
+
+Go to GitHub and open the PR against `main`.
+
+Then wait for:
+
+- CodeRabbit
+- any required checks
 
 Do not merge immediately.
 
-Wait for CodeRabbit.
-If CodeRabbit finds issues, fix them before merging.
+---
+
+## Step 9 — Merge only after review and testing
+
+Merge only after:
+
+- your own testing passed
+- CodeRabbit is clean or addressed
+- required checks passed
 
 ---
 
-## Step 9 — Merge
+## Step 10 — Clean up locally after merge
 
-After:
-
-- your own browser test passed
-- CodeRabbit is clean
-- the PR checks passed
-
-merge the PR into `main`.
-
----
-
-## Step 10 — Clean up locally (Preston only)
-
-After merge, Preston runs locally — not the agent during the task:
+After merge, Preston runs locally:
 
 ```powershell
 git checkout main
@@ -126,38 +141,45 @@ git fetch origin --prune
 
 ## Step 11 — Update the docs
 
-After every merged PR, update:
+After meaningful work or after merge, make sure the advisor updates:
 
 - `docs/AI_CONTEXT.md`
+- `docs/HANDOFF.md`
+- `docs/STRUCTURE.md`
 - `docs/NEXT_AGENT_PROMPT.md`
-- any other docs that became stale
-- `docs/ai-reference/` if the visual source of truth changed
+- any other stale docs
 
-This is mandatory. Do not leave stale branch names or stale "current task" notes in the repo.
-
----
-
-## Rules to never break
-
-- Never push directly to `main`
-- Never let Cursor create the branch
-- One task per Cursor chat
-- Never approve code you did not test
-- If CodeRabbit flags something real, fix it
-- If Cursor changes files outside the task scope, stop it
-- If a visual pass drifts off-theme, pause and ask instead of continuing
-- Never let Cursor modify `src/lib/perceivedEffect/`
+This is mandatory.
 
 ---
 
-## Current project snapshot
+## Rules To Never Break
 
-- Phase 5 core Tools and Settings work is merged into `main`
-- The local-only access follow-up is also merged into `main`
-- PR `#10` review issues are resolved; only a non-blocking docstring warning remained
-- `Insights` is live (Peer Comparison tab still deferred)
-- Next likely refinement work:
-  - explicit local-only -> account upgrade flow first
-  - Tools hub first
-  - Settings hub second
-  - only after approved screenshots are in `docs/ai-reference/goal/`
+- never push directly to `main`
+- never let the coding agent create the branch
+- one task per coding-agent chat
+- never approve code you did not test
+- if CodeRabbit flags something real, fix it
+- if a visual pass drifts off-theme, stop it
+- never let the coding agent modify `src/lib/perceivedEffect/`
+- never let an agent say a feature works unless it was actually verified
+
+---
+
+## Current Reality You Should Remember
+
+On `main`:
+
+- Phase 5 core Tools and Settings work is merged
+- local-only access follow-up is merged
+- local-only -> account upgrade decision is still missing
+
+On `feat/real-notifications-v1`:
+
+- notification implementation exists
+- builds pass
+- real end-to-end device delivery is still not confirmed
+
+If a future agent says "notifications work," ask:
+
+- was that tested on a real signed-in browser/PWA device, yes or no?
