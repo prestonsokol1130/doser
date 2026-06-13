@@ -239,10 +239,10 @@ export function MainApp({
   useEffect(() => {
     if (localOnly) return
 
-    const uid = auth.currentUser?.uid
-    if (!uid) return
-
     const sync = () => {
+      const uid = auth.currentUser?.uid
+      if (!uid) return
+
       syncPushRegistration(uid).catch((error) => {
         console.error('Failed to sync push registration:', error)
       })

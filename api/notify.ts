@@ -433,33 +433,40 @@ async function sendOneSignalPush(
   }
 
   try {
-    const response = await fetch('https://onesignal.com/api/v1/notifications', {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        include_aliases: { external_id: [uid] },
-        target_channel: 'push',
-        headings: { en: title },
-        contents: { en: body },
-      }),
-    })
-
-    if (!response.ok) {
-      const text = await response.text()
-      console.error('OneSignal send failed', {
-        uid,
-        status: response.status,
-        body: text,
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10_000)
+    try {
+      const response = await fetch('https://onesignal.com/api/v1/notifications', {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          app_id: ONESIGNAL_APP_ID,
+          include_aliases: { external_id: [uid] },
+          target_channel: 'push',
+          headings: { en: title },
+          contents: { en: body },
+        }),
+        signal: controller.signal,
       })
-      return false
-    }
 
-    console.log('Sent notification via OneSignal', { uid, title })
-    return true
+      if (!response.ok) {
+        const text = await response.text()
+        console.error('OneSignal send failed', {
+          uid,
+          status: response.status,
+          body: text,
+        })
+        return false
+      }
+
+      console.log('Sent notification via OneSignal', { uid, title })
+      return true
+    } finally {
+      clearTimeout(timeoutId)
+    }
   } catch (error) {
     console.error('OneSignal send error', {
       uid,
