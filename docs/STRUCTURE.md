@@ -1,6 +1,6 @@
 # Doser 2.0 — Codebase Structure Reference
 
-Last updated: 2026-06-12
+Last updated: 2026-06-13
 
 **BEFORE BUILDING ANYTHING: Read HANDOFF.md Section 2b (Design System Rules).**
 That section defines all the colors, fonts, layout rules, copy rules, and animation rules
@@ -45,6 +45,10 @@ src/
 │
 ├── main.tsx                          Entry point. Mounts App into #root.
 ├── App.tsx                           Phase router. Gate → Auth → Onboarding → MainApp.
+│                                     Also owns the local-only/auth handoff.
+│                                     Current gap: auth success still routes forward
+│                                     immediately instead of stopping for an explicit
+│                                     local-only upgrade decision.
 ├── App.css                           Unused boilerplate. Do not add styles here.
 ├── index.css                         Global styles, CSS variables, Google Fonts import.
 │                                     DO NOT remove existing variables — other screens use them.
@@ -218,6 +222,8 @@ Always read the existing Firestore schema before assuming field names.
 When that flag is active, `App.tsx` routes around auth, `OnboardingLayer.tsx` saves into
 `src/store/localDataStore.ts`, and `MainApp.tsx` persists profile/dose state locally.
 Returning to the auth screen is supported; migration from local-only data into Firebase is not yet built.
+The next task should likely intercept the auth-session transition in `App.tsx`, because
+that is where local-only mode is currently cleared and cloud-backed routing resumes.
 
 **How PEL is calculated:**
 Import from `src/lib/perceivedEffect/perceivedEffectModel.ts`.

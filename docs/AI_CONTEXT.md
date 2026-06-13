@@ -43,9 +43,8 @@ Code review:
 
 Current git state when this file was last updated:
 
-- `main` contains PR `#8`
-- The latest completed follow-up after Phase 5 is `feat/local-only-access`
-- Do not assume that a local-only branch has already been merged without checking live git state
+- `main` contains PR `#8` plus the merged local-only follow-up from PR `#10`
+- `main` HEAD when this file was last updated: `88d8446 fix: wrap up local-only access flow`
 - No active feature branch should be assumed from this file alone
 
 ---
@@ -152,9 +151,13 @@ Phase 5 refinements that are already merged:
    - Shared validation constants moved into `src/types.ts`
    - `MainApp.tsx` profile persistence guard fixed so profile saving is enabled only after a successful load
 
-### Post-Phase-5 Follow-up — Local-Only Access: COMPLETE
+### Post-Phase-5 Follow-up — Local-Only Access: COMPLETE AND MERGED
 
-Latest validated branch: `feat/local-only-access`
+Merged to `main` through commits:
+
+- `dc81679 feat: add local-only access mode`
+- `e953675 refactor: enhance local-only mode handling and improve dose context sanitization`
+- `88d8446 fix: wrap up local-only access flow`
 
 Delivered behavior:
 
@@ -168,6 +171,22 @@ Delivered behavior:
 Current limitation:
 
 - There is still no migration/import flow from local-only data into a signed-in Firebase account
+
+Important implementation seam for the next task:
+
+- `src/App.tsx` currently clears local-only mode and routes into the signed-in flow
+  as soon as a Firebase auth session exists
+- `src/components/settings/AccountScreen.tsx` can send a device-only user back to
+  auth, but there is no explicit decision screen after sign-in yet
+- `src/components/MainApp.tsx` already has separate Firestore and `localStorage`
+  persistence lanes, so the next task is about the handoff between them, not a
+  full persistence rewrite
+
+Review outcome from the merge:
+
+- All 3 actionable CodeRabbit review issues on PR `#10` were resolved before merge
+- The remaining `Docstring Coverage` note was a warning inside the PR comment, not
+  a blocking required check
 
 ### Live tab state right now
 
@@ -358,9 +377,17 @@ and behavior are intentional.
 - Service worker caching on localhost can make the browser show stale UI
 - Tailwind JIT can keep stale arbitrary-value utilities on long-lived dev sessions
 - Insights Peer Comparison tab is still a deferred stub inside the live Insights screen
+- The next storage-upgrade task must not allow `App.tsx` to silently flip a device-only
+  user into cloud-backed mode immediately after auth
 - The repo's screenshot library is incomplete for current Tools / Settings state
   - existing `current-app-state` images are historical wrong-theme references, not fresh truth captures
   - fresh current UI screenshots should be added before future visual-review tasks
+- `npm run lint` still has pre-existing failures in:
+  - `src/components/settings/InstallAppScreen.tsx`
+  - `src/components/settings/ProfileSettingsScreen.tsx`
+  - `src/components/tools/DoseBuddyControls.tsx`
+  - `src/components/tools/DoseBuddyScreen.tsx`
+  - `src/components/tools/StashScreen.tsx`
 
 ---
 

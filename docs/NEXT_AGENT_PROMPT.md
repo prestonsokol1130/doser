@@ -1,4 +1,4 @@
-# Next Task — Build the Local-Only to Account Upgrade Flow
+# Next Task — Add the Explicit Local-Only Upgrade Decision
 
 @HANDOFF.md
 @STRUCTURE.md
@@ -17,17 +17,31 @@ Read before writing any code:
 
 ## Status
 
-PR `#8` is merged. Phase 5 core Tools and Settings screens are already on `main`.
-The local-only access follow-up is now in place on the current branch.
-Device-only users can reach the auth screen again, but there is still no explicit
-upgrade/import path for moving from local-only use into an account-backed flow.
+Phase 5 core Tools and Settings screens are already on `main`.
+The local-only access follow-up is also already merged on `main` at `88d8446`.
+
+Current live local-only flow:
+
+- `src/components/auth/LogIn.tsx` offers `Continue on this device`
+- `src/store/localSessionStore.ts` sets the `doser.localOnly` session flag
+- `src/App.tsx` routes device-only users into local onboarding or the main app
+- `src/store/localDataStore.ts` persists local profile, doses, dose contexts, and
+  the local onboarding-complete flag
+- `src/components/settings/AccountScreen.tsx` can send a device-only user back to auth
+
+Current gap:
+
+- once a Firebase auth session appears, `src/App.tsx` immediately calls
+  `clearLocalOnlyMode()`, sets `localOnly` false, and routes into the signed-in flow
+- that means a device-only user who logs in does not get an explicit storage-upgrade
+  decision yet
 
 ---
 
 ## The task
 
 Implement the next safe step for local-only mode: when a user leaves device-only mode
-and signs in or creates an account, the app must present an explicit upgrade decision
+and signs in or creates an account, the app must hit an explicit upgrade decision
 instead of silently switching storage models with no explanation.
 
 The minimum acceptable product behavior is:
@@ -37,6 +51,7 @@ The minimum acceptable product behavior is:
 - The user must get an explicit choice before continuing into the signed-in app.
 - Do not silently merge local data into Firestore.
 - Do not silently delete local-only data.
+- Do not silently overwrite existing cloud-backed data with local-only data.
 - Keep the current app theme intact.
 
 Use the live codebase to decide the cleanest implementation, but keep the scope tight.
@@ -51,6 +66,7 @@ Expected touched areas will likely include:
 - new small components/helpers if they fit the existing structure cleanly
 - `src/store/localDataStore.ts`
 - `src/store/localSessionStore.ts`
+- `src/components/MainApp.tsx` only if genuinely required
 
 Do not touch:
 
@@ -67,6 +83,23 @@ Do not touch:
 - Do not claim cloud backup exists for local-only history if it does not
 - Prefer a clear decision screen over background magic
 - If you introduce copy, keep it direct and serious
+- Preserve the current dark theme and current typography/capitalization rules
+
+## Suggested implementation direction
+
+Use the real code, but the handoff seam is likely:
+
+1. Device-only user enters from `Settings` -> `Account` -> `Log In or Create Account`
+2. User completes Firebase auth
+3. App detects both:
+   - a valid Firebase session
+   - existing local-only data
+4. App pauses before normal signed-in routing and shows a clear decision surface
+5. User explicitly chooses how to proceed
+
+Keep the first pass small and safe. An acceptable initial version is a decision flow
+that preserves local-only data for later import and lets the user continue into the
+account-backed app only after acknowledging that the two storage models are separate.
 
 ---
 
@@ -74,6 +107,7 @@ Do not touch:
 
 - `npx tsc --noEmit -p tsconfig.app.json`
 - `npm run build`
+- `npm run lint` is optional for this task because there is existing unrelated lint debt
 
 ---
 
@@ -82,8 +116,20 @@ Do not touch:
 - A local-only user who signs in is not silently dropped into a different storage model
 - The upgrade path is explicit and understandable
 - Local-only data is neither silently deleted nor silently merged
+- Existing cloud-backed data is not silently overwritten
 - The current theme is preserved
 - Validation commands pass
+
+## Browser checks
+
+Test at least this path locally:
+
+- Log in screen -> `Continue on this device` -> finish onboarding -> reach main app
+- `Settings` -> `Account` -> `Log In or Create Account`
+- complete sign-in or sign-up
+- confirm the app stops at the explicit upgrade decision instead of silently entering
+  the signed-in app
+- reload after the decision path and confirm behavior is consistent
 
 ---
 

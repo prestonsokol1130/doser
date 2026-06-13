@@ -321,8 +321,17 @@ ToleranceConfidence = "calibrating" | "partial" | "full"
   - `users/{uid}` profile data
   - `users/{uid}/doses` dose entries
   - `doseContexts` on the user document
+- Local-only mode additionally stores:
+  - `doser.localOnly` through `src/store/localSessionStore.ts`
+  - `doser.local.profile`, `doser.local.doses`, `doser.local.doseContexts`,
+    and `doser.local.onboardingComplete` through `src/store/localDataStore.ts`
 - Local React state is owned by `MainApp.tsx` and persisted through
-  `src/store/profileStore.ts`
+  either Firestore helpers in `src/store/profileStore.ts` or local-only helpers in
+  `src/store/localDataStore.ts`
+- Current gap: once Firebase auth reports a session, `src/App.tsx` immediately
+  clears local-only mode and routes forward. The next storage-upgrade task needs
+  to insert an explicit decision at that handoff instead of silently switching
+  persistence models.
 - PEL calculations are stateless — inputs only: doses + profile + timestamp
 - Read the live Firestore helpers before assuming field names or write shape
 
@@ -467,7 +476,7 @@ Never create, rename, or switch branches.
 
 ## 16. Current Build Status
 
-Last updated: 2026-06-12
+Last updated: 2026-06-13
 
 Phase 1 — Foundation: COMPLETE
 Phase 2 — Gate + Auth + Onboarding: COMPLETE
@@ -506,12 +515,15 @@ Phase 5 — Tools + Settings: CORE COMPLETE (PR #8 merged)
   - Accessibility and CodeRabbit follow-up fixes merged
   - Insights tab is live (Peer Comparison sub-tab still deferred)
 
-Post-Phase-5 follow-up — Local-only access: COMPLETE
+Post-Phase-5 follow-up — Local-only access: COMPLETE AND MERGED
+  - Merged on `main` via `dc81679`, `e953675`, and `88d8446`
   - `Continue on this device` added to the log in screen
-  - Device-only onboarding path merged on the feature branch
+  - Device-only onboarding path is live on `main`
   - Local profile, doses, and dose contexts persist through `localStorage`
   - `Settings` -> `Account` now reflects device-only status and can return the user to auth
   - Local-only -> Firebase migration/import flow is still not built
+  - Important seam: `src/App.tsx` currently clears local-only mode as soon as auth succeeds,
+    so the next task needs to intercept that transition with an explicit decision flow
 
 Next likely task:
   - build the explicit local-only -> account upgrade flow
@@ -519,6 +531,11 @@ Next likely task:
   - then refine the Settings hub
   - do not start visual work from `Downloads`; move approved references into
     `docs/ai-reference/goal/` first
+
+Recent issues encountered:
+  - PR `#10` had 3 actionable CodeRabbit comments; all were fixed before merge
+  - the remaining CodeRabbit `Docstring Coverage` note was informational only
+  - `npm run lint` still fails on pre-existing files outside the local-only change scope
 
 See `docs/AI_CONTEXT.md` for the full current state before doing anything.
 

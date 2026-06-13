@@ -153,8 +153,11 @@ This is mandatory. Do not leave stale branch names or stale "current task" notes
 ## Current project snapshot
 
 - Phase 5 core Tools and Settings work is merged into `main`
+- The local-only access follow-up is also merged into `main`
+- PR `#10` review issues are resolved; only a non-blocking docstring warning remained
 - `Insights` is live (Peer Comparison tab still deferred)
 - Next likely refinement work:
+  - explicit local-only -> account upgrade flow first
   - Tools hub first
   - Settings hub second
   - only after approved screenshots are in `docs/ai-reference/goal/`
