@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Dose, DoseContext, Profile, Substance } from '../../types'
 import {
   CAROUSEL_CARD_COUNT,
@@ -29,6 +29,35 @@ type TimerScreenProps = {
   nowMs: number
 }
 
+function profileDefaultSubstance(profile: Profile): Substance {
+  return profile.defaultSubstance ?? 'GBL'
+}
+
+function isSelectableSubstance(
+  substance: Dose['substance'],
+): substance is Substance {
+  return substance === 'GBL' || substance === 'BDO'
+}
+
+function resolveInitialTimerSubstance(
+  doses: Dose[],
+  profile: Profile,
+  nowMs: number,
+): Substance {
+  const fallback = profileDefaultSubstance(profile)
+  const selectableDoses = doses.filter(
+    (dose): dose is Dose & { substance: Substance } =>
+      isSelectableSubstance(dose.substance),
+  )
+  if (selectableDoses.length === 0) return fallback
+
+  const mostRecent = selectableDoses.reduce((latest, dose) =>
+    dose.ts > latest.ts ? dose : latest,
+  )
+  const activeSession = currentSession(doses, mostRecent.substance, nowMs)
+  return activeSession.length > 0 ? mostRecent.substance : fallback
+}
+
 export function TimerScreen({
   profile,
   doses,
@@ -37,10 +66,13 @@ export function TimerScreen({
   setDoses,
   nowMs,
 }: TimerScreenProps) {
-  const [substance, setSubstance] = useState<Substance>('GBL')
-  const [doseAmount, setDoseAmount] = useState(() =>
-    snapDoseToStep(preferredDoseForSubstance(profile, 'GBL')),
+  const [substance, setSubstance] = useState<Substance>(() =>
+    resolveInitialTimerSubstance(doses, profile, nowMs),
   )
+  const [doseAmount, setDoseAmount] = useState(() => {
+    const initialSubstance = resolveInitialTimerSubstance(doses, profile, nowMs)
+    return snapDoseToStep(preferredDoseForSubstance(profile, initialSubstance))
+  })
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [checkInOpen, setCheckInOpen] = useState(false)
   const [draftContext, setDraftContext] = useState<DoseContext>(DEFAULT_DOSE_CONTEXT)
@@ -48,6 +80,16 @@ export function TimerScreen({
   const timer = computeTimerState(doses, substance, profile, nowMs)
   const activeSession = currentSession(doses, substance, nowMs)
   const isRedose = activeSession.length > 0
+  const wasInActiveSessionRef = useRef(isRedose)
+
+  useEffect(() => {
+    if (wasInActiveSessionRef.current && !isRedose) {
+      const next = profileDefaultSubstance(profile)
+      setSubstance(next)
+      setDoseAmount(snapDoseToStep(preferredDoseForSubstance(profile, next)))
+    }
+    wasInActiveSessionRef.current = isRedose
+  }, [isRedose, profile])
 
   const commitDose = useCallback(
     (context: DoseContext | null) => {

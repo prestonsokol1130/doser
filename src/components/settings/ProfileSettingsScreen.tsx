@@ -5,7 +5,7 @@ import {
   normalizeHeightToCm,
   normalizeWeightToKg,
 } from '@/lib/metabolicProfile'
-import type { BiologicalSex, Profile, WeightUnit } from '@/types'
+import type { BiologicalSex, Profile, Substance, WeightUnit } from '@/types'
 import { FormField } from '../tools/FormField'
 import { SubScreenHeader } from '../tools/SubScreenHeader'
 
@@ -184,6 +184,42 @@ export function ProfileSettingsScreen({
                   }
                   className={`flex-1 rounded-[10px] border py-2 text-[10px] uppercase tracking-[0.12em] outline-none ${
                     profile.biologicalSex === option.value
+                      ? 'border-[var(--color-ring)] text-[var(--color-ring)]'
+                      : 'border-[var(--app-divider)] text-[var(--app-faint)]'
+                  }`}
+                  style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <span
+              className="text-[10px] uppercase tracking-[0.14em] text-[var(--app-faint)]"
+              style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+            >
+              Primary Substance
+            </span>
+            <div className="mt-2 flex gap-2">
+              {(
+                [
+                  { value: 'GBL' as Substance, label: 'GBL' },
+                  { value: 'BDO' as Substance, label: 'BDO' },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() =>
+                    onProfileChange({
+                      ...profile,
+                      defaultSubstance: option.value,
+                    })
+                  }
+                  className={`flex-1 rounded-[10px] border py-2 text-[10px] uppercase tracking-[0.12em] outline-none ${
+                    (profile.defaultSubstance ?? 'GBL') === option.value
                       ? 'border-[var(--color-ring)] text-[var(--color-ring)]'
                       : 'border-[var(--app-divider)] text-[var(--app-faint)]'
                   }`}
