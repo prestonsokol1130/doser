@@ -1,6 +1,6 @@
 import { onAuthStateChanged, signOut } from 'firebase/auth'
+import OneSignal from 'react-onesignal'
 import { auth } from '../lib/firebase'
-import { removeBrowserPushRegistration } from '@/lib/pushRegistration'
 
 export type AuthSession = {
   user: { id: string }
@@ -29,11 +29,8 @@ export function subscribeToAuth(
 }
 
 export async function logOut(): Promise<void> {
-  const uid = auth.currentUser?.uid ?? null
-  if (uid) {
-    await removeBrowserPushRegistration(uid).catch((error) => {
-      console.error('Failed to remove browser push registration on sign-out', error)
-    })
-  }
   await signOut(auth)
+  await OneSignal.logout().catch((error) => {
+    console.error('Failed to logout OneSignal on sign-out', error)
+  })
 }

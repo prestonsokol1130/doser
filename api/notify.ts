@@ -6,8 +6,6 @@ import type {
   QueryDocumentSnapshot,
 } from 'firebase-admin/firestore'
 import { getFirestore } from 'firebase-admin/firestore'
-import type { MulticastMessage } from 'firebase-admin/messaging'
-import { getMessaging } from 'firebase-admin/messaging'
 
 if (!getApps().length) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
@@ -21,15 +19,17 @@ if (!getApps().length) {
 }
 
 const db = getFirestore()
-const messaging = getMessaging()
 
-const APP_ORIGIN = 'https://usedoser.com'
+const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID
+const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY
+
 const HOUR_MS = 60 * 60 * 1000
 const MINUTE_MS = 60 * 1000
 const FIXED_MISSED_DOSE_DELAY_MS = HOUR_MS
 const FIXED_SESSION_AUTO_END_DELAY_MS = 3 * HOUR_MS
 const STATE_COLLECTION = 'system'
 const STATE_DOC_ID = 'notificationState'
+const DEFAULT_TIME_ZONE = 'UTC'
 
 type Substance = 'GBL' | 'BDO'
 type DoseSubstance = Substance | 'GHB'
@@ -67,13 +67,6 @@ type DoseDoc = {
   substance: DoseSubstance
   amountMl: number
   ts: number
-}
-
-type NotificationDeviceDoc = {
-  token?: string
-  permission?: string
-  timeZone?: string
-  updatedAt?: number
 }
 
 type NotificationState = {
@@ -146,16 +139,7 @@ async function processUser(
   const profile = readProfile(userDoc.data())
   if (!profile) return
 
-  const devicesSnapshot = await userDoc.ref.collection('notificationDevices').get()
-  const devices = devicesSnapshot.docs
-    .map((doc) => doc.data() as NotificationDeviceDoc)
-    .filter((device) => device.permission === 'granted' && typeof device.token === 'string')
-
-  if (devices.length === 0) {
-    return
-  }
-
-  const timeZone = pickTimeZone(devices)
+  const uid = userDoc.id
   const nowMs = Date.now()
   const stateRef = userDoc.ref.collection(STATE_COLLECTION).doc(STATE_DOC_ID)
   const stateSnapshot = await stateRef.get()
@@ -165,10 +149,9 @@ async function processUser(
   const latestDose = await fetchLatestDose(userDoc.ref)
   if (latestDose) {
     await processDoseWindowNotifications(
-      userDoc.id,
+      uid,
       profile,
       latestDose,
-      devicesSnapshot.docs,
       state,
       patch,
       nowMs,
@@ -178,8 +161,6 @@ async function processUser(
   await processDailySummary(
     userDoc.ref,
     profile,
-    devicesSnapshot.docs,
-    timeZone,
     state,
     patch,
     nowMs,
@@ -188,7 +169,6 @@ async function processUser(
   await processStashAlert(
     userDoc.ref,
     profile,
-    devicesSnapshot.docs,
     state,
     patch,
     nowMs,
@@ -204,7 +184,6 @@ async function processDoseWindowNotifications(
   uid: string,
   profile: UserProfile,
   latestDose: DoseDoc,
-  deviceDocs: QueryDocumentSnapshot[],
   state: NotificationState,
   patch: Partial<NotificationState>,
   nowMs: number,
@@ -220,21 +199,12 @@ async function processDoseWindowNotifications(
     nowMs >= dueReminderAt &&
     nowMs < nextWindowAt
   ) {
-    const doseDueSuccessCount = await sendToDevices(
+    const sent = await sendOneSignalPush(
       uid,
-      deviceDocs,
-      buildNotificationMessage(
-        'Dose due soon',
-        `Your next ${normalizeTrackedSubstance(latestDose.substance)} window opens at ${formatClockTime(nextWindowAt)}.`,
-        `dose-due-${latestDose.id}`,
-        {
-          type: 'dose-due',
-          doseId: latestDose.id,
-        },
-        profile.notif?.silent === true,
-      ),
+      'Dose due soon',
+      `Your next ${normalizeTrackedSubstance(latestDose.substance)} window opens at ${formatClockTime(nextWindowAt)}.`,
     )
-    if (doseDueSuccessCount > 0) {
+    if (sent) {
       patch.doseDueSentForDoseId = latestDose.id
       patch.doseDueSentAt = nowMs
     }
@@ -245,21 +215,12 @@ async function processDoseWindowNotifications(
     state.missedDoseSentForDoseId !== latestDose.id &&
     nowMs >= missedDoseAt
   ) {
-    const missedDoseSuccessCount = await sendToDevices(
+    const sent = await sendOneSignalPush(
       uid,
-      deviceDocs,
-      buildNotificationMessage(
-        'No dose logged',
-        `It has been 1 hour since your ${normalizeTrackedSubstance(latestDose.substance)} redose window opened and no new dose was logged.`,
-        `missed-dose-${latestDose.id}`,
-        {
-          type: 'missed-dose',
-          doseId: latestDose.id,
-        },
-        profile.notif?.silent === true,
-      ),
+      'No dose logged',
+      `It has been 1 hour since your ${normalizeTrackedSubstance(latestDose.substance)} redose window opened and no new dose was logged.`,
     )
-    if (missedDoseSuccessCount > 0) {
+    if (sent) {
       patch.missedDoseSentForDoseId = latestDose.id
       patch.missedDoseSentAt = nowMs
     }
@@ -277,8 +238,6 @@ async function processDoseWindowNotifications(
 async function processDailySummary(
   userRef: DocumentReference,
   profile: UserProfile,
-  deviceDocs: QueryDocumentSnapshot[],
-  timeZone: string,
   state: NotificationState,
   patch: Partial<NotificationState>,
   nowMs: number,
@@ -286,34 +245,27 @@ async function processDailySummary(
   if (profile.notif?.dailyUsageSummary !== true) return
 
   const summaryTime = sanitizeDailySummaryTime(profile.notif?.dailySummaryTime)
-  const localNow = getLocalNow(timeZone, nowMs)
+  const localNow = getLocalNow(DEFAULT_TIME_ZONE, nowMs)
   if (localNow.timeKey !== summaryTime) return
   if (state.dailySummaryLastSentDate === localNow.dateKey) return
 
-  const todayStartMs = getStartOfLocalDayMs(timeZone, nowMs)
+  const todayStartMs = getStartOfLocalDayMs(DEFAULT_TIME_ZONE, nowMs)
   const dosesToday = await fetchDosesSince(userRef, todayStartMs)
   const doseCount = dosesToday.length
   const totalMl = dosesToday.reduce((sum, dose) => sum + dose.amountMl, 0)
   const lastDoseTs = dosesToday[dosesToday.length - 1]?.ts ?? null
   const lastDoseLabel =
-    lastDoseTs == null ? 'No dose logged today.' : `Last dose at ${formatClockTime(lastDoseTs, timeZone)}.`
+    lastDoseTs == null
+      ? 'No dose logged today.'
+      : `Last dose at ${formatClockTime(lastDoseTs, DEFAULT_TIME_ZONE)}.`
 
-  const dailySummarySuccessCount = await sendToDevices(
+  const sent = await sendOneSignalPush(
     userRef.id,
-    deviceDocs,
-    buildNotificationMessage(
-      'Daily summary',
-      `${doseCount} dose${doseCount === 1 ? '' : 's'} today. ${totalMl.toFixed(1)} mL total. ${lastDoseLabel}`,
-      `daily-summary-${localNow.dateKey}`,
-      {
-        type: 'daily-summary',
-        date: localNow.dateKey,
-      },
-      profile.notif?.silent === true,
-    ),
+    'Daily summary',
+    `${doseCount} dose${doseCount === 1 ? '' : 's'} today. ${totalMl.toFixed(1)} mL total. ${lastDoseLabel}`,
   )
 
-  if (dailySummarySuccessCount > 0) {
+  if (sent) {
     patch.dailySummaryLastSentDate = localNow.dateKey
     patch.dailySummaryLastSentAt = nowMs
   }
@@ -322,7 +274,6 @@ async function processDailySummary(
 async function processStashAlert(
   userRef: DocumentReference,
   profile: UserProfile,
-  deviceDocs: QueryDocumentSnapshot[],
   state: NotificationState,
   patch: Partial<NotificationState>,
   nowMs: number,
@@ -346,20 +297,12 @@ async function processStashAlert(
   const isLow = remainingPct <= (notif.stashLowThresholdPct ?? 20)
 
   if (isLow && !state.stashLowActive) {
-    const stashLowSuccessCount = await sendToDevices(
+    const sent = await sendOneSignalPush(
       userRef.id,
-      deviceDocs,
-      buildNotificationMessage(
-        'Stash running low',
-        `${remainingMl.toFixed(1)} mL remaining (${remainingPct}%).`,
-        'stash-low',
-        {
-          type: 'stash-low',
-        },
-        notif.silent === true,
-      ),
+      'Stash running low',
+      `${remainingMl.toFixed(1)} mL remaining (${remainingPct}%).`,
     )
-    if (stashLowSuccessCount > 0) {
+    if (sent) {
       patch.stashLowActive = true
       patch.stashLowSentAt = nowMs
     }
@@ -371,80 +314,50 @@ async function processStashAlert(
   }
 }
 
-async function sendToDevices(
+async function sendOneSignalPush(
   uid: string,
-  deviceDocs: QueryDocumentSnapshot[],
-  message: Omit<MulticastMessage, 'tokens'>,
-): Promise<number> {
-  const activeDeviceDocs = deviceDocs.filter((doc) => {
-    const device = doc.data() as NotificationDeviceDoc
-    return device.permission === 'granted' && typeof device.token === 'string'
-  })
-  const tokens = [...new Set(activeDeviceDocs.map((doc) => (doc.data() as NotificationDeviceDoc).token!))]
-  if (tokens.length === 0) return 0
-
-  const response = await messaging.sendEachForMulticast({
-    ...message,
-    tokens,
-  })
-
-  const staleDocDeletes: Promise<unknown>[] = []
-  response.responses.forEach((result, index) => {
-    if (result.success) return
-    const code = result.error?.code ?? ''
-    if (
-      code === 'messaging/registration-token-not-registered' ||
-      code === 'messaging/invalid-registration-token'
-    ) {
-      const token = tokens[index]
-      const staleDoc = activeDeviceDocs.find(
-        (doc) => (doc.data() as NotificationDeviceDoc).token === token,
-      )
-      if (staleDoc) staleDocDeletes.push(staleDoc.ref.delete())
-    }
-  })
-
-  if (staleDocDeletes.length > 0) {
-    await Promise.allSettled(staleDocDeletes)
-  }
-
-  console.log('Sent notification', {
-    uid,
-    successCount: response.successCount,
-    failureCount: response.failureCount,
-  })
-
-  return response.successCount
-}
-
-function buildNotificationMessage(
   title: string,
   body: string,
-  tag: string,
-  data: Record<string, string>,
-  silent: boolean,
-): Omit<MulticastMessage, 'tokens'> {
-  const icon = new URL('/favicon.svg', APP_ORIGIN).toString()
-  return {
-    notification: {
-      title,
-      body,
-    },
-    data,
-    webpush: {
+): Promise<boolean> {
+  if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+    console.error('OneSignal env vars missing')
+    return false
+  }
+
+  try {
+    const response = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
       headers: {
-        Urgency: 'high',
+        Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      notification: {
-        tag,
-        icon,
-        badge: icon,
-        silent,
-      },
-      fcmOptions: {
-        link: APP_ORIGIN,
-      },
-    },
+      body: JSON.stringify({
+        app_id: ONESIGNAL_APP_ID,
+        include_aliases: { external_id: [uid] },
+        target_channel: 'push',
+        headings: { en: title },
+        contents: { en: body },
+      }),
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      console.error('OneSignal send failed', {
+        uid,
+        status: response.status,
+        body: text,
+      })
+      return false
+    }
+
+    console.log('Sent notification via OneSignal', { uid, title })
+    return true
+  } catch (error) {
+    console.error('OneSignal send error', {
+      uid,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return false
   }
 }
 
@@ -489,19 +402,6 @@ function getDoseDueReminderAt(profile: UserProfile, dose: DoseDoc): number {
 function sanitizeDailySummaryTime(value: string | undefined): string {
   if (!value) return '09:00'
   return /^\d{2}:\d{2}$/.test(value) ? value : '09:00'
-}
-
-function pickTimeZone(devices: NotificationDeviceDoc[]): string {
-  const sorted = [...devices].sort(
-    (a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0),
-  )
-  const timeZone = sorted[0]?.timeZone ?? 'UTC'
-  try {
-    new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date())
-    return timeZone
-  } catch {
-    return 'UTC'
-  }
 }
 
 function getLocalNow(timeZone: string, nowMs: number): LocalNow {

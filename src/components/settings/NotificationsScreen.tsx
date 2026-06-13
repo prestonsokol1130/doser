@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react'
 import { auth } from '@/lib/firebase'
 import {
   getBrowserPushPermission,
-  hasPushConfig,
-  isBrowserPushSupported,
-  requestBrowserPushPermission,
+  syncPushRegistration,
 } from '@/lib/pushRegistration'
 import type { NotificationPrefs, Profile } from '@/types'
 import { FormField, ToggleField } from '../tools/FormField'
@@ -25,6 +23,15 @@ function updateNotif(
     ...profile,
     notif: { ...profile.notif, ...patch },
   }
+}
+
+function isBrowserPushSupported(): boolean {
+  return typeof window !== 'undefined' && 'Notification' in window
+}
+
+function hasOneSignalConfig(): boolean {
+  const appId = import.meta.env.VITE_ONESIGNAL_APP_ID
+  return typeof appId === 'string' && appId.length > 0
 }
 
 export function NotificationsScreen({
@@ -53,8 +60,11 @@ export function NotificationsScreen({
 
     setRequestingPermission(true)
     try {
-      const nextPermission = await requestBrowserPushPermission(uid)
-      setPermission(nextPermission === 'config-missing' ? 'default' : nextPermission)
+      const nextPermission = await Notification.requestPermission()
+      setPermission(getBrowserPushPermission())
+      if (nextPermission === 'granted') {
+        await syncPushRegistration(uid)
+      }
     } catch (error) {
       console.error('Failed to request browser push permission', error)
       setPermission(getBrowserPushPermission())
@@ -103,7 +113,7 @@ export function NotificationsScreen({
                 This browser cannot receive background push notifications.
               </p>
             </div>
-          ) : !hasPushConfig() ? (
+          ) : !hasOneSignalConfig() ? (
             <div className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-4">
               <p
                 className="text-[12px] uppercase tracking-[0.1em] text-[var(--app-text)]"
@@ -115,7 +125,7 @@ export function NotificationsScreen({
                 className="mt-1 text-[12px] text-[var(--app-dim)]"
                 style={{ fontFamily: 'var(--font-body)' }}
               >
-                This build is missing the Firebase web push key, so reminders cannot reach this device yet.
+                This build is missing the OneSignal app ID, so reminders cannot reach this device yet.
               </p>
             </div>
           ) : permission === 'denied' ? (

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { auth } from '../lib/firebase'
-import { syncBrowserPushRegistration } from '@/lib/pushRegistration'
+import { syncPushRegistration } from '@/lib/pushRegistration'
 import {
   fetchLocalDoseContexts,
   fetchLocalDoses,
@@ -243,7 +243,7 @@ export function MainApp({
     if (!uid) return
 
     const sync = () => {
-      syncBrowserPushRegistration(uid).catch((error) => {
+      syncPushRegistration(uid).catch((error) => {
         console.error('Failed to sync push registration:', error)
       })
     }
