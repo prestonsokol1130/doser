@@ -31,7 +31,9 @@ export function subscribeToAuth(
 export async function logOut(): Promise<void> {
   const uid = auth.currentUser?.uid ?? null
   if (uid) {
-    await removeBrowserPushRegistration(uid).catch(() => undefined)
+    await removeBrowserPushRegistration(uid).catch((error) => {
+      console.error('Failed to remove browser push registration on sign-out', error)
+    })
   }
   await signOut(auth)
 }

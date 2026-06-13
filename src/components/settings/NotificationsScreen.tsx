@@ -55,6 +55,9 @@ export function NotificationsScreen({
     try {
       const nextPermission = await requestBrowserPushPermission(uid)
       setPermission(nextPermission === 'config-missing' ? 'default' : nextPermission)
+    } catch (error) {
+      console.error('Failed to request browser push permission', error)
+      setPermission(getBrowserPushPermission())
     } finally {
       setRequestingPermission(false)
     }

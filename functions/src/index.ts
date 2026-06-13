@@ -184,7 +184,7 @@ async function processDoseWindowNotifications(
     nowMs >= dueReminderAt &&
     nowMs < nextWindowAt
   ) {
-    await sendToDevices(
+    const doseDueSuccessCount = await sendToDevices(
       uid,
       deviceDocs,
       buildNotificationMessage(
@@ -198,8 +198,10 @@ async function processDoseWindowNotifications(
         profile.notif?.silent === true,
       ),
     )
-    patch.doseDueSentForDoseId = latestDose.id
-    patch.doseDueSentAt = nowMs
+    if (doseDueSuccessCount > 0) {
+      patch.doseDueSentForDoseId = latestDose.id
+      patch.doseDueSentAt = nowMs
+    }
   }
 
   if (
@@ -207,7 +209,7 @@ async function processDoseWindowNotifications(
     state.missedDoseSentForDoseId !== latestDose.id &&
     nowMs >= missedDoseAt
   ) {
-    await sendToDevices(
+    const missedDoseSuccessCount = await sendToDevices(
       uid,
       deviceDocs,
       buildNotificationMessage(
@@ -221,8 +223,10 @@ async function processDoseWindowNotifications(
         profile.notif?.silent === true,
       ),
     )
-    patch.missedDoseSentForDoseId = latestDose.id
-    patch.missedDoseSentAt = nowMs
+    if (missedDoseSuccessCount > 0) {
+      patch.missedDoseSentForDoseId = latestDose.id
+      patch.missedDoseSentAt = nowMs
+    }
   }
 
   if (
@@ -258,7 +262,7 @@ async function processDailySummary(
   const lastDoseLabel =
     lastDoseTs == null ? 'No dose logged today.' : `Last dose at ${formatClockTime(lastDoseTs, timeZone)}.`
 
-  await sendToDevices(
+  const dailySummarySuccessCount = await sendToDevices(
     userRef.id,
     deviceDocs,
     buildNotificationMessage(
@@ -273,8 +277,10 @@ async function processDailySummary(
     ),
   )
 
-  patch.dailySummaryLastSentDate = localNow.dateKey
-  patch.dailySummaryLastSentAt = nowMs
+  if (dailySummarySuccessCount > 0) {
+    patch.dailySummaryLastSentDate = localNow.dateKey
+    patch.dailySummaryLastSentAt = nowMs
+  }
 }
 
 async function processStashAlert(
@@ -297,14 +303,14 @@ async function processStashAlert(
   const refillAt = Math.max(0, stash.refillAt ?? 0)
   const dosesSinceRefill = await fetchDosesSince(userRef, refillAt)
   const consumedMl = dosesSinceRefill.reduce((sum, dose) => sum + dose.amountMl, 0)
-  const remainingMl = Math.max(0, (stash.capacityMl ?? 0) - consumedMl)
   const fullMl = (stash.fullMl ?? 0) > 0 ? stash.fullMl ?? 0 : stash.capacityMl ?? 0
+  const remainingMl = Math.max(0, (stash.capacityMl ?? 0) - consumedMl)
   const remainingPct =
     fullMl > 0 ? Math.round((remainingMl / fullMl) * 100) : 0
   const isLow = remainingPct <= (notif.stashLowThresholdPct ?? 20)
 
   if (isLow && !state.stashLowActive) {
-    await sendToDevices(
+    const stashLowSuccessCount = await sendToDevices(
       userRef.id,
       deviceDocs,
       buildNotificationMessage(
@@ -317,8 +323,10 @@ async function processStashAlert(
         notif.silent === true,
       ),
     )
-    patch.stashLowActive = true
-    patch.stashLowSentAt = nowMs
+    if (stashLowSuccessCount > 0) {
+      patch.stashLowActive = true
+      patch.stashLowSentAt = nowMs
+    }
     return
   }
 
@@ -331,13 +339,13 @@ async function sendToDevices(
   uid: string,
   deviceDocs: admin.firestore.QueryDocumentSnapshot[],
   message: Omit<admin.messaging.MulticastMessage, 'tokens'>,
-): Promise<void> {
+): Promise<number> {
   const activeDeviceDocs = deviceDocs.filter((doc) => {
     const device = doc.data() as NotificationDeviceDoc
     return device.permission === 'granted' && typeof device.token === 'string'
   })
   const tokens = [...new Set(activeDeviceDocs.map((doc) => (doc.data() as NotificationDeviceDoc).token!))]
-  if (tokens.length === 0) return
+  if (tokens.length === 0) return 0
 
   const response = await messaging.sendEachForMulticast({
     ...message,
@@ -369,6 +377,8 @@ async function sendToDevices(
     successCount: response.successCount,
     failureCount: response.failureCount,
   })
+
+  return response.successCount
 }
 
 function buildNotificationMessage(
@@ -449,7 +459,13 @@ function pickTimeZone(devices: NotificationDeviceDoc[]): string {
   const sorted = [...devices].sort(
     (a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0),
   )
-  return sorted[0]?.timeZone ?? 'UTC'
+  const timeZone = sorted[0]?.timeZone ?? 'UTC'
+  try {
+    new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date())
+    return timeZone
+  } catch {
+    return 'UTC'
+  }
 }
 
 function getLocalNow(timeZone: string, nowMs: number): LocalNow {

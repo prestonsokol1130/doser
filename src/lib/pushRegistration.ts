@@ -5,6 +5,7 @@ import type { PushPermissionState } from '@/lib/notifications'
 
 const DEVICE_ID_KEY = 'doser.notificationDeviceId'
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY
+const SERVICE_WORKER_READY_TIMEOUT_MS = 8_000
 
 export type PushRegistrationState = PushPermissionState | 'config-missing'
 
@@ -37,6 +38,17 @@ export function getBrowserPushPermission(): PushPermissionState {
 
 export function hasPushConfig(): boolean {
   return typeof VAPID_KEY === 'string' && VAPID_KEY.length > 0
+}
+
+function waitForServiceWorkerReady(): Promise<ServiceWorkerRegistration> {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<ServiceWorkerRegistration>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Service worker did not become ready within 8 seconds'))
+      }, SERVICE_WORKER_READY_TIMEOUT_MS)
+    }),
+  ])
 }
 
 async function upsertDevice(uid: string, token: string): Promise<void> {
@@ -76,7 +88,7 @@ export async function syncBrowserPushRegistration(
     return permission
   }
 
-  const registration = await navigator.serviceWorker.ready
+  const registration = await waitForServiceWorkerReady()
   const messaging = getMessaging(firebaseApp)
   const token = await getToken(messaging, {
     vapidKey: VAPID_KEY,
