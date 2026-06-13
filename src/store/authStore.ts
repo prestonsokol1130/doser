@@ -30,7 +30,9 @@ export function subscribeToAuth(
 
 export async function logOut(): Promise<void> {
   await signOut(auth)
-  await OneSignal.logout().catch((error) => {
-    console.error('Failed to logout OneSignal on sign-out', error)
-  })
+  try {
+    await OneSignal.logout()
+  } catch (error) {
+    console.warn('Failed to logout OneSignal on sign-out', error)
+  }
 }
