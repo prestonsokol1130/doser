@@ -38,10 +38,10 @@ function shouldPauseForLocalUpgrade(): boolean {
 
 function getInitialPhase(): AppPhase {
   if (!isGateComplete()) return 'gate'
-  if (isLocalOnlyAuthFlow()) return 'auth'
   if (shouldPauseForLocalUpgrade() && auth.currentUser?.uid) {
     return 'local-upgrade'
   }
+  if (isLocalOnlyAuthFlow()) return 'auth'
   if (isLocalOnlyMode()) return resolveLocalPhase()
   return 'auth'
 }
