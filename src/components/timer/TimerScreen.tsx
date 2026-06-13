@@ -83,13 +83,14 @@ export function TimerScreen({
   const timer = computeTimerState(doses, substance, profile, nowMs)
   const activeSession = currentSession(doses, substance, nowMs)
   const isRedose = activeSession.length > 0
+  const defaultSubstance = profileDefaultSubstance(profile)
   const wasInActiveSessionRef = useRef(isRedose)
-  const prevDefaultSubstanceRef = useRef(profile.defaultSubstance)
+  const prevDefaultSubstanceRef = useRef(defaultSubstance)
   const prevSubstanceRef = useRef(substance)
 
   useEffect(() => {
     const defaultChanged =
-      prevDefaultSubstanceRef.current !== profile.defaultSubstance
+      prevDefaultSubstanceRef.current !== defaultSubstance
     const sessionEnded = wasInActiveSessionRef.current && !isRedose
     const manualSubstanceToggleDuringSession =
       substance !== prevSubstanceRef.current && wasInActiveSessionRef.current
@@ -99,15 +100,15 @@ export function TimerScreen({
       !isRedose &&
       (sessionEnded || defaultChanged)
     ) {
-      const next = profileDefaultSubstance(profile)
+      const next = defaultSubstance
       setSubstance(next)
       setDoseAmount(snapDoseToStep(preferredDoseForSubstance(profile, next)))
     }
 
     wasInActiveSessionRef.current = isRedose
-    prevDefaultSubstanceRef.current = profile.defaultSubstance
+    prevDefaultSubstanceRef.current = defaultSubstance
     prevSubstanceRef.current = substance
-  }, [isRedose, profile, substance])
+  }, [isRedose, defaultSubstance, profile, substance])
 
   const commitDose = useCallback(
     (context: DoseContext | null) => {
