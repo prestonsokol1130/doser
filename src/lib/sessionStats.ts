@@ -1,5 +1,6 @@
+import { isDoseStillInActiveSession } from '@/lib/notifications'
 import { HOUR_MS, MINUTE_MS } from '@/lib/perceivedEffect/effectCurves'
-import type { Dose, DoseSubstance, Substance } from '@/types'
+import type { Dose, DoseSubstance, Profile, Substance } from '@/types'
 
 /** Gap with no doses that starts a new session. */
 export const SESSION_GAP_MS = 6 * HOUR_MS
@@ -124,6 +125,7 @@ export function splitIntoSessions(doses: Dose[], gapMs = SESSION_GAP_MS): Dose[]
 export function currentSession(
   doses: Dose[],
   substance: Substance,
+  profile: Profile,
   nowMs: number,
 ): Dose[] {
   const filtered = doses
@@ -134,8 +136,8 @@ export function currentSession(
   const sessions = splitIntoSessions(filtered)
   if (sessions.length === 0) return []
   const last = sessions[sessions.length - 1]!
-  const lastDoseTs = last[last.length - 1]!.ts
-  if (nowMs - lastDoseTs > SESSION_GAP_MS) return []
+  const lastDose = last[last.length - 1]!
+  if (!isDoseStillInActiveSession(profile, lastDose, nowMs)) return []
   return last
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { auth } from '../lib/firebase'
+import { syncBrowserPushRegistration } from '@/lib/pushRegistration'
 import {
   fetchLocalDoseContexts,
   fetchLocalDoses,
@@ -234,6 +235,23 @@ export function MainApp({
     const id = window.setInterval(() => setNowMs(Date.now()), 1000)
     return () => window.clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    if (localOnly) return
+
+    const uid = auth.currentUser?.uid
+    if (!uid) return
+
+    const sync = () => {
+      syncBrowserPushRegistration(uid).catch((error) => {
+        console.error('Failed to sync push registration:', error)
+      })
+    }
+
+    sync()
+    window.addEventListener('focus', sync)
+    return () => window.removeEventListener('focus', sync)
+  }, [localOnly])
 
   if (loading) {
     return (

@@ -1,5 +1,6 @@
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
+import { removeBrowserPushRegistration } from '@/lib/pushRegistration'
 
 export type AuthSession = {
   user: { id: string }
@@ -28,5 +29,9 @@ export function subscribeToAuth(
 }
 
 export async function logOut(): Promise<void> {
+  const uid = auth.currentUser?.uid ?? null
+  if (uid) {
+    await removeBrowserPushRegistration(uid).catch(() => undefined)
+  }
   await signOut(auth)
 }

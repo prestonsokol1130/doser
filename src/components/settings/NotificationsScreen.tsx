@@ -1,9 +1,18 @@
+import { useEffect, useState } from 'react'
+import { auth } from '@/lib/firebase'
+import {
+  getBrowserPushPermission,
+  hasPushConfig,
+  isBrowserPushSupported,
+  requestBrowserPushPermission,
+} from '@/lib/pushRegistration'
 import type { NotificationPrefs, Profile } from '@/types'
 import { FormField, ToggleField } from '../tools/FormField'
 import { SubScreenHeader } from '../tools/SubScreenHeader'
 
 type NotificationsScreenProps = {
   profile: Profile
+  localOnly?: boolean
   onProfileChange: (profile: Profile) => void
   onBack: () => void
 }
@@ -20,10 +29,36 @@ function updateNotif(
 
 export function NotificationsScreen({
   profile,
+  localOnly = false,
   onProfileChange,
   onBack,
 }: NotificationsScreenProps) {
   const { notif } = profile
+  const [permission, setPermission] = useState(() => getBrowserPushPermission())
+  const [requestingPermission, setRequestingPermission] = useState(false)
+
+  useEffect(() => {
+    const refreshPermission = () => {
+      setPermission(getBrowserPushPermission())
+    }
+
+    refreshPermission()
+    window.addEventListener('focus', refreshPermission)
+    return () => window.removeEventListener('focus', refreshPermission)
+  }, [])
+
+  async function handleEnableNotifications() {
+    const uid = auth.currentUser?.uid ?? null
+    if (!uid || localOnly) return
+
+    setRequestingPermission(true)
+    try {
+      const nextPermission = await requestBrowserPushPermission(uid)
+      setPermission(nextPermission === 'config-missing' ? 'default' : nextPermission)
+    } finally {
+      setRequestingPermission(false)
+    }
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -35,6 +70,107 @@ export function NotificationsScreen({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex flex-col gap-3">
+          {localOnly ? (
+            <div className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-4">
+              <p
+                className="text-[12px] uppercase tracking-[0.1em] text-[var(--app-text)]"
+                style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+              >
+                Account required
+              </p>
+              <p
+                className="mt-1 text-[12px] text-[var(--app-dim)]"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                Background notifications only work for signed-in accounts in this version.
+              </p>
+            </div>
+          ) : !isBrowserPushSupported() ? (
+            <div className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-4">
+              <p
+                className="text-[12px] uppercase tracking-[0.1em] text-[var(--app-text)]"
+                style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+              >
+                Browser not supported
+              </p>
+              <p
+                className="mt-1 text-[12px] text-[var(--app-dim)]"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                This browser cannot receive background push notifications.
+              </p>
+            </div>
+          ) : !hasPushConfig() ? (
+            <div className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-4">
+              <p
+                className="text-[12px] uppercase tracking-[0.1em] text-[var(--app-text)]"
+                style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+              >
+                Push setup missing
+              </p>
+              <p
+                className="mt-1 text-[12px] text-[var(--app-dim)]"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                This build is missing the Firebase web push key, so reminders cannot reach this device yet.
+              </p>
+            </div>
+          ) : permission === 'denied' ? (
+            <div className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-4">
+              <p
+                className="text-[12px] uppercase tracking-[0.1em] text-[var(--app-text)]"
+                style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+              >
+                Browser notifications blocked
+              </p>
+              <p
+                className="mt-1 text-[12px] text-[var(--app-dim)]"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                This browser is blocking notifications for Doser. Re-enable them in site settings to restore reminders.
+              </p>
+            </div>
+          ) : permission !== 'granted' ? (
+            <div className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-4">
+              <p
+                className="text-[12px] uppercase tracking-[0.1em] text-[var(--app-text)]"
+                style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+              >
+                Browser notifications
+              </p>
+              <p
+                className="mt-1 text-[12px] text-[var(--app-dim)]"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                Allow notifications on this device before reminders can arrive in the background.
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleEnableNotifications()}
+                disabled={requestingPermission}
+                className="mt-3 inline-flex h-11 items-center justify-center rounded-[14px] bg-[var(--color-action)] px-4 text-[12px] uppercase tracking-[0.1em] text-black disabled:opacity-60"
+                style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+              >
+                {requestingPermission ? 'Enabling…' : 'Enable Notifications'}
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)] px-4 py-4">
+              <p
+                className="text-[12px] uppercase tracking-[0.1em] text-[var(--app-text)]"
+                style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
+              >
+                Browser notifications on
+              </p>
+              <p
+                className="mt-1 text-[12px] text-[var(--app-dim)]"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                This device can receive background reminders while you are signed in.
+              </p>
+            </div>
+          )}
+
           <ToggleField
             label="Dose Due Reminder"
             description="Notify when your next dose window is approaching."
@@ -72,11 +208,16 @@ export function NotificationsScreen({
           ) : null}
 
           <ToggleField
-            label="Dose Logged Confirmation"
-            description="Confirm each time a dose is logged."
-            checked={notif.doseLoggedConfirmation}
-            onChange={(doseLoggedConfirmation) =>
-              onProfileChange(updateNotif(profile, { doseLoggedConfirmation }))
+            label="Missed-Dose Alert"
+            description="Notify 1 hour after your next window opens if no new dose is logged."
+            checked={notif.missedDoseAlert}
+            onChange={(missedDoseAlert) =>
+              onProfileChange(
+                updateNotif(profile, {
+                  missedDoseAlert,
+                  missedDoseGraceHours: 1,
+                }),
+              )
             }
           />
 

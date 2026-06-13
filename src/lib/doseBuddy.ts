@@ -98,7 +98,7 @@ export function buildDoseBuddySuggestion(args: {
 }): DoseBuddySuggestion {
   const { substance, profile, doses, doseContexts, draftContext, nowMs } = args
   const pool = [...doses].sort((a, b) => a.ts - b.ts)
-  const session = currentSession(pool, substance, nowMs)
+  const session = currentSession(pool, substance, profile, nowMs)
   const lastSameSubstanceDose = session[session.length - 1] ?? null
   const isRedose = lastSameSubstanceDose != null
 
