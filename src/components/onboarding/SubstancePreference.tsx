@@ -18,10 +18,12 @@ export function SubstancePreference({
   const selected: Substance = profile.defaultSubstance ?? 'GBL'
 
   function handleContinue() {
-    onChange({
-      ...profile,
-      defaultSubstance: profile.defaultSubstance ?? 'GBL',
-    })
+    if (profile.defaultSubstance == null) {
+      onChange({
+        ...profile,
+        defaultSubstance: 'GBL',
+      })
+    }
     onNext()
   }
 
