@@ -190,9 +190,10 @@ This branch is in progress and not merged.
 Branch additions:
 
 - real browser notification permission surface in Settings
-- Firebase web push token sync for signed-in browsers
-- custom Workbox service worker in `src/sw.ts`
-- Firebase Functions package in `functions/`
+- OneSignal web SDK for push token registration (replaced Firebase Cloud Messaging)
+- custom Workbox service worker in `src/sw.ts` (Firebase Messaging removed)
+- `public/OneSignalSDKWorker.js` — OneSignal's separate service worker
+- `api/notify.ts` — Vercel serverless function replacing Firebase Functions scheduler
 - notification timing helpers in `src/lib/notifications.ts`
 - real backend scheduling logic for:
   - dose due reminder
@@ -202,6 +203,15 @@ Branch additions:
 - session auto-end timing aligned to preferred interval + 3 hours
 - fake dose logged confirmation UI removed from onboarding/settings
 - honest local-only copy saying background notifications require an account
+- Firestore transaction claim-before-send to prevent duplicate notifications on overlapping cron runs
+- paginated user query filtered to users with at least one notification type enabled
+
+### Why FCM was replaced with OneSignal
+
+Firebase Cloud Messaging (FCM) token registration was failing with 401 Unauthorized
+on `fcmregistrations.googleapis.com`. The VAPID key and API key were correct — this
+was a Firebase project-level permission issue that could not be resolved. OneSignal
+was chosen as a drop-in replacement. Firebase Auth and Firestore are unchanged.
 
 ### What is not yet proven
 
@@ -209,15 +219,31 @@ Do not say notifications are working end to end yet.
 
 The code exists, but real background delivery is not yet confirmed because:
 
-- no full signed-in phone/PWA test was completed
-- the service-worker change made the in-app browser automation unreliable during testing
-- the Firebase Functions package still needs real deploy-and-device verification
+- the branch has not been merged and deployed to production
+- no full signed-in phone/PWA test has been completed after the OneSignal migration
+- the Firestore composite index required by the OR query on notification prefs
+  must be created in Firebase console on first deploy (Firebase will log the URL)
 
 The honest phrase is:
 
 - implementation exists
 - build passes
 - real delivery is not yet confirmed
+
+### Known deferred issue — user timezone for notifications
+
+Dose-window notification times and daily summary times currently render in UTC
+because no per-user timezone is stored anywhere in the data model. This must be
+fixed in a future task.
+
+Required work:
+- add a `timezone` field to the user Profile type (e.g. `timezone?: string`)
+- capture and save the user's timezone (via `Intl.DateTimeFormat().resolvedOptions().timeZone`)
+  during onboarding or on first sign-in
+- pass the stored timezone into `formatClockTime()` and the daily summary
+  offset calculation in `api/notify.ts`
+
+Do not close this issue by hardcoding a timezone. Wait until profile timezone storage exists.
 
 ---
 
@@ -240,20 +266,42 @@ These decisions are fixed on the notifications branch:
 Current PWA setup:
 
 - `vite-plugin-pwa`
-- custom bundled service worker at `src/sw.ts`
+- custom bundled service worker at `src/sw.ts` (Workbox only, no Firebase Messaging)
+- `public/OneSignalSDKWorker.js` — OneSignal's own service worker (separate)
 - explicit service worker registration in `src/main.tsx`
-- Firebase web push through `src/lib/pushRegistration.ts`
-- Firebase Functions backend in `functions/`
+- OneSignal web SDK via `react-onesignal` in `src/lib/pushRegistration.ts`
+- Vercel serverless function at `api/notify.ts` (replaces Firebase Functions)
+- cron-job.org calls `POST https://usedoser.com/api/notify` every minute
 
-Required env for real push:
+Required env vars:
 
-- `VITE_FIREBASE_VAPID_KEY`
+Client (Vercel, prefixed VITE_):
+- `VITE_ONESIGNAL_APP_ID`
+
+Server (Vercel, not exposed to client):
+- `ONESIGNAL_APP_ID`
+- `ONESIGNAL_REST_API_KEY`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `CRON_SECRET`
+
+How push delivery works:
+
+1. User signs in → `syncPushRegistration(uid)` runs in MainApp.tsx
+2. OneSignal SDK initializes and calls `OneSignal.login(uid)` (Firebase UID = External User ID)
+3. OneSignal registers the device internally — no token stored in Firestore
+4. cron-job.org hits `/api/notify` every minute
+5. `api/notify.ts` queries Firestore for users with notifications enabled
+6. For each user needing a notification, calls OneSignal REST API with `include_aliases.external_id: [uid]`
+7. OneSignal delivers to all registered devices for that user
 
 Required real-world validation before claiming success:
 
 - grant permission in a signed-in browser
-- verify token stored under `users/{uid}/notificationDevices/{deviceId}`
+- verify OneSignal dashboard shows a subscriber
 - verify notifications actually arrive on device
+- create Firestore composite index when prompted by Firebase on first deploy
 
 ---
 
@@ -265,11 +313,9 @@ Firestore currently stores:
 - `users/{uid}/doses` dose data
 - `doseContexts` on the user document
 
-Notifications branch additionally stores:
-
-- `users/{uid}/notificationDevices/{deviceId}`
-
-That browser-device document is used for push delivery.
+The `notificationDevices` subcollection that previously stored FCM tokens has been
+removed. OneSignal manages device registration internally — no device tokens are
+stored in Firestore.
 
 Do not invent a different backend path unless Preston explicitly approves it.
 
@@ -291,12 +337,12 @@ If working on notifications, also inspect:
 
 - `src/components/settings/NotificationsScreen.tsx`
 - `src/components/onboarding/NotificationBasics.tsx`
-- `src/lib/notifications.ts`
 - `src/lib/pushRegistration.ts`
 - `src/sw.ts`
-- `functions/src/index.ts`
+- `api/notify.ts`
 - `src/store/profileStore.ts`
 - `src/components/MainApp.tsx`
+- `public/OneSignalSDKWorker.js`
 
 ---
 
