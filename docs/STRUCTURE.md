@@ -46,9 +46,9 @@ src/
 ├── main.tsx                          Entry point. Mounts App into #root.
 ├── App.tsx                           Phase router. Gate → Auth → Onboarding → MainApp.
 │                                     Also owns the local-only/auth handoff.
-│                                     Current gap: auth success still routes forward
-│                                     immediately instead of stopping for an explicit
-│                                     local-only upgrade decision.
+│                                     When auth succeeds and local-only data exists,
+│                                     pauses at `local-upgrade` and renders
+│                                     LocalOnlyUpgradeDecision before continuing.
 ├── App.css                           Unused boilerplate. Do not add styles here.
 ├── index.css                         Global styles, CSS variables, Google Fonts import.
 │                                     DO NOT remove existing variables — other screens use them.
@@ -116,6 +116,7 @@ src/
     │   ├── AuthLayout.tsx            Shared layout wrapper for auth screens.
     │   ├── AuthField.tsx             Reusable text input for auth forms.
     │   ├── AuthLink.tsx              Reusable link/button used in auth footers.
+    │   ├── LocalOnlyUpgradeDecision.tsx  Explicit storage decision after device-only user signs in (PR #11).
     │   ├── LogIn.tsx                 Email + password login screen. Firebase signInWithEmailAndPassword.
     │   │                             Also exposes `Continue on this device` for local-only mode.
     │   ├── SignUp.tsx                Email + password registration. Firebase createUserWithEmailAndPassword.
@@ -221,9 +222,10 @@ Always read the existing Firestore schema before assuming field names.
 `src/store/localSessionStore.ts` tracks whether the app should run in device-only mode.
 When that flag is active, `App.tsx` routes around auth, `OnboardingLayer.tsx` saves into
 `src/store/localDataStore.ts`, and `MainApp.tsx` persists profile/dose state locally.
-Returning to the auth screen is supported; migration from local-only data into Firebase is not yet built.
-The next task should likely intercept the auth-session transition in `App.tsx`, because
-that is where local-only mode is currently cleared and cloud-backed routing resumes.
+Returning to the auth screen is supported. When a device-only user with local data
+completes auth, `App.tsx` pauses at `local-upgrade` and shows
+`LocalOnlyUpgradeDecision.tsx` before switching to account-backed storage.
+Migration from local-only data into Firebase is not yet built.
 
 **How PEL is calculated:**
 Import from `src/lib/perceivedEffect/perceivedEffectModel.ts`.

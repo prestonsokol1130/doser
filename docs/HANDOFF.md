@@ -328,10 +328,10 @@ ToleranceConfidence = "calibrating" | "partial" | "full"
 - Local React state is owned by `MainApp.tsx` and persisted through
   either Firestore helpers in `src/store/profileStore.ts` or local-only helpers in
   `src/store/localDataStore.ts`
-- Current gap: once Firebase auth reports a session, `src/App.tsx` immediately
-  clears local-only mode and routes forward. The next storage-upgrade task needs
-  to insert an explicit decision at that handoff instead of silently switching
-  persistence models.
+- When a device-only user with local data completes auth, `src/App.tsx` pauses at the
+  `local-upgrade` phase and renders `LocalOnlyUpgradeDecision.tsx` before continuing
+  into account-backed storage. Local-only data is not silently merged, deleted, or
+  overwritten.
 - PEL calculations are stateless — inputs only: doses + profile + timestamp
 - Read the live Firestore helpers before assuming field names or write shape
 
@@ -406,7 +406,7 @@ Tools: Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference.
 Settings: Account, Profile, Notifications, Themes, Install App, Legal.
 
 Current likely next work:
-- build the explicit local-only -> account upgrade path first
+- finish and verify real notifications end to end on `feat/real-notifications-v1`
 - refine the Tools hub first
 - refine the Settings hub second
 - keep the existing theme intact
@@ -522,11 +522,15 @@ Post-Phase-5 follow-up — Local-only access: COMPLETE AND MERGED
   - Local profile, doses, and dose contexts persist through `localStorage`
   - `Settings` -> `Account` now reflects device-only status and can return the user to auth
   - Local-only -> Firebase migration/import flow is still not built
-  - Important seam: `src/App.tsx` currently clears local-only mode as soon as auth succeeds,
-    so the next task needs to intercept that transition with an explicit decision flow
+
+Post-Phase-5 follow-up — Local-only upgrade decision: COMPLETE AND MERGED
+  - Merged on `main` via PR `#11` at `242463e`
+  - `src/App.tsx` pauses at `local-upgrade` when auth succeeds and local data exists
+  - `src/components/auth/LocalOnlyUpgradeDecision.tsx` gives an explicit storage choice
+  - Account storage and device-only storage remain separate; nothing is silently merged
 
 Next likely task:
-  - build the explicit local-only -> account upgrade flow
+  - finish and verify real notifications end to end on `feat/real-notifications-v1`
   - then refine the Tools hub using repo-owned visual references
   - then refine the Settings hub
   - do not start visual work from `Downloads`; move approved references into
