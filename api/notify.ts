@@ -5,7 +5,7 @@ import type {
   DocumentReference,
   QueryDocumentSnapshot,
 } from 'firebase-admin/firestore'
-import { getFirestore } from 'firebase-admin/firestore'
+import { Filter, getFirestore } from 'firebase-admin/firestore'
 
 if (!getApps().length) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
@@ -30,6 +30,7 @@ const FIXED_SESSION_AUTO_END_DELAY_MS = 3 * HOUR_MS
 const STATE_COLLECTION = 'system'
 const STATE_DOC_ID = 'notificationState'
 const DEFAULT_TIME_ZONE = 'UTC'
+const USER_BATCH_SIZE = 100
 
 type Substance = 'GBL' | 'BDO'
 type DoseSubstance = Substance | 'GHB'
@@ -72,12 +73,18 @@ type DoseDoc = {
 type NotificationState = {
   doseDueSentForDoseId?: string
   doseDueSentAt?: number
+  doseDueClaimedForDoseId?: string
+  doseDueClaimedAt?: number
   missedDoseSentForDoseId?: string
   missedDoseSentAt?: number
+  missedDoseClaimedForDoseId?: string
+  missedDoseClaimedAt?: number
   sessionAutoEndedForDoseId?: string
   sessionAutoEndedAt?: number
   dailySummaryLastSentDate?: string
   dailySummaryLastSentAt?: number
+  dailySummaryClaimedDate?: string
+  dailySummaryClaimedAt?: number
   stashLowActive?: boolean
   stashLowSentAt?: number
   updatedAt?: number
@@ -113,24 +120,56 @@ export default async function handler(
   }
 }
 
-async function processAllUsers(): Promise<number> {
-  const usersSnapshot = await db.collection('users').get()
-  console.log('Processing notification queue', {
-    userCount: usersSnapshot.size,
-  })
+function usersWithNotificationsEnabledQuery() {
+  return db
+    .collection('users')
+    .where(
+      Filter.or(
+        Filter.where('profile.notif.doseDueReminder', '==', true),
+        Filter.where('profile.notif.missedDoseAlert', '==', true),
+        Filter.where('profile.notif.dailyUsageSummary', '==', true),
+        Filter.where('profile.notif.stashRunningLow', '==', true),
+      ),
+    )
+    .orderBy('__name__')
+}
 
-  for (const userDoc of usersSnapshot.docs) {
-    try {
-      await processUser(userDoc)
-    } catch (error) {
-      console.error('Notification processing failed', {
-        uid: userDoc.id,
-        error: error instanceof Error ? error.message : String(error),
-      })
+async function processAllUsers(): Promise<number> {
+  let processed = 0
+  let lastDoc: QueryDocumentSnapshot | undefined
+
+  while (true) {
+    let query = usersWithNotificationsEnabledQuery().limit(USER_BATCH_SIZE)
+    if (lastDoc) {
+      query = query.startAfter(lastDoc)
     }
+
+    const usersSnapshot = await query.get()
+    if (usersSnapshot.empty) break
+
+    console.log('Processing notification queue batch', {
+      batchSize: usersSnapshot.size,
+      processedSoFar: processed,
+    })
+
+    for (const userDoc of usersSnapshot.docs) {
+      try {
+        await processUser(userDoc)
+        processed += 1
+      } catch (error) {
+        console.error('Notification processing failed', {
+          uid: userDoc.id,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
+    lastDoc = usersSnapshot.docs[usersSnapshot.docs.length - 1]
+    if (usersSnapshot.size < USER_BATCH_SIZE) break
   }
 
-  return usersSnapshot.size
+  console.log('Finished processing notification queue', { processed })
+  return processed
 }
 
 async function processUser(
@@ -150,6 +189,7 @@ async function processUser(
   if (latestDose) {
     await processDoseWindowNotifications(
       uid,
+      stateRef,
       profile,
       latestDose,
       state,
@@ -160,6 +200,7 @@ async function processUser(
 
   await processDailySummary(
     userDoc.ref,
+    stateRef,
     profile,
     state,
     patch,
@@ -180,8 +221,35 @@ async function processUser(
   }
 }
 
+async function claimNotificationSlot(
+  stateRef: DocumentReference,
+  isAlreadyTaken: (state: NotificationState) => boolean,
+  claimPatch: Partial<NotificationState>,
+  nowMs: number,
+): Promise<boolean> {
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(stateRef)
+      const currentState = readState(snapshot.data())
+      if (isAlreadyTaken(currentState)) {
+        return false
+      }
+
+      transaction.set(
+        stateRef,
+        { ...claimPatch, updatedAt: nowMs },
+        { merge: true },
+      )
+      return true
+    })
+  } catch {
+    return false
+  }
+}
+
 async function processDoseWindowNotifications(
   uid: string,
+  stateRef: DocumentReference,
   profile: UserProfile,
   latestDose: DoseDoc,
   state: NotificationState,
@@ -199,14 +267,27 @@ async function processDoseWindowNotifications(
     nowMs >= dueReminderAt &&
     nowMs < nextWindowAt
   ) {
-    const sent = await sendOneSignalPush(
-      uid,
-      'Dose due soon',
-      `Your next ${normalizeTrackedSubstance(latestDose.substance)} window opens at ${formatClockTime(nextWindowAt, DEFAULT_TIME_ZONE)}.`,
+    const claimed = await claimNotificationSlot(
+      stateRef,
+      (currentState) =>
+        currentState.doseDueSentForDoseId === latestDose.id ||
+        currentState.doseDueClaimedForDoseId === latestDose.id,
+      {
+        doseDueClaimedForDoseId: latestDose.id,
+        doseDueClaimedAt: nowMs,
+      },
+      nowMs,
     )
-    if (sent) {
-      patch.doseDueSentForDoseId = latestDose.id
-      patch.doseDueSentAt = nowMs
+    if (claimed) {
+      const sent = await sendOneSignalPush(
+        uid,
+        'Dose due soon',
+        `Your next ${normalizeTrackedSubstance(latestDose.substance)} window opens at ${formatClockTime(nextWindowAt, DEFAULT_TIME_ZONE)}.`,
+      )
+      if (sent) {
+        patch.doseDueSentForDoseId = latestDose.id
+        patch.doseDueSentAt = nowMs
+      }
     }
   }
 
@@ -215,14 +296,27 @@ async function processDoseWindowNotifications(
     state.missedDoseSentForDoseId !== latestDose.id &&
     nowMs >= missedDoseAt
   ) {
-    const sent = await sendOneSignalPush(
-      uid,
-      'No dose logged',
-      `It has been 1 hour since your ${normalizeTrackedSubstance(latestDose.substance)} redose window opened and no new dose was logged.`,
+    const claimed = await claimNotificationSlot(
+      stateRef,
+      (currentState) =>
+        currentState.missedDoseSentForDoseId === latestDose.id ||
+        currentState.missedDoseClaimedForDoseId === latestDose.id,
+      {
+        missedDoseClaimedForDoseId: latestDose.id,
+        missedDoseClaimedAt: nowMs,
+      },
+      nowMs,
     )
-    if (sent) {
-      patch.missedDoseSentForDoseId = latestDose.id
-      patch.missedDoseSentAt = nowMs
+    if (claimed) {
+      const sent = await sendOneSignalPush(
+        uid,
+        'No dose logged',
+        `It has been 1 hour since your ${normalizeTrackedSubstance(latestDose.substance)} redose window opened and no new dose was logged.`,
+      )
+      if (sent) {
+        patch.missedDoseSentForDoseId = latestDose.id
+        patch.missedDoseSentAt = nowMs
+      }
     }
   }
 
@@ -237,6 +331,7 @@ async function processDoseWindowNotifications(
 
 async function processDailySummary(
   userRef: DocumentReference,
+  stateRef: DocumentReference,
   profile: UserProfile,
   state: NotificationState,
   patch: Partial<NotificationState>,
@@ -248,6 +343,19 @@ async function processDailySummary(
   const localNow = getLocalNow(DEFAULT_TIME_ZONE, nowMs)
   if (localNow.timeKey !== summaryTime) return
   if (state.dailySummaryLastSentDate === localNow.dateKey) return
+
+  const claimed = await claimNotificationSlot(
+    stateRef,
+    (currentState) =>
+      currentState.dailySummaryLastSentDate === localNow.dateKey ||
+      currentState.dailySummaryClaimedDate === localNow.dateKey,
+    {
+      dailySummaryClaimedDate: localNow.dateKey,
+      dailySummaryClaimedAt: nowMs,
+    },
+    nowMs,
+  )
+  if (!claimed) return
 
   const todayStartMs = getStartOfLocalDayMs(DEFAULT_TIME_ZONE, nowMs)
   const dosesToday = await fetchDosesSince(userRef, todayStartMs)
