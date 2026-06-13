@@ -43,8 +43,9 @@ Code review:
 
 Current git state when this file was last updated:
 
-- `main` contains PR `#8` plus the merged local-only follow-up from PR `#10`
-- `main` HEAD when this file was last updated: `88d8446 fix: wrap up local-only access flow`
+- `main` contains PR `#8`, the merged local-only follow-up from PR `#10`, and the
+  explicit local-only upgrade decision from PR `#11`
+- `main` HEAD when this file was last updated: `242463e feat: add explicit local-only upgrade decision (#11)`
 - No active feature branch should be assumed from this file alone
 
 ---
@@ -172,15 +173,22 @@ Current limitation:
 
 - There is still no migration/import flow from local-only data into a signed-in Firebase account
 
-Important implementation seam for the next task:
+### Post-Phase-5 Follow-up — Local-Only Upgrade Decision: COMPLETE AND MERGED
 
-- `src/App.tsx` currently clears local-only mode and routes into the signed-in flow
-  as soon as a Firebase auth session exists
-- `src/components/settings/AccountScreen.tsx` can send a device-only user back to
-  auth, but there is no explicit decision screen after sign-in yet
-- `src/components/MainApp.tsx` already has separate Firestore and `localStorage`
-  persistence lanes, so the next task is about the handoff between them, not a
-  full persistence rewrite
+Merged to `main` via PR `#11` at `242463e`.
+
+Delivered behavior:
+
+- When a device-only user with local data completes auth, `src/App.tsx` pauses at a
+  `local-upgrade` phase instead of silently switching storage models
+- `src/components/auth/LocalOnlyUpgradeDecision.tsx` explains that local-only and
+  account storage are separate and nothing has been moved, deleted, or merged
+- The user can choose `Use account storage` or `Stay on this device`
+- Choosing account storage clears local-only mode and continues into the signed-in flow;
+  local-only data remains on the device for later import
+- Choosing stay on device signs out and returns to device-only mode with local data intact
+- `src/store/localSessionStore.ts` tracks the local-only auth flow so the handoff is
+  explicit from `Settings` -> `Account` -> sign-in as well
 
 Review outcome from the merge:
 
@@ -200,14 +208,16 @@ Review outcome from the merge:
 
 ## Immediate Next Work
 
-There is no active core-phase rebuild right now. The next likely work is a storage-upgrade follow-up, then refinement.
+There is no active core-phase rebuild right now. The next likely work is finishing and
+verifying real notifications end to end, then refinement.
 
 Priority order unless Preston changes it:
 
-1. Local-only -> account upgrade flow
-   - A device-only user can now get back to auth, but there is no import/migration flow yet
-   - Do not silently merge local data into cloud data
-   - The next implementation should make the upgrade path explicit and reversible
+1. Finish and verify real notifications end to end
+   - Work continues on `feat/real-notifications-v1` (not merged to `main`)
+   - Implementation exists and builds pass, but real signed-in browser/PWA delivery has
+     not been confirmed on a real device yet
+   - Do not describe notifications as working until manual device testing proves delivery
 
 2. Tools / Settings redesign intake
    - Preston has external reference material from `Doser Scroll Animations.zip`
@@ -216,13 +226,18 @@ Priority order unless Preston changes it:
      - `docs/ai-reference/goal/`
    - Do not rely on `Downloads` paths in prompts
 
-3. Tools hub refinement
+3. Local-only -> account migration/import (deferred)
+   - The explicit upgrade decision is complete on `main` via PR `#11`
+   - A future task may add import/migration from local-only data into a signed-in account
+   - Do not silently merge local data into cloud data
+
+4. Tools hub refinement
    - Start with `src/components/tools/ToolsScreen.tsx`
    - Keep the existing theme
    - Keep sub-screen logic intact
    - Treat this as a hub-layout / presentation pass, not a rewrite of Stash, Dose Buddy, or Taper
 
-4. Settings hub refinement
+5. Settings hub refinement
    - After Tools hub
    - Same rules: hub-only first, preserve logic, preserve theme
 
@@ -377,8 +392,6 @@ and behavior are intentional.
 - Service worker caching on localhost can make the browser show stale UI
 - Tailwind JIT can keep stale arbitrary-value utilities on long-lived dev sessions
 - Insights Peer Comparison tab is still a deferred stub inside the live Insights screen
-- The next storage-upgrade task must not allow `App.tsx` to silently flip a device-only
-  user into cloud-backed mode immediately after auth
 - The repo's screenshot library is incomplete for current Tools / Settings state
   - existing `current-app-state` images are historical wrong-theme references, not fresh truth captures
   - fresh current UI screenshots should be added before future visual-review tasks
