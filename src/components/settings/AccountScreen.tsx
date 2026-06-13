@@ -71,8 +71,9 @@ export function AccountScreen({
               style={{ fontFamily: 'var(--font-body)' }}
             >
               Your profile and doses stay on this device. If you go back to the
-              log in screen, the app will switch to account-backed storage.
-              Local-only data stays on this device until a migration flow is built.
+              log in screen and sign in, the app will stop at a storage decision
+              before switching to account-backed storage. Local-only data stays
+              on this device until an import flow is built.
             </p>
           </div>
 
