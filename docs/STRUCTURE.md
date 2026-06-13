@@ -13,7 +13,7 @@ Read this alongside:
 
 ## App Entry Flow
 
-```
+```text
 main.tsx
   └── App.tsx
         ├── GateLayer
@@ -116,7 +116,7 @@ Branch-local notifications backend package.
 
 ## File Tree (Practical Map)
 
-```
+```text
 src/
 ├── main.tsx
 ├── App.tsx

@@ -202,7 +202,7 @@ async function processDoseWindowNotifications(
     const sent = await sendOneSignalPush(
       uid,
       'Dose due soon',
-      `Your next ${normalizeTrackedSubstance(latestDose.substance)} window opens at ${formatClockTime(nextWindowAt)}.`,
+      `Your next ${normalizeTrackedSubstance(latestDose.substance)} window opens at ${formatClockTime(nextWindowAt, DEFAULT_TIME_ZONE)}.`,
     )
     if (sent) {
       patch.doseDueSentForDoseId = latestDose.id
@@ -291,7 +291,7 @@ async function processStashAlert(
   const dosesSinceRefill = await fetchDosesSince(userRef, refillAt)
   const consumedMl = dosesSinceRefill.reduce((sum, dose) => sum + dose.amountMl, 0)
   const fullMl = (stash.fullMl ?? 0) > 0 ? stash.fullMl ?? 0 : stash.capacityMl ?? 0
-  const remainingMl = Math.max(0, (stash.capacityMl ?? 0) - consumedMl)
+  const remainingMl = Math.max(0, fullMl - consumedMl)
   const remainingPct =
     fullMl > 0 ? Math.round((remainingMl / fullMl) * 100) : 0
   const isLow = remainingPct <= (notif.stashLowThresholdPct ?? 20)
@@ -401,7 +401,7 @@ function getDoseDueReminderAt(profile: UserProfile, dose: DoseDoc): number {
 
 function sanitizeDailySummaryTime(value: string | undefined): string {
   if (!value) return '09:00'
-  return /^\d{2}:\d{2}$/.test(value) ? value : '09:00'
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value) ? value : '09:00'
 }
 
 function getLocalNow(timeZone: string, nowMs: number): LocalNow {
@@ -430,8 +430,18 @@ function getLocalNow(timeZone: string, nowMs: number): LocalNow {
 function getStartOfLocalDayMs(timeZone: string, nowMs: number): number {
   const localNow = getLocalNow(timeZone, nowMs)
   const [year, month, day] = localNow.dateKey.split('-').map(Number)
-  const offsetMs = getTimeZoneOffsetMs(timeZone, nowMs)
-  return Date.UTC(year, (month ?? 1) - 1, day ?? 1, 0, 0, 0, 0) - offsetMs
+  try {
+    const midnightMs = Date.UTC(year, (month ?? 1) - 1, day ?? 1, 0, 0, 0, 0)
+    const offsetMs = getTimeZoneOffsetMs(timeZone, midnightMs)
+    return midnightMs - offsetMs
+  } catch {
+    const utcDate = new Date(nowMs)
+    return Date.UTC(
+      utcDate.getUTCFullYear(),
+      utcDate.getUTCMonth(),
+      utcDate.getUTCDate(),
+    )
+  }
 }
 
 function getTimeZoneOffsetMs(timeZone: string, nowMs: number): number {

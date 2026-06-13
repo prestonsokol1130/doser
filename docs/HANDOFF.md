@@ -304,36 +304,22 @@ If working on notifications, also inspect:
 
 ### Coding agent rules
 
-Before writing any code:
-
 1. read the relevant files first
 2. do not guess names or paths
 3. do not invent fake data
 4. do not silently resolve errors
-
-While working:
-
 5. do not change the current theme
 6. do not modify files outside the task scope
 7. do not rewrite working code unless required
 8. do not touch `src/lib/perceivedEffect/`
 9. do not create or switch branches
-
-Validation:
-
-10. run:
-    - `npx tsc --noEmit -p tsconfig.app.json`
-    - `npm run build`
-11. if notifications backend changed, also run:
-    - `npm run build` inside `functions/`
-
-Report back:
-
-12. current branch
-13. files changed
-14. what changed
-15. what is still unverified
-16. validation output
+10. run `npx tsc --noEmit -p tsconfig.app.json` and `npm run build`
+11. if notifications backend changed, also run `npm run build` inside `functions/`
+12. report current branch
+13. report files changed
+14. report what changed
+15. report what is still unverified
+16. report validation output
 
 ### Advisor rules
 
