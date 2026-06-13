@@ -287,6 +287,16 @@ async function processDoseWindowNotifications(
       if (sent) {
         patch.doseDueSentForDoseId = latestDose.id
         patch.doseDueSentAt = nowMs
+      } else {
+        try {
+          await stateRef.update({
+            doseDueClaimedForDoseId: null,
+            doseDueClaimedAt: null,
+            updatedAt: nowMs,
+          })
+        } catch {
+          // best-effort; next cron run will re-evaluate
+        }
       }
     }
   }
@@ -316,6 +326,16 @@ async function processDoseWindowNotifications(
       if (sent) {
         patch.missedDoseSentForDoseId = latestDose.id
         patch.missedDoseSentAt = nowMs
+      } else {
+        try {
+          await stateRef.update({
+            missedDoseClaimedForDoseId: null,
+            missedDoseClaimedAt: null,
+            updatedAt: nowMs,
+          })
+        } catch {
+          // best-effort; next cron run will re-evaluate
+        }
       }
     }
   }
@@ -376,6 +396,16 @@ async function processDailySummary(
   if (sent) {
     patch.dailySummaryLastSentDate = localNow.dateKey
     patch.dailySummaryLastSentAt = nowMs
+  } else {
+    try {
+      await stateRef.update({
+        dailySummaryClaimedDate: null,
+        dailySummaryClaimedAt: null,
+        updatedAt: nowMs,
+      })
+    } catch {
+      // best-effort; next cron run will re-evaluate
+    }
   }
 }
 

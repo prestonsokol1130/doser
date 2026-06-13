@@ -73,8 +73,8 @@ Stack:
 - Firebase Auth
 - Firestore
 - vite-plugin-pwa / Workbox
-- Firebase Cloud Messaging for the in-progress notification branch
-- Firebase Functions for the in-progress notification branch
+- OneSignal (web push delivery on the notifications branch)
+- Vercel serverless functions (notification scheduler on the notifications branch)
 
 Code review:
 
@@ -277,14 +277,13 @@ Client-side additions:
 - `src/lib/pushRegistration.ts`
   - handles browser permission checks
   - requests permission
-  - gets the Firebase web push token
-  - stores one browser device record under:
-    - `users/{uid}/notificationDevices/{deviceId}`
+  - initializes the OneSignal web SDK and calls `OneSignal.login(uid)`
+  - no token stored in Firestore — OneSignal manages device registration internally
 - `src/lib/firebase.ts`
-  - now exports `firebaseApp` for messaging setup
+  - exports `firebaseApp` for Firebase Auth and Firestore
 - `src/sw.ts`
   - custom bundled Workbox service worker
-  - initializes Firebase Messaging in the worker
+  - handles caching only; no Firebase Messaging
 
 Timing / notification logic additions:
 
@@ -304,15 +303,12 @@ Timing / notification logic additions:
 - `src/lib/doseBuddy.ts`
   - updated to use the new current-session signature
 
-Firebase backend additions:
+Backend additions:
 
-- `firebase.json`
-- `functions/package.json`
-- `functions/tsconfig.json`
-- `functions/src/index.ts`
+- `api/notify.ts` — Vercel serverless function (replaces the Firebase Functions scheduler)
+- `vercel.json` — cron configuration for the Vercel function
 
-The new Firebase Functions package adds a scheduled job that checks signed-in users
-and sends notifications for:
+The new Vercel serverless function runs as a cron job and sends notifications for:
 
 - dose due reminder
 - missed-dose alert
@@ -379,7 +375,7 @@ These checks still need to be performed manually on a real signed-in browser/PWA
 preferably on phone:
 
 1. confirm browser permission prompt behaves correctly
-2. confirm a Firebase web push token is stored under the user
+2. confirm the OneSignal dashboard shows a registered subscriber for the user
 3. confirm dose due reminder reaches the device
 4. confirm missed-dose alert reaches the device
 5. confirm daily summary arrives at the chosen time
@@ -392,11 +388,12 @@ preferably on phone:
 The following must exist for real delivery:
 
 - root app env must include:
-  - `VITE_FIREBASE_VAPID_KEY`
-- Firebase Functions must be deployed from `functions/`
-- the branch's Firebase backend code must be live in the project Preston is testing
+  - `VITE_ONESIGNAL_APP_ID`
+- Vercel serverless function at `api/notify.ts` must be deployed
+- server env must include `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`, Firebase admin vars, and `CRON_SECRET`
+- cron-job.org must be configured to call `POST https://usedoser.com/api/notify` every minute
 
-If the VAPID key is missing, the UI now tells the truth and says push setup is missing.
+If the OneSignal app ID is missing, the UI tells the truth and says push setup is missing.
 
 ### Important Warnings For Future Agents
 
@@ -454,8 +451,8 @@ Finish and verify real notifications end to end
 
 Required next steps:
 
-1. deploy the Firebase Functions package
-2. confirm the VAPID key is present in the local app env
+1. deploy the Vercel function and confirm `api/notify.ts` is live
+2. confirm OneSignal env vars are present (`VITE_ONESIGNAL_APP_ID`, `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`)
 3. manually test the notification flows on a real signed-in browser/PWA
 4. fix anything discovered during real delivery testing
 5. only after that, describe notifications as working
@@ -555,9 +552,9 @@ This is a web app intentionally distributed outside app stores.
 On `feat/real-notifications-v1`, notification delivery is being built through:
 
 - browser notification permission
-- Firebase web messaging
-- a real app service worker
-- Firebase Functions in the same repo
+- OneSignal web SDK (replaced Firebase Cloud Messaging — see HANDOFF.md for why)
+- a real app service worker (Workbox only; no Firebase Messaging)
+- Vercel serverless function at `api/notify.ts` (replaced Firebase Functions)
 
 Do not replace that branch with a fake "only while app is open" version.
 

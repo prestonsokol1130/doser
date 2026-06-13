@@ -1,4 +1,4 @@
-import { isDoseStillInActiveSession } from '@/lib/notifications'
+import { isDoseStillInActiveSession, FIXED_SESSION_AUTO_END_DELAY_MS, preferredIntervalMsForSubstance } from '@/lib/notifications'
 import { HOUR_MS, MINUTE_MS } from '@/lib/perceivedEffect/effectCurves'
 import type { Dose, DoseSubstance, Profile, Substance } from '@/types'
 
@@ -133,7 +133,10 @@ export function currentSession(
     .sort((a, b) => a.ts - b.ts)
   if (filtered.length === 0) return []
 
-  const sessions = splitIntoSessions(filtered)
+  const sessionGapMs =
+    preferredIntervalMsForSubstance(profile, substance) +
+    FIXED_SESSION_AUTO_END_DELAY_MS
+  const sessions = splitIntoSessions(filtered, sessionGapMs)
   if (sessions.length === 0) return []
   const last = sessions[sessions.length - 1]!
   const lastDose = last[last.length - 1]!

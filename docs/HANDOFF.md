@@ -422,8 +422,8 @@ Two parallel truths matter:
 
 ### Still missing on `feat/real-notifications-v1`
 
-- deploy the Firebase Functions package (or verify OneSignal/Vercel path is live)
-- confirm VAPID key or OneSignal env vars are present
+- deploy and verify the Vercel serverless function at `api/notify.ts` is live
+- confirm OneSignal env vars are present (`VITE_ONESIGNAL_APP_ID`, `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`)
 - manually test real signed-in browser/PWA delivery
 - verify each notification path on device
 - then fix any issues found in real testing
