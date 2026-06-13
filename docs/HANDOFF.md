@@ -181,7 +181,7 @@ Tabs:
 - Phase 5 core Tools and Settings work is merged
 - local-only access follow-up is merged at `88d8446`
 - local-only mode exists
-- explicit local-only -> account upgrade decision does not exist yet
+- explicit local-only -> account upgrade decision merged via PR `#11` at `242463e`
 
 ### What is on `feat/real-notifications-v1`
 
@@ -344,6 +344,27 @@ If working on notifications, also inspect:
 - `src/components/MainApp.tsx`
 - `public/OneSignalSDKWorker.js`
 
+### Data model and routing seams
+
+- Firebase Auth handles sign-in state
+- Firestore stores:
+  - `users/{uid}` profile data
+  - `users/{uid}/doses` dose entries
+  - `doseContexts` on the user document
+- Local-only mode additionally stores:
+  - `doser.localOnly` through `src/store/localSessionStore.ts`
+  - `doser.local.profile`, `doser.local.doses`, `doser.local.doseContexts`,
+    and `doser.local.onboardingComplete` through `src/store/localDataStore.ts`
+- Local React state is owned by `MainApp.tsx` and persisted through
+  either Firestore helpers in `src/store/profileStore.ts` or local-only helpers in
+  `src/store/localDataStore.ts`
+- When a device-only user with local data completes auth, `src/App.tsx` pauses at the
+  `local-upgrade` phase and renders `LocalOnlyUpgradeDecision.tsx` before continuing
+  into account-backed storage. Local-only data is not silently merged, deleted, or
+  overwritten.
+- PEL calculations are stateless — inputs only: doses + profile + timestamp
+- Read the live Firestore helpers before assuming field names or write shape
+
 ---
 
 ## 10. Agent Rules
@@ -395,17 +416,27 @@ Do not quietly turn the notifications branch back into a fake settings-only feat
 
 Two parallel truths matter:
 
-### Still missing on `main`
+### Completed on `main`
 
-- explicit local-only -> account upgrade decision
+- explicit local-only -> account upgrade decision (PR `#11`)
 
 ### Still missing on `feat/real-notifications-v1`
 
-- deploy the Firebase Functions package
-- confirm VAPID key is present
+- deploy the Firebase Functions package (or verify OneSignal/Vercel path is live)
+- confirm VAPID key or OneSignal env vars are present
 - manually test real signed-in browser/PWA delivery
 - verify each notification path on device
 - then fix any issues found in real testing
+
+Phase 5 — Tools + Settings: CORE COMPLETE.
+Tools: Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference.
+Settings: Account, Profile, Notifications, Themes, Install App, Legal.
+
+Current likely next work after notifications:
+
+- refine the Tools hub first
+- refine the Settings hub second
+- keep the existing theme intact
 
 ---
 
@@ -419,3 +450,127 @@ When finishing a task, the coding agent should tell Preston:
 4. what still needs testing
 5. exact validation results
 6. whether the feature is fully verified or only partially implemented
+
+These are intentional harm reduction calibration decisions, not bugs.
+
+
+---
+
+## 14. Folder Structure
+
+This is the established src/ layout. All new files go in the correct folder — do not create new top-level folders without explicit instruction.
+
+src/
+  components/
+    gate/          <- Age gate, legal acknowledgment, harm reduction acknowledgment
+    auth/          <- Log in, sign up, forgot password, recovery
+    onboarding/    <- Profile setup, substance defaults, notification basics
+    timer/
+      carousel/    <- All 6 carousel cards as individual components
+    insights/      <- All, GBL, BDO, Peer tabs
+    history/       <- Sessions, entries, edit/delete, import/export
+    tools/         <- Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference
+    settings/      <- Account, Profile, Notifications, Themes, Install, Legal
+  lib/
+    perceivedEffect/
+      effectCurves.ts           <- DO NOT MODIFY
+      perceivedEffectModel.ts   <- DO NOT MODIFY
+      toleranceModel.ts         <- DO NOT MODIFY
+  store/           <- App state
+  types.ts         <- All TypeScript types (see Section 8)
+  App.tsx          <- Root component and routing
+  main.tsx         <- Entry point
+  index.css        <- Global styles and CSS variables.
+                      MAY add new variables and font imports.
+                      NEVER remove or rename existing variables — gate/auth/onboarding use them.
+
+
+---
+
+## 15. Branch Rule
+
+You do not create branches. Ever.
+The branch is always created by Preston before the Cursor task starts.
+Your first action in any task is to run:
+
+`git branch --show-current`
+
+Confirm which branch you are on, then work only on that branch.
+If you are not on the branch Preston said to use, stop and tell him.
+Never run `git checkout -b` under any circumstances.
+Never create, rename, or switch branches.
+
+
+---
+
+## 16. Current Build Status
+
+Last updated: 2026-06-13
+
+Phase 1 — Foundation: COMPLETE
+Phase 2 — Gate + Auth + Onboarding: COMPLETE
+  - Gate Layer (PR #1): MERGED
+  - Auth screens with Firebase (PR #2): MERGED
+  - Onboarding (PR #3): MERGED
+
+Phase 3 — Timer Screen: COMPLETE
+  - Core timer screen (PR #4): MERGED 2026-06-07
+  - Built: TimerScreen, TimerHeader, TopStatRow, TimerRingCard, TimerCarousel,
+    DoseCard, BottomNav, timerUtils, new design tokens in index.css
+  - PEL engine files: copied into src/lib/perceivedEffect/
+  - Firestore security rules: updated with {document=**} wildcard
+
+Phase 3b — Dose Persistence: COMPLETE
+  - Firestore dose persistence merged
+  - Validation on load and save merged
+  - Differential sync and batch chunking merged
+  - Shared validation constants merged
+
+Phase 4 — History + Carousel + 3D Cube: COMPLETE
+  - PR #7 merged to main
+  - History screen done
+  - Carousel cards 2–6 done
+  - 3D cube transition done
+  - Phase 4 review fixes applied
+
+Phase 5 — Tools + Settings: CORE COMPLETE (PR #8 merged)
+  - Tools hub merged
+  - Settings hub merged
+  - Stash, Dose Buddy, Taper, Emergency Resources, Safety Reference merged
+  - Account, Profile, Notifications, Themes, Install App, Legal merged
+  - Theme rollback merged after the rejected off-theme pass
+  - Stash redesign merged, including `StashPrefs.fullMl`
+  - Dose Buddy mobile cleanup merged
+  - Accessibility and CodeRabbit follow-up fixes merged
+  - Insights tab is live (Peer Comparison sub-tab still deferred)
+
+Post-Phase-5 follow-up — Local-only access: COMPLETE AND MERGED
+  - Merged on `main` via `dc81679`, `e953675`, and `88d8446`
+  - `Continue on this device` added to the log in screen
+  - Device-only onboarding path is live on `main`
+  - Local profile, doses, and dose contexts persist through `localStorage`
+  - `Settings` -> `Account` now reflects device-only status and can return the user to auth
+  - Local-only -> Firebase migration/import flow is still not built
+
+Post-Phase-5 follow-up — Local-only upgrade decision: COMPLETE AND MERGED
+  - Merged on `main` via PR `#11` at `242463e`
+  - `src/App.tsx` pauses at `local-upgrade` when auth succeeds and local data exists
+  - `src/components/auth/LocalOnlyUpgradeDecision.tsx` gives an explicit storage choice
+  - Account storage and device-only storage remain separate; nothing is silently merged
+
+Next likely task:
+  - finish and verify real notifications end to end on `feat/real-notifications-v1`
+  - then refine the Tools hub using repo-owned visual references
+  - then refine the Settings hub
+  - do not start visual work from `Downloads`; move approved references into
+    `docs/ai-reference/goal/` first
+
+Recent issues encountered:
+  - PR `#10` had 3 actionable CodeRabbit comments; all were fixed before merge
+  - the remaining CodeRabbit `Docstring Coverage` note was informational only
+  - `npm run lint` still fails on pre-existing files outside the local-only change scope
+
+See `docs/AI_CONTEXT.md` for the full current state before doing anything.
+
+Firebase project: doser-e389f
+Auth methods enabled: Email/Password, Google

@@ -17,9 +17,17 @@ Read before writing any code:
 
 ## Status
 
+PR `#11` merged the explicit local-only upgrade decision to `main`. That work is done.
+
 You are likely continuing branch:
 
 - `feat/real-notifications-v1`
+
+The next active task is on branch:
+
+- `feat/real-notifications-v1`
+
+This branch is in progress. It is not merged to `main`.
 
 This branch already added:
 
@@ -31,7 +39,6 @@ This branch already added:
 - custom service worker in `src/sw.ts`
 - Firebase Functions package in `functions/`
 - scheduled notification sender in `functions/src/index.ts`
-
 The app build passes.
 The functions package build passes.
 

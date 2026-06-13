@@ -89,16 +89,19 @@ Auth methods enabled:
 - Email/Password
 - Google
 
-Current merged baseline:
+Current merged baseline on `main`:
 
 - `main` contains Phase 5 core Tools and Settings work from PR `#8`
-- `main` also contains the local-only follow-up merged at commit `88d8446`
+- `main` also contains the local-only follow-up merged at commit `88d8446` (PR `#10`)
+- `main` also contains the explicit local-only upgrade decision from PR `#11`
+- `main` HEAD when this file was last updated: `242463e feat: add explicit local-only upgrade decision (#11)`
 
 Current active branch during this doc update:
 
 - `feat/real-notifications-v1`
 
 Do not assume any future session is still on that branch. Always verify the live repo.
+No active feature branch should be assumed from this file alone.
 
 ---
 
@@ -204,13 +207,29 @@ Delivered behavior on `main`:
 
 Known gap still on `main`:
 
-- there is still no explicit upgrade decision after a device-only user signs in
 - there is still no migration/import flow from local-only data into a signed-in account
 
-Important seam for that task:
+Important prior seam (before PR `#11`):
 
-- `src/App.tsx` currently clears local-only mode and routes forward as soon as a
-  Firebase auth session exists
+- `src/App.tsx` previously cleared local-only mode and routed forward as soon as a
+  Firebase auth session existed
+
+### Post-Phase-5 Follow-up — Local-Only Upgrade Decision: COMPLETE AND MERGED
+
+Merged to `main` via PR `#11` at `242463e`.
+
+Delivered behavior:
+
+- When a device-only user with local data completes auth, `src/App.tsx` pauses at a
+  `local-upgrade` phase instead of silently switching storage models
+- `src/components/auth/LocalOnlyUpgradeDecision.tsx` explains that local-only and
+  account storage are separate and nothing has been moved, deleted, or merged
+- The user can choose `Use account storage` or `Stay on this device`
+- Choosing account storage clears local-only mode and continues into the signed-in flow;
+  local-only data remains on the device for later import
+- Choosing stay on device signs out and returns to device-only mode with local data intact
+- `src/store/localSessionStore.ts` tracks the local-only auth flow so the handoff is
+  explicit from `Settings` -> `Account` -> sign-in as well
 
 ### Live Tab State On `main`
 
@@ -393,20 +412,45 @@ If the VAPID key is missing, the UI now tells the truth and says push setup is m
 
 ## Immediate Next Work
 
-There are now two distinct tracks:
+There are now two distinct tracks.
 
-### Track A — Still needed on `main`
+There is no active core-phase rebuild right now. The next likely work is finishing and
+verifying real notifications end to end, then refinement.
+
+### Track A — Completed on `main` (PR `#11`)
 
 Explicit local-only -> account upgrade decision
 
-- device-only users still need a clear stop-and-explain handoff after auth
+- device-only users now get a clear stop-and-explain handoff after auth
 - no silent merge
 - no silent delete
 - no silent overwrite
 
 ### Track B — Still needed on `feat/real-notifications-v1`
 
-Finish and verify real notifications
+Finish and verify real notifications end to end
+
+- Work continues on `feat/real-notifications-v1` (not merged to `main`)
+- Implementation exists and builds pass, but real signed-in browser/PWA delivery has
+  not been confirmed on a real device yet
+- Do not describe notifications as working until manual device testing proves delivery
+
+### Track C — Deferred follow-ups after notifications
+
+3. Local-only -> account migration/import (deferred)
+   - The explicit upgrade decision is complete on `main` via PR `#11`
+   - A future task may add import/migration from local-only data into a signed-in account
+   - Do not silently merge local data into cloud data
+
+4. Tools hub refinement
+   - Start with `src/components/tools/ToolsScreen.tsx`
+   - Keep the existing theme
+   - Keep sub-screen logic intact
+   - Treat this as a hub-layout / presentation pass, not a rewrite of Stash, Dose Buddy, or Taper
+
+5. Settings hub refinement
+   - After Tools hub
+   - Same rules: hub-only first, preserve logic, preserve theme
 
 Required next steps:
 
@@ -558,10 +602,13 @@ That folder contains hand-tuned subjective intensity modeling.
 
 - service worker caching on localhost can make the browser show stale UI
 - Tailwind JIT can keep stale arbitrary-value utilities on long-lived dev sessions
-- the local-only -> account upgrade decision is still missing on `main`
 - the notifications branch is implemented but not end-to-end confirmed on a real device
 - the in-app browser automation became unreliable after service-worker takeover during
   this notifications branch work
+- Insights Peer Comparison tab is still a deferred stub inside the live Insights screen
+- The repo's screenshot library is incomplete for current Tools / Settings state
+  - existing `current-app-state` images are historical wrong-theme references, not fresh truth captures
+  - fresh current UI screenshots should be added before future visual-review tasks
 - `npm run lint` still has pre-existing failures outside this branch's scope in:
   - `src/components/settings/InstallAppScreen.tsx`
   - `src/components/settings/ProfileSettingsScreen.tsx`

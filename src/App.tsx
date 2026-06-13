@@ -1,26 +1,47 @@
 import { useEffect, useState } from 'react'
 import { AuthLayer } from './components/auth/AuthLayer'
+import { LocalOnlyUpgradeDecision } from './components/auth/LocalOnlyUpgradeDecision'
 import { GateLayer } from './components/gate/GateLayer'
 import { OnboardingLayer } from './components/onboarding/OnboardingLayer'
 import { MainApp } from './components/MainApp'
 import { auth } from './lib/firebase'
-import { subscribeToAuth } from './store/authStore'
+import { logOut, subscribeToAuth } from './store/authStore'
 import { isGateComplete } from './store/gateStore'
-import { isLocalOnboardingComplete } from './store/localDataStore'
 import {
+  getLocalDataStatus,
+  isLocalOnboardingComplete,
+} from './store/localDataStore'
+import {
+  clearLocalOnlyAuthFlow,
   clearLocalOnlyMode,
+  enterLocalOnlyAuthFlow,
+  isLocalOnlyAuthFlow,
   isLocalOnlyMode,
 } from './store/localSessionStore'
 import { isOnboardingComplete } from './store/profileStore'
 
-type AppPhase = 'gate' | 'auth' | 'onboarding-check' | 'onboarding' | 'timer'
+type AppPhase =
+  | 'gate'
+  | 'auth'
+  | 'local-upgrade'
+  | 'onboarding-check'
+  | 'onboarding'
+  | 'timer'
 
 function resolveLocalPhase(): AppPhase {
   return isLocalOnboardingComplete() ? 'timer' : 'onboarding'
 }
 
+function shouldPauseForLocalUpgrade(): boolean {
+  return isLocalOnlyMode() && getLocalDataStatus().hasAnyData
+}
+
 function getInitialPhase(): AppPhase {
   if (!isGateComplete()) return 'gate'
+  if (shouldPauseForLocalUpgrade() && auth.currentUser?.uid) {
+    return 'local-upgrade'
+  }
+  if (isLocalOnlyAuthFlow()) return 'auth'
   if (isLocalOnlyMode()) return resolveLocalPhase()
   return 'auth'
 }
@@ -30,22 +51,39 @@ function App() {
   const [phase, setPhase] = useState<AppPhase>(getInitialPhase)
   const [userId, setUserId] = useState<string | null>(null)
   const [localOnly, setLocalOnly] = useState(() => isLocalOnlyMode())
+  const [localDataStatus, setLocalDataStatus] = useState(() => getLocalDataStatus())
 
   useEffect(() => {
     if (!gateComplete) return
 
     return subscribeToAuth((session) => {
       if (session) {
+        setUserId(session.user.id)
+
+        if (shouldPauseForLocalUpgrade()) {
+          setLocalOnly(true)
+          setLocalDataStatus(getLocalDataStatus())
+          setPhase('local-upgrade')
+          return
+        }
+
         clearLocalOnlyMode()
         setLocalOnly(false)
-        setUserId(session.user.id)
         setPhase('onboarding-check')
+        return
+      }
+
+      if (isLocalOnlyAuthFlow()) {
+        setLocalOnly(true)
+        setUserId(null)
+        setPhase('auth')
         return
       }
 
       if (isLocalOnlyMode()) {
         setLocalOnly(true)
         setUserId(null)
+        setLocalDataStatus(getLocalDataStatus())
         setPhase(resolveLocalPhase())
         return
       }
@@ -86,6 +124,7 @@ function App() {
           setGateComplete(true)
           if (isLocalOnlyMode()) {
             setLocalOnly(true)
+            setLocalDataStatus(getLocalDataStatus())
             setPhase(resolveLocalPhase())
           } else {
             setPhase('auth')
@@ -99,16 +138,56 @@ function App() {
     return (
       <AuthLayer
         onComplete={() => {
-          clearLocalOnlyMode()
-          setLocalOnly(false)
           const uid = auth.currentUser?.uid ?? null
           if (!uid) return
           setUserId(uid)
+
+          if (shouldPauseForLocalUpgrade()) {
+            setLocalOnly(true)
+            setLocalDataStatus(getLocalDataStatus())
+            setPhase('local-upgrade')
+            return
+          }
+
+          clearLocalOnlyAuthFlow()
+          clearLocalOnlyMode()
+          setLocalOnly(false)
           setPhase('onboarding-check')
         }}
         onLocalOnly={() => {
+          clearLocalOnlyAuthFlow()
           setLocalOnly(true)
           setUserId(null)
+          setLocalDataStatus(getLocalDataStatus())
+          setPhase(resolveLocalPhase())
+        }}
+      />
+    )
+  }
+
+  if (phase === 'local-upgrade') {
+    return (
+      <LocalOnlyUpgradeDecision
+        userEmail={auth.currentUser?.email ?? null}
+        localDataStatus={localDataStatus}
+        onContinueToAccount={() => {
+          const uid = userId ?? auth.currentUser?.uid ?? null
+          if (!uid) {
+            setPhase('auth')
+            return
+          }
+
+          clearLocalOnlyMode()
+          setLocalOnly(false)
+          setUserId(uid)
+          setPhase('onboarding-check')
+        }}
+        onStayOnDevice={async () => {
+          clearLocalOnlyAuthFlow()
+          await logOut()
+          setLocalOnly(true)
+          setUserId(null)
+          setLocalDataStatus(getLocalDataStatus())
           setPhase(resolveLocalPhase())
         }}
       />
@@ -143,8 +222,10 @@ function App() {
     <MainApp
       localOnly={localOnly}
       onExitLocalOnly={() => {
-        clearLocalOnlyMode()
-        setLocalOnly(false)
+        if (!enterLocalOnlyAuthFlow()) {
+          return
+        }
+        setLocalOnly(true)
         setUserId(null)
         setPhase('auth')
       }}

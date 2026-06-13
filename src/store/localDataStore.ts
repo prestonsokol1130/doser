@@ -115,6 +115,15 @@ function mergeProfileDefaults(profile: Partial<Profile>): Profile {
     doseBuddy: { ...defaults.doseBuddy, ...(profile.doseBuddy ?? {}) },
   }
 }
+
+export type LocalDataStatus = {
+  hasAnyData: boolean
+  onboardingComplete: boolean
+  hasProfile: boolean
+  doseCount: number
+  doseContextCount: number
+}
+
 export function isLocalOnboardingComplete(): boolean {
   try {
     return localStorage.getItem(ONBOARDING_KEY) === 'true'
@@ -203,4 +212,24 @@ export function saveLocalDoseContexts(
   contexts: Record<string, DoseContext>,
 ): void {
   writeJson(DOSE_CONTEXTS_KEY, sanitizeDoseContexts(contexts))
+}
+
+export function getLocalDataStatus(): LocalDataStatus {
+  const onboardingComplete = isLocalOnboardingComplete()
+  const rawProfile = readJson<Partial<Profile>>(PROFILE_KEY)
+  const hasProfile =
+    !!rawProfile &&
+    typeof rawProfile === 'object' &&
+    Object.keys(rawProfile).length > 0
+  const doseCount = fetchLocalDoses().length
+  const doseContextCount = Object.keys(fetchLocalDoseContexts()).length
+
+  return {
+    hasAnyData:
+      onboardingComplete || hasProfile || doseCount > 0 || doseContextCount > 0,
+    onboardingComplete,
+    hasProfile,
+    doseCount,
+    doseContextCount,
+  }
 }
