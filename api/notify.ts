@@ -1,10 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import * as admin from 'firebase-admin'
+import { initializeApp, getApps, cert } from 'firebase-admin/app'
+import type {
+  DocumentData,
+  DocumentReference,
+  QueryDocumentSnapshot,
+} from 'firebase-admin/firestore'
+import { getFirestore } from 'firebase-admin/firestore'
+import type { MulticastMessage } from 'firebase-admin/messaging'
+import { getMessaging } from 'firebase-admin/messaging'
 
-if (!admin.apps.length) {
+if (!getApps().length) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-  admin.initializeApp({
-    credential: admin.credential.cert({
+  initializeApp({
+    credential: cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey,
@@ -12,8 +20,8 @@ if (!admin.apps.length) {
   })
 }
 
-const db = admin.firestore()
-const messaging = admin.messaging()
+const db = getFirestore()
+const messaging = getMessaging()
 
 const APP_ORIGIN = 'https://usedoser.com'
 const HOUR_MS = 60 * 60 * 1000
@@ -133,7 +141,7 @@ async function processAllUsers(): Promise<number> {
 }
 
 async function processUser(
-  userDoc: admin.firestore.QueryDocumentSnapshot,
+  userDoc: QueryDocumentSnapshot,
 ): Promise<void> {
   const profile = readProfile(userDoc.data())
   if (!profile) return
@@ -196,7 +204,7 @@ async function processDoseWindowNotifications(
   uid: string,
   profile: UserProfile,
   latestDose: DoseDoc,
-  deviceDocs: admin.firestore.QueryDocumentSnapshot[],
+  deviceDocs: QueryDocumentSnapshot[],
   state: NotificationState,
   patch: Partial<NotificationState>,
   nowMs: number,
@@ -267,9 +275,9 @@ async function processDoseWindowNotifications(
 }
 
 async function processDailySummary(
-  userRef: admin.firestore.DocumentReference,
+  userRef: DocumentReference,
   profile: UserProfile,
-  deviceDocs: admin.firestore.QueryDocumentSnapshot[],
+  deviceDocs: QueryDocumentSnapshot[],
   timeZone: string,
   state: NotificationState,
   patch: Partial<NotificationState>,
@@ -312,9 +320,9 @@ async function processDailySummary(
 }
 
 async function processStashAlert(
-  userRef: admin.firestore.DocumentReference,
+  userRef: DocumentReference,
   profile: UserProfile,
-  deviceDocs: admin.firestore.QueryDocumentSnapshot[],
+  deviceDocs: QueryDocumentSnapshot[],
   state: NotificationState,
   patch: Partial<NotificationState>,
   nowMs: number,
@@ -365,8 +373,8 @@ async function processStashAlert(
 
 async function sendToDevices(
   uid: string,
-  deviceDocs: admin.firestore.QueryDocumentSnapshot[],
-  message: Omit<admin.messaging.MulticastMessage, 'tokens'>,
+  deviceDocs: QueryDocumentSnapshot[],
+  message: Omit<MulticastMessage, 'tokens'>,
 ): Promise<number> {
   const activeDeviceDocs = deviceDocs.filter((doc) => {
     const device = doc.data() as NotificationDeviceDoc
@@ -415,7 +423,7 @@ function buildNotificationMessage(
   tag: string,
   data: Record<string, string>,
   silent: boolean,
-): Omit<admin.messaging.MulticastMessage, 'tokens'> {
+): Omit<MulticastMessage, 'tokens'> {
   const icon = new URL('/favicon.svg', APP_ORIGIN).toString()
   return {
     notification: {
@@ -440,13 +448,13 @@ function buildNotificationMessage(
   }
 }
 
-function readProfile(data: admin.firestore.DocumentData): UserProfile | null {
+function readProfile(data: DocumentData): UserProfile | null {
   const profile = data.profile
   if (!profile || typeof profile !== 'object') return null
   return profile as UserProfile
 }
 
-function readState(data: admin.firestore.DocumentData | undefined): NotificationState {
+function readState(data: DocumentData | undefined): NotificationState {
   if (!data || typeof data !== 'object') return {}
   return data as NotificationState
 }
@@ -550,7 +558,7 @@ function formatClockTime(ts: number, timeZone?: string): string {
 }
 
 async function fetchLatestDose(
-  userRef: admin.firestore.DocumentReference,
+  userRef: DocumentReference,
 ): Promise<DoseDoc | null> {
   const snapshot = await userRef
     .collection('doses')
@@ -577,7 +585,7 @@ async function fetchLatestDose(
 }
 
 async function fetchDosesSince(
-  userRef: admin.firestore.DocumentReference,
+  userRef: DocumentReference,
   sinceMs: number,
 ): Promise<DoseDoc[]> {
   const snapshot = await userRef
