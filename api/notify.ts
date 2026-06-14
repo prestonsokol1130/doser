@@ -731,20 +731,20 @@ async function sendOneSignalPush(
       }
 
       const text = await response.text()
-      let body: unknown
+      let responseBody: unknown
       try {
-        body = JSON.parse(text)
+        responseBody = JSON.parse(text)
       } catch {
         console.error('OneSignal returned non-JSON response', { uid, title, text })
         return false
       }
 
-      if (!wasOneSignalPushDelivered(body)) {
-        console.error('OneSignal send did not deliver', { uid, title, body })
+      if (!wasOneSignalPushDelivered(responseBody)) {
+        console.error('OneSignal send did not deliver', { uid, title, responseBody })
         return false
       }
 
-      console.log('Sent notification via OneSignal', { uid, title, body })
+      console.log('Sent notification via OneSignal', { uid, title, responseBody })
       return true
     } finally {
       clearTimeout(timeoutId)
