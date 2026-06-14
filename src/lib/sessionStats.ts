@@ -1,8 +1,6 @@
+import { isDoseStillInActiveSession, FIXED_SESSION_AUTO_END_DELAY_MS, preferredIntervalMsForSubstance } from '@/lib/notifications'
 import { HOUR_MS, MINUTE_MS } from '@/lib/perceivedEffect/effectCurves'
-import type { Dose, DoseSubstance, Substance } from '@/types'
-
-/** Gap with no doses that starts a new session. */
-export const SESSION_GAP_MS = 6 * HOUR_MS
+import type { Dose, DoseSubstance, Profile, Substance } from '@/types'
 
 export function startOfTodayMs(nowMs: number): number {
   const d = new Date(nowMs)
@@ -103,8 +101,8 @@ export function sessionMetrics(doses: Dose[]): SessionMetrics {
   }
 }
 
-/** Split doses into sessions separated by gaps longer than SESSION_GAP_MS. */
-export function splitIntoSessions(doses: Dose[], gapMs = SESSION_GAP_MS): Dose[][] {
+/** Split doses into sessions separated by a given gap. */
+export function splitIntoSessions(doses: Dose[], gapMs: number): Dose[][] {
   const sorted = [...doses].sort((a, b) => a.ts - b.ts)
   if (sorted.length === 0) return []
 
@@ -124,32 +122,44 @@ export function splitIntoSessions(doses: Dose[], gapMs = SESSION_GAP_MS): Dose[]
 export function currentSession(
   doses: Dose[],
   substance: Substance,
+  profile: Profile,
   nowMs: number,
 ): Dose[] {
   const filtered = doses
-    .filter((d) => d.substance === substance)
+    .filter((d) => d.substance === substance && d.ts <= nowMs)
     .sort((a, b) => a.ts - b.ts)
   if (filtered.length === 0) return []
 
-  const sessions = splitIntoSessions(filtered)
+  const sessionGapMs =
+    preferredIntervalMsForSubstance(profile, substance) +
+    FIXED_SESSION_AUTO_END_DELAY_MS
+  const sessions = splitIntoSessions(filtered, sessionGapMs)
   if (sessions.length === 0) return []
   const last = sessions[sessions.length - 1]!
-  const lastDoseTs = last[last.length - 1]!.ts
-  if (nowMs - lastDoseTs > SESSION_GAP_MS) return []
+  const lastDose = last[last.length - 1]!
+  if (!isDoseStillInActiveSession(profile, lastDose, nowMs)) return []
   return last
 }
 
 export function sessionsInLookback(
   doses: Dose[],
   substance: Substance,
+  profile: Profile,
   nowMs: number,
   lookbackMs: number,
 ): Dose[][] {
   const cutoff = nowMs - lookbackMs
   const filtered = doses
-    .filter((d) => d.substance === substance && d.ts >= cutoff && d.ts <= nowMs)
+    .filter((d) => d.substance === substance && d.ts <= nowMs)
     .sort((a, b) => a.ts - b.ts)
-  return splitIntoSessions(filtered)
+  const sessionGapMs =
+    preferredIntervalMsForSubstance(profile, substance) +
+    FIXED_SESSION_AUTO_END_DELAY_MS
+  const sessions = splitIntoSessions(filtered, sessionGapMs)
+  return sessions.filter((session) => {
+    const lastTs = session[session.length - 1]?.ts ?? 0
+    return lastTs >= cutoff
+  })
 }
 
 export type CompareTrend = 'up' | 'down' | 'flat'

@@ -90,6 +90,7 @@ export function OnboardingLayer({
     return (
       <NotificationBasics
         profile={profile}
+        localOnly={localOnly}
         onChange={setProfile}
         onNext={() => goToStep('finish')}
         onBack={() => goToStep('substance')}

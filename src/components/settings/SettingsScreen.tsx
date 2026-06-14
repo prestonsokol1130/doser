@@ -59,6 +59,7 @@ export function SettingsScreen({
     return (
       <NotificationsScreen
         profile={profile}
+        localOnly={localOnly}
         onProfileChange={onProfileChange}
         onBack={() => setScreen('hub')}
       />

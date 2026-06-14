@@ -4,6 +4,7 @@ import { OnboardingLayout } from './OnboardingLayout'
 
 type NotificationBasicsProps = {
   profile: Profile
+  localOnly?: boolean
   onChange: (profile: Profile) => void
   onNext: () => void
   onBack: () => void
@@ -24,6 +25,7 @@ function updateNotif(
 
 export function NotificationBasics({
   profile,
+  localOnly = false,
   onChange,
   onNext,
   onBack,
@@ -42,6 +44,12 @@ export function NotificationBasics({
         Reminders help you stay on your preferred dosing interval. You can fine
         tune all notification types later in Settings.
       </p>
+
+      {localOnly ? (
+        <p className="text-sm leading-relaxed text-[var(--color-text-dim)]">
+          Background notifications require an account in this version.
+        </p>
+      ) : null}
 
       <ToggleRow
         label="Dose Reminders"
@@ -81,11 +89,16 @@ export function NotificationBasics({
           />
 
           <ToggleRow
-            label="Dose Logged Confirmation"
-            description="Confirm each time a dose is logged."
-            checked={notif.doseLoggedConfirmation}
-            onChange={(doseLoggedConfirmation) =>
-              onChange(updateNotif(profile, { doseLoggedConfirmation }))
+            label="Missed-Dose Alert"
+            description="Notify 1 hour after your next window opens if no new dose is logged."
+            checked={notif.missedDoseAlert}
+            onChange={(missedDoseAlert) =>
+              onChange(
+                updateNotif(profile, {
+                  missedDoseAlert,
+                  missedDoseGraceHours: 1,
+                }),
+              )
             }
           />
 

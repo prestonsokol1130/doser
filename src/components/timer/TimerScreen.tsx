@@ -81,7 +81,7 @@ export function TimerScreen({
   const [draftContext, setDraftContext] = useState<DoseContext>(DEFAULT_DOSE_CONTEXT)
 
   const timer = computeTimerState(doses, substance, profile, nowMs)
-  const activeSession = currentSession(doses, substance, nowMs)
+  const activeSession = currentSession(doses, substance, profile, nowMs)
   const isRedose = activeSession.length > 0
   const defaultSubstance = profileDefaultSubstance(profile)
   const wasInActiveSessionRef = useRef(isRedose)

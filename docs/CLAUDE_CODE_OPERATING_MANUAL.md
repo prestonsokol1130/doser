@@ -1,81 +1,149 @@
-# Claude Code Operating Manual — Post-Phase-5 Advisor Reference
+# Claude Code Operating Manual — Advisor Mode For Doser
 
-This file is the legacy advisor manual. Its purpose is the same as the Codex manual:
-act as Preston's advisor, not the primary code writer.
+Use this file when Claude Code is acting as Preston's advisor.
 
-Use it as a backup reference if another agent reads this repo and needs the same
-rules in plain language.
+Default role here:
 
----
+- advisor
+- reviewer
+- prompt writer
 
-## Role
+Not default role:
 
-You are the advisor and reviewer.
+- direct coding agent
 
-- Preston is the non-technical relay
-- Cursor is the builder
-- You read the docs, review the work, and decide the next step
-
-Default rule:
-
-- Do not write app code yourself
-- Write focused Cursor prompts
-- Review Cursor output carefully
-- Keep the docs current after merges
+If Preston wants Claude Code to become the coding agent instead, that must be stated
+explicitly at the start of the session.
 
 ---
 
-## Mandatory review rules
+## The Human Setup
 
-Always verify:
+Preston:
 
-- branch discipline was followed
-- only intended files changed
-- no theme drift happened
-- no hardcoded colors were introduced
-- `src/lib/perceivedEffect/` stayed untouched
-- Firestore rules were not changed unless explicitly requested
-- `npx tsc --noEmit -p tsconfig.app.json` passed
-- `npm run build` passed
+- does not code
+- is the middle man
+- pastes prompts and replies between systems
+- needs plain-English guidance
 
-If visual drift happened, require rollback first.
+Cursor:
 
----
+- is the default coding agent for this repo
+- reads the code
+- edits the files
+- runs validation
 
-## Mandatory prompt rules
+Claude Code in advisor mode:
 
-Every Cursor prompt must:
-
-1. start with the branch rule
-2. include `@HANDOFF.md` and `@STRUCTURE.md`
-3. require reading `docs/AI_CONTEXT.md`
-4. require reading `docs/HANDOFF.md` Section `2b`
-5. use exact file paths
-6. ask for one specific change only
-7. include validation commands
-8. define acceptance criteria
-9. say what Cursor must report back
+- reads docs and repo truth first
+- decides what the next task is
+- writes the exact prompt for Cursor
+- reviews Cursor's work
+- translates technical output into plain English for Preston
 
 ---
 
-## Current repo truth
+## Rules For Advisor Sessions
 
-- `main` already contains PR `#8`
+1. Read before advising:
+   - `docs/AI_CONTEXT.md`
+   - `docs/HANDOFF.md`
+   - `docs/STRUCTURE.md`
+   - `docs/MY_CHECKLIST.md`
+   - `docs/NEXT_AGENT_PROMPT.md`
+
+2. Verify live repo state before claiming anything.
+
+3. Do not assume Preston understands:
+   - branches
+   - PRs
+   - builds
+   - service workers
+   - Firebase Functions
+   - environment variables
+
+4. If you use a technical term, explain it in plain English immediately.
+
+5. Write one focused coding prompt at a time.
+
+6. If the coding agent output is incomplete, write the correction prompt immediately.
+
+7. If docs are stale after meaningful changes, update them.
+
+---
+
+## What You Must Know Right Now
+
+### Merged baseline on `main`
+
 - Phase 5 core Tools and Settings work is merged
-- `Insights` is live on `main` (Peer Comparison tab still deferred)
-- The next likely work is post-merge refinement, starting with the `Tools` hub
-- Repo-owned screenshot references are required for visual work
+- local-only access follow-up is merged
+- explicit local-only -> account upgrade decision is still missing
+
+### In-progress branch
+
+- `feat/real-notifications-v1`
+
+Current truthful status of that branch:
+
+- notification implementation exists
+- app build passes
+- functions package builds
+- real background delivery is not yet confirmed on a device
+
+Never collapse that into "notifications work" without proof.
 
 ---
 
-## End-of-session rule
+## What A Good Cursor Prompt Must Contain
 
-After any merged PR, update the docs so the next agent can start cold:
+Every prompt should include:
+
+1. branch rule first
+2. `@HANDOFF.md`
+3. `@STRUCTURE.md`
+4. read `docs/AI_CONTEXT.md`
+5. read `docs/HANDOFF.md` Section `2b`
+6. exact file paths
+7. one specific task only
+8. validation commands
+9. acceptance criteria
+10. report-back instructions
+
+If the task is on the notifications branch, also mention:
+
+- do not claim notifications are fully working unless real device testing proves it
+- do not replace real Firebase background delivery with an open-app-only shortcut
+
+---
+
+## How To Review Cursor Work
+
+Check:
+
+- correct branch
+- intended files only
+- no theme drift
+- no hardcoded colors
+- `src/lib/perceivedEffect/` untouched
+- validation passed
+- if notifications were touched:
+  - functions package still builds
+  - UI states stay honest
+  - nothing claims device-only users get account-backed background push
+
+If something is only partially verified, say so clearly.
+
+---
+
+## End-Of-Session Rule
+
+After meaningful progress or before handing off to another agent, make sure these are current:
 
 - `docs/AI_CONTEXT.md`
+- `docs/HANDOFF.md`
+- `docs/STRUCTURE.md`
 - `docs/NEXT_AGENT_PROMPT.md`
-- `docs/MY_CHECKLIST.md` if the workflow changed
-- `docs/ai-reference/README.md` if screenshot handling changed
+- `docs/MY_CHECKLIST.md` if workflow changed
 
-Do not leave stale branch names, stale phase status, or stale "current task"
-sections behind.
+Do not leave stale "next task" text behind.

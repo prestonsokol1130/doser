@@ -19,6 +19,10 @@ Read before writing any code:
 
 PR `#11` merged the explicit local-only upgrade decision to `main`. That work is done.
 
+You are likely continuing branch:
+
+- `feat/real-notifications-v1`
+
 The next active task is on branch:
 
 - `feat/real-notifications-v1`
@@ -35,7 +39,6 @@ This branch already added:
 - custom service worker in `src/sw.ts`
 - Firebase Functions package in `functions/`
 - scheduled notification sender in `functions/src/index.ts`
-
 The app build passes.
 The functions package build passes.
 
@@ -63,22 +66,26 @@ That means:
 
 ---
 
-## Required paths to inspect
+## Post-Merge Verification Checklist
 
-- `src/components/settings/NotificationsScreen.tsx`
-- `src/components/onboarding/NotificationBasics.tsx`
-- `src/components/MainApp.tsx`
-- `src/lib/firebase.ts`
-- `src/lib/notifications.ts`
-- `src/lib/pushRegistration.ts`
-- `src/lib/sessionStats.ts`
-- `src/main.tsx`
-- `src/sw.ts`
-- `src/store/authStore.ts`
-- `src/store/profileStore.ts`
-- `functions/src/index.ts`
-- `firebase.json`
-- `.env.example`
+After this branch is merged and deployed to production:
+
+1. Verify Vercel auto-deploys the `main` branch to production (check https://usedoser.com).
+2. Test all OneSignal notification flows end-to-end on a real signed-in device/PWA:
+   - Grant permission in the PWA.
+   - Verify the OneSignal dashboard shows a subscriber for your test user.
+   - Manually trigger conditions to test and verify that the dose-due reminder, missed-dose alert, daily summary, and stash-low alert all arrive correctly.
+2. Test all notification flows end-to-end on a real signed-in device/PWA.
+   - **Permission**: Grant permission in the PWA and verify the OneSignal dashboard shows a new subscriber for your test user.
+   - **Dose-Due Reminder**: Log a dose and verify the "dose due" reminder arrives at the correct lead time.
+   - **Missed-Dose Alert**: Let a redose window pass without logging a dose and verify the "missed dose" alert arrives 1 hour later.
+   - **Daily Summary**: Set a summary time and verify the summary notification arrives at the correct time of day.
+   - **Stash-Low Alert**: Set a stash threshold, log doses to cross it, and verify the "stash low" alert arrives only once.
+   - **Opt-Out**: Turn off all notifications in settings and verify no notifications are received.
+   - **Sign-Out**: Sign out of the account and verify that account-related notifications stop arriving on that device.
+   - **Silent Mode**: Enable silent notifications and verify they arrive without sound or vibration.
+3. Create the Firestore composite index if Firebase logs a URL on the first cron run.
+4. Only when all notification types are confirmed to be delivered successfully is the feature considered fully verified.
 
 ---
 
@@ -102,6 +109,7 @@ Run:
 - `npx tsc --noEmit -p tsconfig.app.json`
 - `npm run build`
 - in `functions/`: `npm run build`
+- `npm run build`
 
 If possible in this environment, also verify:
 

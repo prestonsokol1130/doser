@@ -3,6 +3,7 @@ import {
   buildDoseBuddySuggestion,
   DEFAULT_DOSE_CONTEXT,
 } from '@/lib/doseBuddy'
+import { HOUR_MS } from '@/lib/perceivedEffect/effectCurves'
 import {
   formatTimeAgo,
   formatIntervalMinutes,
@@ -141,7 +142,7 @@ export function DoseBuddyScreen({
   }, [doseContexts, doses])
 
   const groupedSessions = useMemo(() => {
-    return splitIntoSessions(dosesWithInputs).reverse()
+    return splitIntoSessions(dosesWithInputs, 6 * HOUR_MS).reverse()
   }, [dosesWithInputs])
 
   const recentSubstance: Substance = useMemo(() => {
