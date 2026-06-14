@@ -12,13 +12,50 @@ safer redosing decisions.
 It is not a medical device. It does not guarantee safety. It is intentionally
 distributed outside app stores at `usedoser.com`.
 
-Preston is the solo builder and product owner. He does not code directly. He uses:
+Preston is the solo builder and product owner. He does not code directly.
 
-- an advisor agent for planning, review, prompts, and handoff quality
-- Cursor for the actual code changes
+Preston has no coding experience. Any agent helping on this repo must explain every
+step in plain English and must not assume technical knowledge.
 
-Preston has no coding background. Any agent helping him must spell out every step in
-plain English and must not assume technical knowledge.
+---
+
+## Role Model For Future Agents
+
+This repo is built around a three-role workflow. Future agents must follow it exactly
+unless Preston explicitly changes the workflow.
+
+### Preston
+
+- product owner
+- non-technical middle man
+- opens the chats
+- pastes prompts between systems
+- runs the browser tests when told exactly what to do
+- opens PRs and handles GitHub clicks when guided step by step
+
+### Advisor Agent
+
+- reads the docs and the live repo first
+- decides what the next task should be
+- writes the exact prompt for the coding agent
+- reviews the coding agent's output
+- tells Preston what to do next in plain English
+- keeps the docs current after meaningful changes
+
+The advisor is not allowed to assume Preston knows what a branch, PR, build, service
+worker, Firebase Function, or environment variable is. If those terms are used, they
+must be explained in plain language.
+
+### Coding Agent
+
+- Cursor is the default coding agent in this repo
+- the coding agent reads the code, makes the edits, and runs validation
+- the coding agent must work only on the branch Preston already created
+- the coding agent must not create, rename, or switch branches
+
+If Claude Code or another system is used instead of Cursor, that agent must be told
+explicitly whether it is acting as advisor-only or coding-agent-only for that session.
+Do not let one agent drift between both roles without saying so.
 
 ---
 
@@ -36,23 +73,41 @@ Stack:
 - Firebase Auth
 - Firestore
 - vite-plugin-pwa / Workbox
+- OneSignal (web push delivery on the notifications branch)
+- Vercel serverless functions (notification scheduler on the notifications branch)
 
 Code review:
 
 - CodeRabbit is connected and reviews PRs automatically
 
-Current git state when this file was last updated:
+Firebase project:
 
-- `main` contains PR `#8`, the merged local-only follow-up from PR `#10`, and the
-  explicit local-only upgrade decision from PR `#11`
+- `doser-e389f`
+
+Auth methods enabled:
+
+- Email/Password
+- Google
+
+Current merged baseline on `main`:
+
+- `main` contains Phase 5 core Tools and Settings work from PR `#8`
+- `main` also contains the local-only follow-up merged at commit `88d8446` (PR `#10`)
+- `main` also contains the explicit local-only upgrade decision from PR `#11`
 - `main` HEAD when this file was last updated: `242463e feat: add explicit local-only upgrade decision (#11)`
-- No active feature branch should be assumed from this file alone
+
+Current active branch during this doc update:
+
+- `feat/real-notifications-v1`
+
+Do not assume any future session is still on that branch. Always verify the live repo.
+No active feature branch should be assumed from this file alone.
 
 ---
 
 ## Current Build Status
 
-Last updated: 2026-06-12
+Last updated: 2026-06-13
 
 ### Phase 1 — Foundation: COMPLETE
 
@@ -111,67 +166,53 @@ Merged deliverables:
 
 Merged supporting work:
 
-- `MainApp.tsx` now owns shared app state across Timer, History, Tools, and Settings
+- `MainApp.tsx` owns shared app state across Timer, History, Tools, and Settings
 - Dose contexts persist alongside profile and doses
 - `src/lib/stash.ts`, `src/lib/taper.ts`, `src/lib/doseBuddy.ts` added
 - Profile types extended for Stash, Taper, Dose Buddy, notifications, and theme
 - `authStore.ts` includes sign-out support for the Account screen
 
-Phase 5 refinements that are already merged:
+Phase 5 refinements already merged:
 
 1. Theme rollback
    - The off-theme Tools / Dose Buddy / Stash drift was removed
    - Current app theme was restored
-   - Goal images are directional only, not permission for a new visual system
-
 2. Stash redesign
    - Stash hero uses the horizontal liquid-tank layout
    - Inline refill controls, stat pills, quick chips, and accelerated stepper are live
-
 3. Stash data model fix
-   - `StashPrefs.fullMl` now stores the tank's 100 percent visual reference
-   - `capacityMl` is no longer forced to act as both current amount and denominator
-   - Legacy profiles fall back through `stashFullMl()`
-
-4. Stash animation follow-up fixes
-   - The earlier rejected slosh pass was replaced during iteration
-   - Follow-up fixes merged:
-     - keyframe names normalized to kebab-case
-     - duplicate SVG wave path removed from the reference HTML
-     - fill-control buttons in the reference HTML explicitly use `type="button"`
-
-5. Dose Buddy mobile cleanup
-   - Start-session / redose check-in sheet was tightened for small screens
-   - "Why this suggestion" stays collapsed until opened
-   - Mobile height was capped more carefully
-
-6. Accessibility and review fixes
-   - `NavRow` decorative chevron hidden correctly from screen readers
-   - `NavRow` keyboard focus state added
-   - Install prompt dismissal now shows user feedback
-   - Shared validation constants moved into `src/types.ts`
-   - `MainApp.tsx` profile persistence guard fixed so profile saving is enabled only after a successful load
+   - `StashPrefs.fullMl` stores the 100 percent reference
+   - `capacityMl` is no longer forced to do two jobs
+4. Dose Buddy mobile cleanup
+   - Start-session / redose sheet was tightened for smaller screens
+5. Accessibility and follow-up fixes
+   - keyboard focus and review fixes were merged
 
 ### Post-Phase-5 Follow-up — Local-Only Access: COMPLETE AND MERGED
 
-Merged to `main` through commits:
+Merged to `main` through:
 
 - `dc81679 feat: add local-only access mode`
 - `e953675 refactor: enhance local-only mode handling and improve dose context sanitization`
 - `88d8446 fix: wrap up local-only access flow`
 
-Delivered behavior:
+Delivered behavior on `main`:
 
 - Log in screen offers `Continue on this device`
 - Device-only mode can complete onboarding without Firebase auth
 - Profile, doses, and dose contexts persist locally in `localStorage`
 - Main app reads and writes local state when device-only mode is active
-- `Settings` -> `Account` shows device-only status and a path back to the auth screen
-- Local onboarding save now rolls back the profile write if the onboarding-complete flag fails to persist
+- `Settings -> Account` shows device-only status and a path back to auth
+- Local onboarding save rolls back if the onboarding-complete flag fails to persist
 
-Current limitation:
+Known gap still on `main`:
 
-- There is still no migration/import flow from local-only data into a signed-in Firebase account
+- there is still no migration/import flow from local-only data into a signed-in account
+
+Important prior seam (before PR `#11`):
+
+- `src/App.tsx` previously cleared local-only mode and routed forward as soon as a
+  Firebase auth session existed
 
 ### Post-Phase-5 Follow-up — Local-Only Upgrade Decision: COMPLETE AND MERGED
 
@@ -190,41 +231,208 @@ Delivered behavior:
 - `src/store/localSessionStore.ts` tracks the local-only auth flow so the handoff is
   explicit from `Settings` -> `Account` -> sign-in as well
 
-Review outcome from the merge:
-
-- All 3 actionable CodeRabbit review issues on PR `#10` were resolved before merge
-- The remaining `Docstring Coverage` note was a warning inside the PR comment, not
-  a blocking required check
-
-### Live tab state right now
+### Live Tab State On `main`
 
 - `Timer` — live
 - `History` — live
 - `Tools` — live
 - `Settings` — live
-- `Insights` — live (Peer Comparison tab still deferred)
+- `Insights` — live
+- `Insights -> Peer Comparison` — still deferred
+
+---
+
+## Branch In Progress — `feat/real-notifications-v1`
+
+This branch is in progress. It is not merged to `main`.
+
+### Goal Of This Branch
+
+Build the first real notification system using the existing Firebase stack instead of
+leaving notifications as settings-only UI.
+
+### What Was Added On This Branch
+
+Client-side additions:
+
+- `src/components/settings/NotificationsScreen.tsx`
+  - adds a real browser-permission status card
+  - shows honest states:
+    - account required
+    - browser not supported
+    - push config missing
+    - browser notifications blocked
+    - browser notifications on
+  - adds a visible `Missed-Dose Alert` toggle
+  - removes the fake `Dose Logged Confirmation` toggle
+- `src/components/onboarding/NotificationBasics.tsx`
+  - removes the fake confirmation toggle
+  - tells local-only users that background notifications require an account
+- `src/components/MainApp.tsx`
+  - syncs push registration for signed-in users
+- `src/store/authStore.ts`
+  - removes the browser push target on sign-out
+- `src/main.tsx`
+  - explicitly registers the service worker
+- `src/lib/pushRegistration.ts`
+  - handles browser permission checks
+  - requests permission
+  - initializes the OneSignal web SDK and calls `OneSignal.login(uid)`
+  - no token stored in Firestore — OneSignal manages device registration internally
+- `src/lib/firebase.ts`
+  - exports `firebaseApp` for Firebase Auth and Firestore
+- `src/sw.ts`
+  - custom bundled Workbox service worker
+  - handles caching only; no Firebase Messaging
+
+Timing / notification logic additions:
+
+- `src/lib/notifications.ts`
+  - centralizes:
+    - next dose window calculation
+    - dose due reminder time
+    - missed-dose alert time
+    - session auto-end time
+- fixed product rules implemented:
+  - missed-dose alert = 1 hour after redose eligibility
+  - session auto-end timing = 3 hours after redose eligibility
+- `src/lib/sessionStats.ts`
+  - current session now ends using the new preferred-interval-plus-3-hours rule
+- `src/components/timer/TimerScreen.tsx`
+- `src/components/timer/carousel/SessionCompareCard.tsx`
+- `src/lib/doseBuddy.ts`
+  - updated to use the new current-session signature
+
+Backend additions:
+
+- `api/notify.ts` — Vercel serverless function (replaces the Firebase Functions scheduler)
+- `vercel.json` — cron configuration for the Vercel function
+
+The new Vercel serverless function runs as a cron job and sends notifications for:
+
+- dose due reminder
+- missed-dose alert
+- daily summary
+- stash low alert
+
+The same scheduled backend also records session auto-end timing markers, even though
+there is not yet a richer explicit session document model in Firestore.
+
+### Notification Behavior Intended By This Branch
+
+For signed-in account users with push permission granted:
+
+1. Dose due reminder
+   - uses the saved lead time
+   - sends before the next window opens
+2. Missed-dose alert
+   - separate toggle
+   - sends 1 hour after the user became eligible to redose
+3. Session auto-end
+   - no separate toggle
+   - follows the missed-dose timeline
+   - session is treated as inactive 3 hours after redose eligibility
+4. Daily summary
+   - uses the saved time
+   - first version includes:
+     - doses today
+     - total mL today
+     - last dose time
+5. Stash low alert
+   - uses the saved threshold
+   - fires only when crossing into the low state
+
+### What Is Honest To Say Right Now
+
+The code path is built.
+
+It is **not yet honest to say notifications are confirmed working in real use**.
+
+Why:
+
+- full real end-to-end phone/PWA delivery has not been verified yet
+- the in-app browser automation became unreliable after the new service worker took
+  over the local preview tab
+- no completed manual signed-in phone test was captured during this branch work
+
+So the truthful status is:
+
+- implementation exists
+- build passes
+- backend package builds
+- real delivery is not yet confirmed end to end
+
+### Validation Completed On This Branch
+
+- `npx tsc --noEmit -p tsconfig.app.json` passes
+- `npm run build` passes
+- `npm run build` inside `functions/` passes
+- local preview endpoint returned HTTP `200`
+
+### Validation Still Missing Before Anyone Claims It Works
+
+These checks still need to be performed manually on a real signed-in browser/PWA,
+preferably on phone:
+
+1. confirm browser permission prompt behaves correctly
+2. confirm the OneSignal dashboard shows a registered subscriber for the user
+3. confirm dose due reminder reaches the device
+4. confirm missed-dose alert reaches the device
+5. confirm daily summary arrives at the chosen time
+6. confirm stash low alert arrives only on threshold crossing
+7. confirm users with notifications off do not receive those alerts
+8. confirm signed-out browsers stop receiving account notifications
+
+### Environment / Deploy Prerequisites For This Branch
+
+The following must exist for real delivery:
+
+- root app env must include:
+  - `VITE_ONESIGNAL_APP_ID`
+- Vercel serverless function at `api/notify.ts` must be deployed
+- server env must include `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`, Firebase admin vars, and `CRON_SECRET`
+- cron-job.org must be configured to call `POST https://usedoser.com/api/notify` every minute
+
+If the OneSignal app ID is missing, the UI tells the truth and says push setup is missing.
+
+### Important Warnings For Future Agents
+
+- Do not tell Preston "notifications work" unless a real device test proves it
+- Do not treat a successful build as proof of delivery
+- Do not quietly switch this branch back to settings-only language
+- Do not remove the honest blocked/missing states from the Notifications screen
+- Do not claim local-only users get real background notifications in this version
+- Do not silently merge this branch with local-only upgrade work unless Preston
+  explicitly wants the branches combined
 
 ---
 
 ## Immediate Next Work
 
+There are now two distinct tracks.
+
 There is no active core-phase rebuild right now. The next likely work is finishing and
 verifying real notifications end to end, then refinement.
 
-Priority order unless Preston changes it:
+### Track A — Completed on `main` (PR `#11`)
 
-1. Finish and verify real notifications end to end
-   - Work continues on `feat/real-notifications-v1` (not merged to `main`)
-   - Implementation exists and builds pass, but real signed-in browser/PWA delivery has
-     not been confirmed on a real device yet
-   - Do not describe notifications as working until manual device testing proves delivery
+Explicit local-only -> account upgrade decision
 
-2. Tools / Settings redesign intake
-   - Preston has external reference material from `Doser Scroll Animations.zip`
-   - Those references are not yet safely normalized into the repo
-   - Before any visual Cursor task, approved screenshots or mockups must be copied into:
-     - `docs/ai-reference/goal/`
-   - Do not rely on `Downloads` paths in prompts
+- device-only users now get a clear stop-and-explain handoff after auth
+- no silent merge
+- no silent delete
+- no silent overwrite
+
+### Track B — Still needed on `feat/real-notifications-v1`
+
+Finish and verify real notifications end to end
+
+- Work continues on `feat/real-notifications-v1` (not merged to `main`)
+- Implementation exists and builds pass, but real signed-in browser/PWA delivery has
+  not been confirmed on a real device yet
+- Do not describe notifications as working until manual device testing proves delivery
+
+### Track C — Deferred follow-ups after notifications
 
 3. Local-only -> account migration/import (deferred)
    - The explicit upgrade decision is complete on `main` via PR `#11`
@@ -241,79 +449,77 @@ Priority order unless Preston changes it:
    - After Tools hub
    - Same rules: hub-only first, preserve logic, preserve theme
 
-Still deferred:
+Required next steps:
 
-- Push notification delivery beyond settings UI
-- Insights Peer Comparison tab (opt-in anonymous comparison — UI stub only)
-- Dose Buddy peer comparison / local peer contribution feature
-- Dose Buddy contexts wiring into other analytics surfaces beyond current use
+1. deploy the Vercel function and confirm `api/notify.ts` is live
+2. confirm OneSignal env vars are present (`VITE_ONESIGNAL_APP_ID`, `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`)
+3. manually test the notification flows on a real signed-in browser/PWA
+4. fix anything discovered during real delivery testing
+5. only after that, describe notifications as working
 
-Validation snapshot from the latest local-only wrap-up:
+### Still Deferred
 
-- `npx tsc --noEmit -p tsconfig.app.json` passes
-- `npm run build` passes
-- `npm run lint` still fails on pre-existing repo-wide issues in:
-  - `src/components/settings/InstallAppScreen.tsx`
-  - `src/components/settings/ProfileSettingsScreen.tsx`
-  - `src/components/tools/DoseBuddyControls.tsx`
-  - `src/components/tools/DoseBuddyScreen.tsx`
-  - `src/components/tools/StashScreen.tsx`
+- `Insights -> Peer Comparison`
+- Dose Buddy peer comparison / local peer contribution
+- broader reuse of Dose Buddy contexts across more analytics surfaces
 
 ---
 
-## Key Documents in This Repo
+## Key Documents In This Repo
 
 `docs/AI_CONTEXT.md`
-- Current-state truth source
+- current-state source of truth
 
 `docs/HANDOFF.md`
-- Technical and design rules
-- Section `2b` is the design-system law
+- technical and design rules
+- Section `2b` is design law
 
 `docs/STRUCTURE.md`
-- Real file tree and wiring map
+- real file tree and wiring map
 
 `docs/CODEX_OPERATING_MANUAL.md`
-- Advisor-role manual for Codex-style sessions
+- advisor workflow manual
 
 `docs/CLAUDE_CODE_OPERATING_MANUAL.md`
-- Backup advisor-role reference in the same spirit
+- advisor backup manual for Claude-style sessions
 
 `docs/MY_CHECKLIST.md`
-- Preston's step-by-step workflow
+- Preston's plain-English workflow checklist
 
 `docs/NEXT_AGENT_PROMPT.md`
-- The next likely Cursor task brief
+- current handoff prompt for the next agent/task
 
 `docs/ai-reference/README.md`
-- Rules for repo-owned screenshots and mockups
+- screenshot and mockup handling rules
 
 ---
 
-## How the Workflow Works
+## Workflow Rules
 
 Every task should follow this pattern:
 
 1. Preston creates the branch himself from `main`
-2. Preston opens a brand-new Cursor chat
-3. Advisor writes one focused Cursor prompt
-4. Cursor reads the docs and code first
-5. Cursor asks questions if blocked
-6. Cursor changes code and runs validation
-7. Preston tests in the browser
-8. Advisor reviews the result
-9. Cursor commits and pushes
+2. Preston opens a brand-new coding-agent chat
+3. The advisor writes one focused prompt
+4. The coding agent reads docs and code first
+5. The coding agent asks questions if blocked
+6. The coding agent edits code and runs validation
+7. Preston tests in the browser or on device
+8. The advisor reviews the result
+9. The coding agent commits and pushes after approval
 10. Preston opens the PR
-11. CodeRabbit review is handled before merge
-12. After merge, docs are updated so the next session starts clean
+11. CodeRabbit comments are handled before merge
+12. After merge, docs are updated
 
 Important workflow rules:
 
-- Cursor never creates branches
-- One task per Cursor chat
-- Prompts must use exact file paths
-- Visual prompts must use repo-owned screenshots only
-- If a visual pass drifts off-theme, rollback comes before any new design work
+- Preston is the middle man
+- the advisor explains every step in plain English
+- the coding agent does the actual edits
+- one task per coding-agent chat
+- prompts must use exact file paths
+- visual prompts must use repo-owned screenshots only
+- if docs and code disagree, prefer the live code and then fix the docs
 
 ---
 
@@ -321,9 +527,8 @@ Important workflow rules:
 
 ### Firebase over Supabase
 
-The project switched away from Supabase during early work. Firebase Auth and
-Firestore are the current backend stack. Do not write new docs or prompts that
-describe this app as Supabase-based.
+Firebase Auth and Firestore are the active backend stack. Do not write new docs or
+prompts that describe this app as Supabase-based.
 
 ### PEL over pharmacokinetic math
 
@@ -332,7 +537,7 @@ intentional and must not be rewritten.
 
 ### PWA only
 
-This is a web app, intentionally distributed outside app stores.
+This is a web app intentionally distributed outside app stores.
 
 ### Stash model
 
@@ -340,14 +545,18 @@ This is a web app, intentionally distributed outside app stores.
 
 - `capacityMl` = current on-hand baseline
 - `fullMl` = the 100 percent tank reference
-- `refillAt` = timestamp after which consumption counts against the current stash
+- `refillAt` = timestamp after which consumption counts against the stash
 
-This separation is required so the tank can visually deplete correctly after refill.
+### Notifications branch architecture
 
-### Accent tints
+On `feat/real-notifications-v1`, notification delivery is being built through:
 
-New translucent accent treatments must use `color-mix(...)` with design tokens rather
-than hardcoded rgba values.
+- browser notification permission
+- OneSignal web SDK (replaced Firebase Cloud Messaging — see HANDOFF.md for why)
+- a real app service worker (Workbox only; no Firebase Messaging)
+- Vercel serverless function at `api/notify.ts` (replaced Firebase Functions)
+
+Do not replace that branch with a fake "only while app is open" version.
 
 ---
 
@@ -369,9 +578,9 @@ Short version:
 
 Font summary:
 
-- `--font-display` = Antonio for big numbers
-- `--font-heading` = Montserrat for section titles and headers
-- `--font-body` = Inter for UI text
+- `--font-display` = Antonio
+- `--font-heading` = Montserrat
+- `--font-body` = Inter
 - Unbounded only for the `doser` wordmark
 
 ---
@@ -380,22 +589,24 @@ Font summary:
 
 Critical rule:
 
-- Do not rewrite `src/lib/perceivedEffect/`
+- do not rewrite `src/lib/perceivedEffect/`
 
-This folder contains hand-tuned subjective intensity modeling. Its calibration values
-and behavior are intentional.
+That folder contains hand-tuned subjective intensity modeling.
 
 ---
 
 ## Known Issues / Watch Outs
 
-- Service worker caching on localhost can make the browser show stale UI
+- service worker caching on localhost can make the browser show stale UI
 - Tailwind JIT can keep stale arbitrary-value utilities on long-lived dev sessions
+- the notifications branch is implemented but not end-to-end confirmed on a real device
+- the in-app browser automation became unreliable after service-worker takeover during
+  this notifications branch work
 - Insights Peer Comparison tab is still a deferred stub inside the live Insights screen
 - The repo's screenshot library is incomplete for current Tools / Settings state
   - existing `current-app-state` images are historical wrong-theme references, not fresh truth captures
   - fresh current UI screenshots should be added before future visual-review tasks
-- `npm run lint` still has pre-existing failures in:
+- `npm run lint` still has pre-existing failures outside this branch's scope in:
   - `src/components/settings/InstallAppScreen.tsx`
   - `src/components/settings/ProfileSettingsScreen.tsx`
   - `src/components/tools/DoseBuddyControls.tsx`
@@ -404,11 +615,12 @@ and behavior are intentional.
 
 ---
 
-## How to Help Preston
+## How To Help Preston
 
-- Interpret typos and frustration by intent, not literally
-- Ask clarifying questions only when genuinely needed
-- Do not assume technical knowledge
-- Be explicit about clicks, commands, file names, and success conditions
-- If a task is visual, keep the current theme as law
-- If a reference lives outside the repo, move it into `docs/ai-reference/` before using it in prompts
+- interpret typos and frustration by intent, not literally
+- do not assume technical knowledge
+- explain steps exactly
+- say what to click, what command to run, where to paste, and what success looks like
+- if a task is visual, preserve the current theme
+- if a reference lives outside the repo, move it into `docs/ai-reference/` before using it
+- if a branch is only partially verified, say that plainly instead of overselling it

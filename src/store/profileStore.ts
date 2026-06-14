@@ -30,7 +30,7 @@ export function defaultNotificationPrefs(): NotificationPrefs {
     doseDueLeadMinutes: 5,
     stashRunningLow: false,
     stashLowThresholdPct: 20,
-    doseLoggedConfirmation: true,
+    doseLoggedConfirmation: false,
     dailyUsageSummary: false,
     dailySummaryTime: '09:00',
     missedDoseAlert: false,

@@ -64,16 +64,18 @@ function CompareRow({ label, current, average, trend, barPct }: CompareRowProps)
 
 export function SessionCompareCard({
   doses,
+  profile,
   substance,
   nowMs,
 }: CarouselCardData) {
   const { current, averages } = useMemo(() => {
-    const session = currentSession(doses, substance, nowMs)
+    const session = currentSession(doses, substance, profile, nowMs)
     const currentMetrics = sessionMetrics(session)
 
     const lookbackSessions = sessionsInLookback(
       doses,
       substance,
+      profile,
       nowMs,
       7 * 24 * HOUR_MS,
     )
@@ -104,7 +106,7 @@ export function SessionCompareCard({
       },
       priorCount: count,
     }
-  }, [doses, substance, nowMs])
+  }, [doses, profile, substance, nowMs])
 
   const doseSizeTrend = compareTrend(current.avgDoseMl, averages.avgDoseMl)
   const spacingTrend = compareTrend(current.avgSpacingMinutes, averages.avgSpacing)

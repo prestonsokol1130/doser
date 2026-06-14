@@ -170,7 +170,7 @@ export function buildInsightSet(
   const prev30 = within(60, 30)
 
   // Sessions
-  const sessions = splitIntoSessions(doses)
+  const sessions = splitIntoSessions(doses, 6 * HOUR_MS)
   const sessionStart = (s: Dose[]) => s[0]!.ts
   const sessionEnd = (s: Dose[]) => s[s.length - 1]!.ts
   const sessionsSince = (ago: number) => sessions.filter((s) => sessionStart(s) >= nowMs - ago * DAY_MS)

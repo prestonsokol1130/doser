@@ -2,48 +2,129 @@
 
 Last updated: 2026-06-13
 
-**BEFORE BUILDING ANYTHING: Read HANDOFF.md Section 2b (Design System Rules).**
-That section defines all the colors, fonts, layout rules, copy rules, and animation rules
-that every new screen must follow. It is the authoritative reference.
+Read this alongside:
 
-This file provides the file tree and folder structure. Read this alongside HANDOFF.md and AI_CONTEXT.md before building any new screen.
-`docs/ai-reference/` stores screenshots and mockups, but the current app theme and
-design rules remain the source of truth.
+- `docs/AI_CONTEXT.md`
+- `docs/HANDOFF.md`
+
+`docs/HANDOFF.md` Section `2b` is the design authority.
 
 ---
 
 ## App Entry Flow
 
-```
+```text
 main.tsx
-  └── App.tsx  ← controls which phase renders based on gate/auth/onboarding state
-        ├── GateLayer       (phase: 'gate')
-        ├── AuthLayer       (phase: 'auth')
-        ├── loading spinner (phase: 'onboarding-check')
-        ├── OnboardingLayer (phase: 'onboarding')
-        └── MainApp         (phase: 'timer')  ← live app shell for Insights / History / Timer / Tools / Settings
+  └── App.tsx
+        ├── GateLayer
+        ├── AuthLayer
+        ├── loading spinner
+        ├── OnboardingLayer
+        └── MainApp
 ```
 
-Phases advance linearly on first launch: gate → auth → onboarding → timer.
-On return visits: gate is skipped through localStorage and onboarding is skipped if
-the Firestore profile already exists. In device-only mode, auth is bypassed and
-onboarding/profile data come from local storage instead of Firestore.
+Flow:
+
+- gate -> auth -> onboarding -> timer shell on first use
+- gate skipped on return visits
+- onboarding skipped if Firestore profile already exists
+- local-only mode bypasses auth and uses local storage instead of Firestore
+
+Important live state on `main`:
+
+- `App.tsx` pauses at `local-upgrade` when a device-only user with local data completes auth
+- explicit upgrade decision is merged via PR `#11` (`LocalOnlyUpgradeDecision.tsx`)
+- migration/import from local-only data into a signed-in account is still not built
 
 ---
 
-## Full File Tree
+## Key Top-Level Files
 
-```
-docs/
-├── ai-reference/
-│   ├── current-app-state/           Current UI screenshots for comparison.
-│   ├── goal/                        Directional references only, not authorization
-│   │                                for a new visual system.
-│   └── archive/                     Older screenshots and superseded references.
-│
+### `src/main.tsx`
+
+- app entry point
+- mounts React app
+- explicitly registers the PWA service worker
+
+### `src/App.tsx`
+
+- phase router
+- gate/auth/onboarding/main-app chooser
+- owns local-only/auth handoff behavior
+
+### `src/index.css`
+
+- global CSS variables
+- existing variables must not be removed or renamed
+
+### `src/types.ts`
+
+- shared TypeScript types
+- add only, do not rename existing types without explicit instruction
+
+---
+
+## Important Folders
+
+### `src/components/`
+
+- `gate/`
+- `auth/`
+- `onboarding/`
+- `timer/`
+- `history/`
+- `insights/`
+- `tools/`
+- `settings/`
+
+### `src/lib/`
+
+- `firebase.ts`
+- `notifications.ts`
+- `pushRegistration.ts`
+- `stash.ts`
+- `doseBuddy.ts`
+- `taper.ts`
+- `perceivedEffect/` ← do not touch
+
+### `src/store/`
+
+- `authStore.ts`
+- `gateStore.ts`
+- `localDataStore.ts`
+- `localSessionStore.ts`
+- `profileStore.ts`
+
+### `functions/`
+
+Legacy Firebase Functions package (superseded by `api/notify.ts` on Vercel).
+
+- `functions/src/index.ts`
+- `functions/package.json`
+- `functions/tsconfig.json`
+
+### `api/`
+
+- `api/notify.ts` — Vercel serverless notification scheduler (OneSignal delivery)
+
+### `docs/`
+
+- `AI_CONTEXT.md`
+- `HANDOFF.md`
+- `STRUCTURE.md`
+- `CODEX_OPERATING_MANUAL.md`
+- `CLAUDE_CODE_OPERATING_MANUAL.md`
+- `MY_CHECKLIST.md`
+- `NEXT_AGENT_PROMPT.md`
+
+---
+
+## File Tree (Practical Map)
+
+```text
 src/
-│
 ├── main.tsx                          Entry point. Mounts App into #root.
+│                                     Explicitly registers the PWA service worker.
 ├── App.tsx                           Phase router. Gate → Auth → Onboarding → MainApp.
 │                                     Also owns the local-only/auth handoff.
 │                                     When auth succeeds and local-only data exists,
@@ -66,18 +147,14 @@ src/
 │   └── vite.svg                      Unused boilerplate.
 │
 ├── lib/
-│   ├── firebase.ts                   Firebase app init, exports: auth, db (Firestore).
-│   │                                 Import these — never re-initialize Firebase elsewhere.
-│   ├── insightsData.ts               Insights tab data layer — builds InsightSet from doses + profile.
-│   ├── insightsAdvanced.ts           Advanced session analysis helpers. Not yet wired to UI.
-│   ├── metabolicProfile.ts           Metabolic profile calculations. Not yet wired to UI.
-│   ├── doseBuddy.ts                  PHASE 5 — Dose Buddy suggestion engine + context map.
-│   ├── stash.ts                      PHASE 5 — stash remaining/consumed/pct + stashFullMl().
-│   ├── taper.ts                      PHASE 5 — taper step-down schedule calculations.
-│   └── perceivedEffect/              PEL engine — DO NOT MODIFY ANY FILE IN THIS FOLDER.
-│       ├── effectCurves.ts           GBL/BDO curve constants and shape math.
-│       ├── perceivedEffectModel.ts   computePerceivedEffectLevelAt() and related exports.
-│       └── toleranceModel.ts         9-factor behavioral tolerance model.
+│   ├── firebase.ts
+│   ├── notifications.ts
+│   ├── pushRegistration.ts
+│   ├── sessionStats.ts
+│   ├── stash.ts
+│   ├── doseBuddy.ts
+│   ├── taper.ts
+│   └── perceivedEffect/
 │
 ├── store/
 │   ├── appStore.ts                   preferredDoseMl(), preferredIntervalMinutes() helpers.
@@ -196,27 +273,39 @@ src/
         ├── ThemesScreen.tsx          Theme selection (dark only for now).
         ├── InstallAppScreen.tsx      PWA install guidance.
         └── LegalScreen.tsx           Legal / acknowledgments.
+
+firebase.json
+functions/
+├── package.json
+├── tsconfig.json
+└── src/
+    └── index.ts
+
+api/
+└── notify.ts                         Vercel serverless notification scheduler (OneSignal path)
+
+public/
+└── OneSignalSDKWorker.js             OneSignal service worker (separate from src/sw.ts)
 ```
 
 ---
 
-## Key Wiring Facts
+## Main App State Ownership
 
-**How a new tab screen gets connected:**
-1. Create the screen component in the correct folder
-2. Import it into `src/components/MainApp.tsx`
-3. Add or update the render branch keyed off `activeTab`
-4. Make sure the tab id is represented in `BottomNav.tsx`
+### `src/components/MainApp.tsx`
 
-**How doses are stored:**
-Doses live in shared React state in the main app shell and are persisted to
-Firestore through `saveDoses()` / `fetchDoses()` helpers. New features should read
-from the shared dose state instead of creating a second source of truth.
+This is the shared live app shell.
 
-**How profile data is accessed:**
-`fetchUserDocument(uid)` from `src/store/profileStore.ts` returns the Firestore
-`users/{uid}` document. The `profile` field contains the full `Profile` object.
-Always read the existing Firestore schema before assuming field names.
+It owns:
+
+- active tab
+- profile state
+- dose state
+- dose context state
+- loading state
+- ticking `nowMs`
+- local-only persistence routing
+- signed-in browser push registration sync on the notifications branch
 
 **How local-only mode works:**
 `src/store/localSessionStore.ts` tracks whether the app should run in device-only mode.
@@ -227,42 +316,170 @@ completes auth, `App.tsx` pauses at `local-upgrade` and shows
 `LocalOnlyUpgradeDecision.tsx` before switching to account-backed storage.
 Migration from local-only data into Firebase is not yet built.
 
-**How PEL is calculated:**
-Import from `src/lib/perceivedEffect/perceivedEffectModel.ts`.
-Key function: `computePerceivedEffectLevelAt(doses, profile, atMs, contextByDoseId?)`
-Never duplicate this logic. Never rewrite these files.
-
-**CSS variables:**
-Defined in `src/index.css`. Two sets exist:
-- Original set: `--color-accent`, `--color-cta`, `--color-purple`, `--color-surface`, etc.
-  Used by gate, auth, onboarding screens — do not rename or remove.
-- New design system set: `--color-ring`, `--color-action`, `--color-load`, `--app-surface`,
-  `--app-divider`, `--app-text`, `--app-dim`, `--app-faint`, etc.
-  Used by timer screen and all future screens.
-
-**Font families (CSS variables):**
-`--font-display`: Antonio 200 — timer digits, dose numbers
-`--font-heading`: Montserrat 600/700 — card headers, section titles
-`--font-body`: Inter 400/500/600 — labels, nav, body text
-`--font-mono` / Unbounded: wordmark "doser" only
+If a feature needs access to shared doses/profile, start here before inventing a new
+source of truth.
 
 ---
 
-## Build Commands
+## Notification Branch Structure
 
-```
-npm run dev                            Start dev server (usually localhost:5173)
-npx tsc --noEmit -p tsconfig.app.json  Required validation check
-npm run build                          Required production build check
-npm run lint                           Optional lint check if the task calls for it
-```
+If the current branch is `feat/real-notifications-v1`, these files are the main seams.
+
+### Client notification UI
+
+- `src/components/settings/NotificationsScreen.tsx`
+  - permission state card
+  - real notification toggles
+  - honest blocked/missing/account-required states
+
+- `src/components/onboarding/NotificationBasics.tsx`
+  - simplified onboarding notification settings
+  - local-only limitation copy
+
+### Shared notification logic
+
+- `src/lib/notifications.ts`
+  - next dose window calculation
+  - due reminder time
+  - missed-dose time
+  - session auto-end time
+
+### Browser push registration
+
+- `src/lib/pushRegistration.ts`
+  - browser support check
+  - permission check
+  - permission request
+  - OneSignal web SDK initialization via `react-onesignal`
+  - `OneSignal.login(uid)` — Firebase UID as OneSignal External User ID
+  - no device tokens stored in Firestore; OneSignal manages registration internally
+
+### Service workers
+
+- `src/sw.ts`
+  - Workbox worker for PWA caching only (no Firebase Messaging)
+- `public/OneSignalSDKWorker.js`
+  - OneSignal's separate service worker (`serviceWorkerPath` in OneSignal init)
+
+### Notification backend
+
+- `api/notify.ts`
+  - Vercel serverless cron target (replaces Firebase Functions scheduler)
+  - due reminder
+  - missed-dose alert
+  - daily summary
+  - stash low alert
+  - session auto-end markers
+  - sends via OneSignal REST API using `include_aliases.external_id: [uid]`
+
+### Supporting persistence seams
+
+- `src/lib/firebase.ts`
+- `src/store/profileStore.ts`
+- `src/store/authStore.ts`
 
 ---
 
-## What NOT to Touch
+## Local-Only Mode Structure
 
-- `src/lib/perceivedEffect/` — hand-tuned, never modify
-- `src/index.css` — only ADD variables, never remove or rename existing ones
-- `src/types.ts` — only ADD types, never rename existing ones
-- `.env` — never commit, gitignored
-- Tailwind v3 — do not upgrade to v4
+### `src/store/localSessionStore.ts`
+
+- stores whether device-only mode is active
+
+### `src/store/localDataStore.ts`
+
+- stores local-only profile
+- stores local-only doses
+- stores local-only dose contexts
+- stores local onboarding complete flag
+
+### `src/App.tsx`
+
+- decides whether user goes through auth or local-only path
+- when a device-only user with local data completes auth, pauses at `local-upgrade`
+  and renders `LocalOnlyUpgradeDecision.tsx` before continuing into account-backed storage
+- migration/import from local-only data into a signed-in account is still not built
+
+### `src/components/settings/AccountScreen.tsx`
+
+- device-only users can go back to auth from here
+
+---
+
+## Firestore Shape That Matters
+
+Current important collections/documents:
+
+- `users/{uid}`
+  - `profile`
+  - `doseContexts`
+- `users/{uid}/doses/{doseId}`
+
+The former `users/{uid}/notificationDevices` subcollection (FCM tokens) has been
+removed. OneSignal manages device registration internally — no device tokens are
+stored in Firestore.
+
+Do not assume more exists without reading the live code first.
+
+---
+
+## Validation Map
+
+Web app validation:
+
+- `npx tsc --noEmit -p tsconfig.app.json`
+- `npm run build`
+
+Notifications backend validation:
+
+- confirm `api/notify.ts` deploys with Vercel
+- confirm all required server env vars are present on Vercel:
+  - `ONESIGNAL_APP_ID`
+  - `ONESIGNAL_REST_API_KEY`
+  - `FIREBASE_PROJECT_ID`
+  - `FIREBASE_CLIENT_EMAIL`
+  - `FIREBASE_PRIVATE_KEY`
+  - `CRON_SECRET`
+
+Manual verification still required on notifications branch:
+
+- signed-in browser permission flow
+- OneSignal dashboard shows a registered subscriber
+- real device/PWA delivery via OneSignal
+- Vercel cron-backed end-to-end testing
+
+---
+
+## High-Risk Files
+
+Do not modify casually:
+
+- `src/lib/perceivedEffect/*`
+- `src/index.css` existing variables
+- `src/types.ts` existing types
+
+Be careful with:
+
+- `src/App.tsx`
+- `src/components/MainApp.tsx`
+- `src/store/profileStore.ts`
+- `src/lib/sessionStats.ts`
+- `src/sw.ts`
+- `src/lib/pushRegistration.ts`
+- `api/notify.ts`
+
+---
+
+## Reality Check For Future Agents
+
+The notifications branch has real architecture now, but not full real-world proof.
+
+If you are continuing `feat/real-notifications-v1`, your first questions should be:
+
+1. Is `api/notify.ts` deployed and reachable on Vercel?
+2. Are OneSignal env vars present (`VITE_ONESIGNAL_APP_ID`, `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`)?
+3. Does the OneSignal dashboard show a registered subscriber for the test user?
+4. Has a signed-in real-device test been completed?
+5. Which exact flows have actually been observed arriving on device?
+
+If those answers are missing, do not tell Preston the feature is working.
