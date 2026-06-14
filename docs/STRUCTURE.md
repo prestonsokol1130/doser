@@ -433,7 +433,13 @@ Web app validation:
 Notifications backend validation:
 
 - confirm `api/notify.ts` deploys with Vercel
-- confirm OneSignal env vars are present (`VITE_ONESIGNAL_APP_ID`, `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`)
+- confirm all required server env vars are present on Vercel:
+  - `ONESIGNAL_APP_ID`
+  - `ONESIGNAL_REST_API_KEY`
+  - `FIREBASE_PROJECT_ID`
+  - `FIREBASE_CLIENT_EMAIL`
+  - `FIREBASE_PRIVATE_KEY`
+  - `CRON_SECRET`
 
 Manual verification still required on notifications branch:
 

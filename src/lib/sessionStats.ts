@@ -2,9 +2,6 @@ import { isDoseStillInActiveSession, FIXED_SESSION_AUTO_END_DELAY_MS, preferredI
 import { HOUR_MS, MINUTE_MS } from '@/lib/perceivedEffect/effectCurves'
 import type { Dose, DoseSubstance, Profile, Substance } from '@/types'
 
-/** Gap with no doses that starts a new session. */
-export const SESSION_GAP_MS = 6 * HOUR_MS
-
 export function startOfTodayMs(nowMs: number): number {
   const d = new Date(nowMs)
   d.setHours(0, 0, 0, 0)
@@ -104,8 +101,8 @@ export function sessionMetrics(doses: Dose[]): SessionMetrics {
   }
 }
 
-/** Split doses into sessions separated by gaps longer than SESSION_GAP_MS. */
-export function splitIntoSessions(doses: Dose[], gapMs = SESSION_GAP_MS): Dose[][] {
+/** Split doses into sessions separated by a given gap. */
+export function splitIntoSessions(doses: Dose[], gapMs: number): Dose[][] {
   const sorted = [...doses].sort((a, b) => a.ts - b.ts)
   if (sorted.length === 0) return []
 
@@ -129,7 +126,7 @@ export function currentSession(
   nowMs: number,
 ): Dose[] {
   const filtered = doses
-    .filter((d) => d.substance === substance)
+    .filter((d) => d.substance === substance && d.ts <= nowMs)
     .sort((a, b) => a.ts - b.ts)
   if (filtered.length === 0) return []
 

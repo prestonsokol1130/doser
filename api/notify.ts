@@ -301,6 +301,24 @@ async function releaseNotificationClaim(
   }
 }
 
+async function persistSentNotificationState(
+  stateRef: DocumentReference,
+  patch: Partial<NotificationState>,
+  sentState: Partial<NotificationState>,
+  claimReleaseFields: Partial<NotificationState>,
+  nowMs: number,
+  errorContext: Record<string, unknown>,
+): Promise<void> {
+  const persisted = await persistNotificationSend(stateRef, sentState, nowMs)
+  if (persisted) {
+    Object.assign(patch, sentState)
+    return
+  }
+
+  console.error('Push sent but immediate state persist failed', errorContext)
+  await releaseNotificationClaim(stateRef, claimReleaseFields, nowMs)
+}
+
 async function processDoseWindowNotifications(
   uid: string,
   userRef: DocumentReference,
@@ -357,20 +375,22 @@ async function processDoseWindowNotifications(
           profile.notif?.silent === true,
         )
         if (sent) {
-          const sentState = {
-            doseDueSentForDoseId: currentLatest.id,
-            doseDueSentAt: nowMs,
-            doseDueClaimedForDoseId: null,
-            doseDueClaimedAt: null,
-          }
-          const persisted = await persistNotificationSend(stateRef, sentState, nowMs)
-          Object.assign(patch, sentState)
-          if (!persisted) {
-            console.error('Dose due push sent but immediate state persist failed', {
-              uid,
-              doseId: currentLatest.id,
-            })
-          }
+          await persistSentNotificationState(
+            stateRef,
+            patch,
+            {
+              doseDueSentForDoseId: currentLatest.id,
+              doseDueSentAt: nowMs,
+              doseDueClaimedForDoseId: null,
+              doseDueClaimedAt: null,
+            },
+            {
+              doseDueClaimedForDoseId: null,
+              doseDueClaimedAt: null,
+            },
+            nowMs,
+            { uid, doseId: currentLatest.id, type: 'dose-due' },
+          )
         } else {
           await releaseNotificationClaim(stateRef, {
             doseDueClaimedForDoseId: null,
@@ -421,20 +441,22 @@ async function processDoseWindowNotifications(
           profile.notif?.silent === true,
         )
         if (sent) {
-          const sentState = {
-            missedDoseSentForDoseId: latestDose.id,
-            missedDoseSentAt: nowMs,
-            missedDoseClaimedForDoseId: null,
-            missedDoseClaimedAt: null,
-          }
-          const persisted = await persistNotificationSend(stateRef, sentState, nowMs)
-          Object.assign(patch, sentState)
-          if (!persisted) {
-            console.error('Missed-dose push sent but immediate state persist failed', {
-              uid,
-              doseId: latestDose.id,
-            })
-          }
+          await persistSentNotificationState(
+            stateRef,
+            patch,
+            {
+              missedDoseSentForDoseId: latestDose.id,
+              missedDoseSentAt: nowMs,
+              missedDoseClaimedForDoseId: null,
+              missedDoseClaimedAt: null,
+            },
+            {
+              missedDoseClaimedForDoseId: null,
+              missedDoseClaimedAt: null,
+            },
+            nowMs,
+            { uid, doseId: latestDose.id, type: 'missed-dose' },
+          )
         } else {
           await releaseNotificationClaim(stateRef, {
             missedDoseClaimedForDoseId: null,
@@ -502,20 +524,22 @@ async function processDailySummary(
   )
 
   if (sent) {
-    const sentState = {
-      dailySummaryLastSentDate: localNow.dateKey,
-      dailySummaryLastSentAt: nowMs,
-      dailySummaryClaimedDate: null,
-      dailySummaryClaimedAt: null,
-    }
-    const persisted = await persistNotificationSend(stateRef, sentState, nowMs)
-    Object.assign(patch, sentState)
-    if (!persisted) {
-      console.error('Daily summary push sent but immediate state persist failed', {
-        uid: userRef.id,
-        dateKey: localNow.dateKey,
-      })
-    }
+    await persistSentNotificationState(
+      stateRef,
+      patch,
+      {
+        dailySummaryLastSentDate: localNow.dateKey,
+        dailySummaryLastSentAt: nowMs,
+        dailySummaryClaimedDate: null,
+        dailySummaryClaimedAt: null,
+      },
+      {
+        dailySummaryClaimedDate: null,
+        dailySummaryClaimedAt: null,
+      },
+      nowMs,
+      { uid: userRef.id, dateKey: localNow.dateKey, type: 'daily-summary' },
+    )
   } else {
     await releaseNotificationClaim(stateRef, {
       dailySummaryClaimedDate: null,
@@ -578,18 +602,20 @@ async function processStashAlert(
       notif.silent === true,
     )
     if (sent) {
-      const sentState = {
-        stashLowActive: true,
-        stashLowSentAt: nowMs,
-        stashLowClaimedAt: null,
-      }
-      const persisted = await persistNotificationSend(stateRef, sentState, nowMs)
-      Object.assign(patch, sentState)
-      if (!persisted) {
-        console.error('Stash-low push sent but immediate state persist failed', {
-          uid: userRef.id,
-        })
-      }
+      await persistSentNotificationState(
+        stateRef,
+        patch,
+        {
+          stashLowActive: true,
+          stashLowSentAt: nowMs,
+          stashLowClaimedAt: null,
+        },
+        {
+          stashLowClaimedAt: null,
+        },
+        nowMs,
+        { uid: userRef.id, type: 'stash-low' },
+      )
     } else {
       await releaseNotificationClaim(stateRef, {
         stashLowClaimedAt: null,
@@ -630,31 +656,28 @@ async function getStashLevel(
   }
 }
 
+function hasOneSignalErrors(result: Record<string, unknown>): boolean {
+  const errors = result.errors
+  if (Array.isArray(errors) && errors.length > 0) return true
+  if (errors && typeof errors === 'object' && Object.keys(errors).length > 0) {
+    return true
+  }
+  return false
+}
+
 function wasOneSignalPushDelivered(body: unknown): boolean {
   if (!body || typeof body !== 'object') return false
 
   const result = body as Record<string, unknown>
+  if (hasOneSignalErrors(result)) return false
+
   const id = result.id
-  const hasNotificationId = typeof id === 'string' && id.length > 0
+  if (typeof id !== 'string' || id.length === 0) return false
 
-  if (hasNotificationId) {
-    if (typeof result.recipients === 'number' && result.recipients <= 0) {
-      return false
-    }
-    return true
-  }
+  const recipients = result.recipients
+  if (typeof recipients !== 'number' || recipients <= 0) return false
 
-  const errors = result.errors
-  if (Array.isArray(errors) && errors.length > 0) return false
-  if (errors && typeof errors === 'object' && Object.keys(errors).length > 0) {
-    return false
-  }
-
-  if (typeof result.recipients === 'number' && result.recipients <= 0) {
-    return false
-  }
-
-  return false
+  return true
 }
 
 async function sendOneSignalPush(

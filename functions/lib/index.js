@@ -105,22 +105,26 @@ async function processDoseWindowNotifications(uid, profile, latestDose, deviceDo
         state.doseDueSentForDoseId !== latestDose.id &&
         nowMs >= dueReminderAt &&
         nowMs < nextWindowAt) {
-        await sendToDevices(uid, deviceDocs, buildNotificationMessage('Dose due soon', `Your next ${normalizeTrackedSubstance(latestDose.substance)} window opens at ${formatClockTime(nextWindowAt)}.`, `dose-due-${latestDose.id}`, {
+        const doseDueSuccessCount = await sendToDevices(uid, deviceDocs, buildNotificationMessage('Dose due soon', `Your next ${normalizeTrackedSubstance(latestDose.substance)} window opens at ${formatClockTime(nextWindowAt)}.`, `dose-due-${latestDose.id}`, {
             type: 'dose-due',
             doseId: latestDose.id,
         }, profile.notif?.silent === true));
-        patch.doseDueSentForDoseId = latestDose.id;
-        patch.doseDueSentAt = nowMs;
+        if (doseDueSuccessCount > 0) {
+            patch.doseDueSentForDoseId = latestDose.id;
+            patch.doseDueSentAt = nowMs;
+        }
     }
     if (profile.notif?.missedDoseAlert === true &&
         state.missedDoseSentForDoseId !== latestDose.id &&
         nowMs >= missedDoseAt) {
-        await sendToDevices(uid, deviceDocs, buildNotificationMessage('No dose logged', `It has been 1 hour since your ${normalizeTrackedSubstance(latestDose.substance)} redose window opened and no new dose was logged.`, `missed-dose-${latestDose.id}`, {
+        const missedDoseSuccessCount = await sendToDevices(uid, deviceDocs, buildNotificationMessage('No dose logged', `It has been 1 hour since your ${normalizeTrackedSubstance(latestDose.substance)} redose window opened and no new dose was logged.`, `missed-dose-${latestDose.id}`, {
             type: 'missed-dose',
             doseId: latestDose.id,
         }, profile.notif?.silent === true));
-        patch.missedDoseSentForDoseId = latestDose.id;
-        patch.missedDoseSentAt = nowMs;
+        if (missedDoseSuccessCount > 0) {
+            patch.missedDoseSentForDoseId = latestDose.id;
+            patch.missedDoseSentAt = nowMs;
+        }
     }
     if (state.sessionAutoEndedForDoseId !== latestDose.id &&
         nowMs >= sessionAutoEndAt) {
@@ -143,12 +147,14 @@ async function processDailySummary(userRef, profile, deviceDocs, timeZone, state
     const totalMl = dosesToday.reduce((sum, dose) => sum + dose.amountMl, 0);
     const lastDoseTs = dosesToday[dosesToday.length - 1]?.ts ?? null;
     const lastDoseLabel = lastDoseTs == null ? 'No dose logged today.' : `Last dose at ${formatClockTime(lastDoseTs, timeZone)}.`;
-    await sendToDevices(userRef.id, deviceDocs, buildNotificationMessage('Daily summary', `${doseCount} dose${doseCount === 1 ? '' : 's'} today. ${totalMl.toFixed(1)} mL total. ${lastDoseLabel}`, `daily-summary-${localNow.dateKey}`, {
+    const dailySummarySuccessCount = await sendToDevices(userRef.id, deviceDocs, buildNotificationMessage('Daily summary', `${doseCount} dose${doseCount === 1 ? '' : 's'} today. ${totalMl.toFixed(1)} mL total. ${lastDoseLabel}`, `daily-summary-${localNow.dateKey}`, {
         type: 'daily-summary',
         date: localNow.dateKey,
     }, profile.notif?.silent === true));
-    patch.dailySummaryLastSentDate = localNow.dateKey;
-    patch.dailySummaryLastSentAt = nowMs;
+    if (dailySummarySuccessCount > 0) {
+        patch.dailySummaryLastSentDate = localNow.dateKey;
+        patch.dailySummaryLastSentAt = nowMs;
+    }
 }
 async function processStashAlert(userRef, profile, deviceDocs, state, patch, nowMs) {
     const stash = profile.stash;
@@ -162,16 +168,18 @@ async function processStashAlert(userRef, profile, deviceDocs, state, patch, now
     const refillAt = Math.max(0, stash.refillAt ?? 0);
     const dosesSinceRefill = await fetchDosesSince(userRef, refillAt);
     const consumedMl = dosesSinceRefill.reduce((sum, dose) => sum + dose.amountMl, 0);
-    const remainingMl = Math.max(0, (stash.capacityMl ?? 0) - consumedMl);
     const fullMl = (stash.fullMl ?? 0) > 0 ? stash.fullMl ?? 0 : stash.capacityMl ?? 0;
+    const remainingMl = Math.max(0, (stash.capacityMl ?? 0) - consumedMl);
     const remainingPct = fullMl > 0 ? Math.round((remainingMl / fullMl) * 100) : 0;
     const isLow = remainingPct <= (notif.stashLowThresholdPct ?? 20);
     if (isLow && !state.stashLowActive) {
-        await sendToDevices(userRef.id, deviceDocs, buildNotificationMessage('Stash running low', `${remainingMl.toFixed(1)} mL remaining (${remainingPct}%).`, 'stash-low', {
+        const stashLowSuccessCount = await sendToDevices(userRef.id, deviceDocs, buildNotificationMessage('Stash running low', `${remainingMl.toFixed(1)} mL remaining (${remainingPct}%).`, 'stash-low', {
             type: 'stash-low',
         }, notif.silent === true));
-        patch.stashLowActive = true;
-        patch.stashLowSentAt = nowMs;
+        if (stashLowSuccessCount > 0) {
+            patch.stashLowActive = true;
+            patch.stashLowSentAt = nowMs;
+        }
         return;
     }
     if (!isLow && state.stashLowActive) {
@@ -185,7 +193,7 @@ async function sendToDevices(uid, deviceDocs, message) {
     });
     const tokens = [...new Set(activeDeviceDocs.map((doc) => doc.data().token))];
     if (tokens.length === 0)
-        return;
+        return 0;
     const response = await messaging.sendEachForMulticast({
         ...message,
         tokens,
@@ -211,6 +219,7 @@ async function sendToDevices(uid, deviceDocs, message) {
         successCount: response.successCount,
         failureCount: response.failureCount,
     });
+    return response.successCount;
 }
 function buildNotificationMessage(title, body, tag, data, silent) {
     const icon = new URL('/favicon.svg', APP_ORIGIN).toString();
@@ -273,7 +282,14 @@ function sanitizeDailySummaryTime(value) {
 }
 function pickTimeZone(devices) {
     const sorted = [...devices].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
-    return sorted[0]?.timeZone ?? 'UTC';
+    const timeZone = sorted[0]?.timeZone ?? 'UTC';
+    try {
+        new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date());
+        return timeZone;
+    }
+    catch {
+        return 'UTC';
+    }
 }
 function getLocalNow(timeZone, nowMs) {
     const parts = new Intl.DateTimeFormat('en-CA', {

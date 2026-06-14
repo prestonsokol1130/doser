@@ -1,122 +1,150 @@
-# Next Task — Merge feat/real-notifications-v1
+# Next Task — Finish And Verify Real Notifications V1
 
 @HANDOFF.md
 @STRUCTURE.md
 
 Do not create, switch, or rename any branch. Run `git branch --show-current` first.
-Work only on `feat/real-notifications-v1`. If you are not on that branch, STOP and say so.
+Work only on the branch Preston already created for this task. If you are not on the
+expected branch, STOP and tell me.
 
 Read before writing any code:
 
 - `docs/AI_CONTEXT.md`
-- `docs/HANDOFF.md`
+- `docs/HANDOFF.md` — especially Section `2b`
 - `docs/STRUCTURE.md`
 
 ---
 
-## What happened in the last session
+## Status
 
-FCM was replaced with OneSignal entirely (401 errors on FCM registrations could not be resolved).
-Firebase Auth and Firestore are unchanged. The full OneSignal migration is complete and built.
+PR `#11` merged the explicit local-only upgrade decision to `main`. That work is done.
 
-Cursor fixed multiple rounds of CodeRabbit issues on this branch. The GitHub CLI (`gh`) is now
-installed at `C:\Users\Preston Sokol\AppData\Local\Microsoft\WindowsApps\gh.exe` and authenticated.
+You are likely continuing branch:
 
-The last CodeRabbit full review (ID 4492153674, Jun 13 2026 23:17) was read via the GitHub API.
-Cursor was given a prompt to fix the final 4 issues from that review. Preston confirmed it is done
-but has not pushed yet as of this handoff. Confirm the latest commit is pushed before proceeding.
+- `feat/real-notifications-v1`
 
----
+The next active task is on branch:
 
-## Current status of PR #12 (feat/real-notifications-v1)
+- `feat/real-notifications-v1`
 
-Branch: `feat/real-notifications-v1`
-PR: https://github.com/prestonsokol1130/doser/pull/12
+This branch is in progress. It is not merged to `main`.
 
-The last Cursor task fixed:
+This branch already added:
 
-1. `src/components/timer/carousel/SessionCompareCard.tsx` — 7-day baseline now uses profile-aware session boundaries instead of fixed 6-hour gap
-2. `src/lib/notifications.ts` — fallbacks added for missing profile fields (GBL=90min, BDO=120min, lead=5min)
-3. `src/components/settings/NotificationsScreen.tsx` — re-reads `auth.currentUser?.uid` after `requestPermission` await before calling `syncPushRegistration`
-4. `docs/STRUCTURE.md` — updated to describe OneSignal flow instead of Firebase push
+- browser notification permission UI in `src/components/settings/NotificationsScreen.tsx`
+- onboarding notification cleanup in `src/components/onboarding/NotificationBasics.tsx`
+- browser push registration in `src/lib/pushRegistration.ts`
+- shared timing helpers in `src/lib/notifications.ts`
+- service worker registration in `src/main.tsx`
+- custom service worker in `src/sw.ts`
+- Firebase Functions package in `functions/`
+- scheduled notification sender in `functions/src/index.ts`
+The app build passes.
+The functions package build passes.
 
-Known deferred issues (CodeRabbit keeps flagging these — they are intentionally not fixed yet):
+What is still not proven:
 
-- Timezone: daily summaries run in UTC. Requires adding `timezone` field to Profile type. Deferred.
-- DST-safe midnight offset: same root cause as timezone. Deferred.
-- Unbounded user scan per cron run: acceptable at current user count. Deferred.
-- Claim ownership on failure: edge case at very low concurrency. Deferred.
+- real signed-in browser/PWA background notification delivery on a device
 
-These are not regressions. Do not fix them without Preston approving the scope change.
-
----
-
-## Your task
-
-1. Confirm the last Cursor commit is pushed to `feat/real-notifications-v1`
-2. Run `@coderabbitai full review` as a comment on PR #12 to trigger a fresh CodeRabbit review
-3. Wait for CodeRabbit to post its review
-4. Read the review using the GitHub CLI:
-   ```
-   gh api repos/prestonsokol1130/doser/pulls/12/reviews | Out-File "$env:TEMP\reviews.json" -Encoding utf8
-   $reviews = Get-Content "$env:TEMP\reviews.json" | ConvertFrom-Json
-   $latest = $reviews | Sort-Object submitted_at | Select-Object -Last 1
-   Write-Host $latest.body
-   ```
-5. If CodeRabbit has NEW actionable issues (not the deferred ones listed above), fix them with Cursor
-6. If CodeRabbit only has the deferred issues or is clean, merge PR #12
-
-To merge:
-```
-gh pr merge 12 --repo prestonsokol1130/doser --squash --auto
-```
+Do not describe notifications as fully working unless you personally verify real
+end-to-end delivery during this task.
 
 ---
 
-## After merging PR #12
+## The task
 
-1. Verify Vercel auto-deploys to production (check https://usedoser.com)
-2. Test OneSignal notifications end to end on a real signed-in device:
-   - grant permission in the PWA
-   - verify OneSignal dashboard shows a subscriber
-   - wait for a dose-due notification
-   - verify it arrives
-3. Create the Firestore composite index if Firebase logs a URL on first query
-4. If notifications work, PR #12 is fully done
+Finish the notifications branch correctly by the book.
+
+That means:
+
+1. verify the local app is using the right env/config for Firebase web push
+2. verify the Firebase Functions package is wired correctly for deployment
+3. test the real notification flows on the live local app as far as this environment allows
+4. fix anything blocking real delivery
+5. keep the current app theme intact
+6. keep the scope on notifications only
 
 ---
 
-## Required paths to inspect
+## Post-Merge Verification Checklist
 
-- `src/components/settings/NotificationsScreen.tsx`
-- `src/components/onboarding/NotificationBasics.tsx`
-- `src/components/MainApp.tsx`
-- `src/lib/notifications.ts`
-- `src/lib/pushRegistration.ts`
-- `src/store/authStore.ts`
-- `api/notify.ts`
-- `public/OneSignalSDKWorker.js`
+After this branch is merged and deployed to production:
+
+1. Verify Vercel auto-deploys the `main` branch to production (check https://usedoser.com).
+2. Test all OneSignal notification flows end-to-end on a real signed-in device/PWA:
+   - Grant permission in the PWA.
+   - Verify the OneSignal dashboard shows a subscriber for your test user.
+   - Manually trigger conditions to test and verify that the dose-due reminder, missed-dose alert, daily summary, and stash-low alert all arrive correctly.
+2. Test all notification flows end-to-end on a real signed-in device/PWA.
+   - **Permission**: Grant permission in the PWA and verify the OneSignal dashboard shows a new subscriber for your test user.
+   - **Dose-Due Reminder**: Log a dose and verify the "dose due" reminder arrives at the correct lead time.
+   - **Missed-Dose Alert**: Let a redose window pass without logging a dose and verify the "missed dose" alert arrives 1 hour later.
+   - **Daily Summary**: Set a summary time and verify the summary notification arrives at the correct time of day.
+   - **Stash-Low Alert**: Set a stash threshold, log doses to cross it, and verify the "stash low" alert arrives only once.
+   - **Opt-Out**: Turn off all notifications in settings and verify no notifications are received.
+   - **Sign-Out**: Sign out of the account and verify that account-related notifications stop arriving on that device.
+   - **Silent Mode**: Enable silent notifications and verify they arrive without sound or vibration.
+3. Create the Firestore composite index if Firebase logs a URL on the first cron run.
+4. Only when all notification types are confirmed to be delivered successfully is the feature considered fully verified.
+
+---
+
+## Product rules
+
+- missed-dose alert is a separate toggle
+- missed-dose alert happens 1 hour after redose eligibility
+- session auto-end follows 3 hours after redose eligibility
+- daily summary stays simple
+- stash low alert only fires on threshold crossing
+- do not bring back dose logged confirmation
+- do not replace the Firebase background path with a fake open-app-only solution
+- do not claim local-only users get real account-backed background notifications
 
 ---
 
 ## Validation
 
-Run before any commit:
+Run:
 
 - `npx tsc --noEmit -p tsconfig.app.json`
 - `npm run build`
+- in `functions/`: `npm run build`
+- `npm run build`
 
-Both must pass with no errors.
+If possible in this environment, also verify:
+
+- permission request behavior
+- token registration behavior
+- due reminder path
+- missed-dose path
+- daily summary path
+- stash low path
+
+If any of those cannot be truly verified, say that clearly instead of pretending.
+
+---
+
+## Acceptance criteria
+
+- notification branch remains honest about what is and is not verified
+- browser permission path is clear
+- push token registration path is sound
+- functions package builds
+- app build passes
+- any real delivery blockers found during testing are fixed
+- current theme is preserved
 
 ---
 
 ## Report back
 
-When finished, tell Preston:
+When finished, tell me:
 
-1. current branch
+1. current branch name
 2. exact files changed
-3. what was fixed
-4. what is still deferred and why
-5. whether PR #12 is merged
-6. whether production delivery was tested and what the result was
+3. what was verified for real
+4. what is still unverified
+5. results of:
+   - `npx tsc --noEmit -p tsconfig.app.json`
+   - `npm run build`
+   - `functions/npm run build`

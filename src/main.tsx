@@ -4,12 +4,11 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.tsx'
 
-registerSW({
-  immediate: true,
-  onRegisterError(error) {
-    console.error('Failed to register service worker:', error)
-  },
-})
+// Explicitly register the service worker.
+// The `vite-plugin-pwa` virtual module handles the registration logic.
+// This ensures our custom service worker (`src/sw.ts`) is installed to handle
+// caching and PWA functionality, working alongside the OneSignal worker.
+registerSW({ immediate: true })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

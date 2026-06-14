@@ -162,7 +162,11 @@ export function NotificationsScreen({
               </p>
               <button
                 type="button"
-                onClick={() => void handleEnableNotifications()}
+                onClick={() => {
+                  handleEnableNotifications().catch((error) => {
+                    console.error('Failed to enable notifications', error)
+                  })
+                }}
                 disabled={requestingPermission}
                 className="mt-3 inline-flex h-11 items-center justify-center rounded-[14px] bg-[var(--color-action)] px-4 text-[12px] uppercase tracking-[0.1em] text-black disabled:opacity-60"
                 style={{ fontFamily: 'var(--font-body)', fontWeight: 600 }}
