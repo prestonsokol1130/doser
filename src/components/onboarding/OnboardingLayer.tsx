@@ -9,9 +9,11 @@ import { FinishIntoTimer } from './FinishIntoTimer'
 import { NotificationBasics } from './NotificationBasics'
 import { ProfileSetup } from './ProfileSetup'
 import { SubstanceDefaults } from './SubstanceDefaults'
+import { SubstancePreference } from './SubstancePreference'
 
 export type OnboardingStep =
   | 'profile'
+  | 'substance-preference'
   | 'substance'
   | 'notification'
   | 'finish'
@@ -62,13 +64,24 @@ export function OnboardingLayer({
     }
   }
 
+  if (step === 'substance-preference') {
+    return (
+      <SubstancePreference
+        profile={profile}
+        onChange={setProfile}
+        onNext={() => goToStep('substance')}
+        onBack={() => goToStep('profile')}
+      />
+    )
+  }
+
   if (step === 'substance') {
     return (
       <SubstanceDefaults
         profile={profile}
         onChange={setProfile}
         onNext={() => goToStep('notification')}
-        onBack={() => goToStep('profile')}
+        onBack={() => goToStep('substance-preference')}
       />
     )
   }
@@ -101,7 +114,7 @@ export function OnboardingLayer({
     <ProfileSetup
       profile={profile}
       onChange={setProfile}
-      onNext={() => goToStep('substance')}
+      onNext={() => goToStep('substance-preference')}
     />
   )
 }

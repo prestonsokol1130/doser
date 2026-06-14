@@ -120,6 +120,7 @@ export interface Profile {
   /** UI preference only; persisted so the form remembers user choice. */
   weightUnit: WeightUnit
   biologicalSex: BiologicalSex | null
+  defaultSubstance?: Substance
   gbl: SubstancePrefs
   bdo: SubstancePrefs
   avatarId: string
