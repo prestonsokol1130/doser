@@ -75,6 +75,7 @@ export function SessionCompareCard({
     const lookbackSessions = sessionsInLookback(
       doses,
       substance,
+      profile,
       nowMs,
       7 * 24 * HOUR_MS,
     )

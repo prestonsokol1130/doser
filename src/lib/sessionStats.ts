@@ -147,14 +147,22 @@ export function currentSession(
 export function sessionsInLookback(
   doses: Dose[],
   substance: Substance,
+  profile: Profile,
   nowMs: number,
   lookbackMs: number,
 ): Dose[][] {
   const cutoff = nowMs - lookbackMs
   const filtered = doses
-    .filter((d) => d.substance === substance && d.ts >= cutoff && d.ts <= nowMs)
+    .filter((d) => d.substance === substance && d.ts <= nowMs)
     .sort((a, b) => a.ts - b.ts)
-  return splitIntoSessions(filtered)
+  const sessionGapMs =
+    preferredIntervalMsForSubstance(profile, substance) +
+    FIXED_SESSION_AUTO_END_DELAY_MS
+  const sessions = splitIntoSessions(filtered, sessionGapMs)
+  return sessions.filter((session) => {
+    const lastTs = session[session.length - 1]?.ts ?? 0
+    return lastTs >= cutoff
+  })
 }
 
 export type CompareTrend = 'up' | 'down' | 'flat'

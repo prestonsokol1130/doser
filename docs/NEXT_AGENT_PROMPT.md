@@ -1,68 +1,88 @@
-# Next Task — Finish And Verify Real Notifications V1
+# Next Task — Merge feat/real-notifications-v1
 
 @HANDOFF.md
 @STRUCTURE.md
 
 Do not create, switch, or rename any branch. Run `git branch --show-current` first.
-Work only on the branch Preston already created for this task. If you are not on the
-expected branch, STOP and tell me.
+Work only on `feat/real-notifications-v1`. If you are not on that branch, STOP and say so.
 
 Read before writing any code:
 
 - `docs/AI_CONTEXT.md`
-- `docs/HANDOFF.md` — especially Section `2b`
+- `docs/HANDOFF.md`
 - `docs/STRUCTURE.md`
 
 ---
 
-## Status
+## What happened in the last session
 
-PR `#11` merged the explicit local-only upgrade decision to `main`. That work is done.
+FCM was replaced with OneSignal entirely (401 errors on FCM registrations could not be resolved).
+Firebase Auth and Firestore are unchanged. The full OneSignal migration is complete and built.
 
-You are likely continuing branch:
+Cursor fixed multiple rounds of CodeRabbit issues on this branch. The GitHub CLI (`gh`) is now
+installed at `C:\Users\Preston Sokol\AppData\Local\Microsoft\WindowsApps\gh.exe` and authenticated.
 
-- `feat/real-notifications-v1`
-
-The next active task is on branch:
-
-- `feat/real-notifications-v1`
-
-This branch is in progress. It is not merged to `main`.
-
-This branch already added:
-
-- browser notification permission UI in `src/components/settings/NotificationsScreen.tsx`
-- onboarding notification cleanup in `src/components/onboarding/NotificationBasics.tsx`
-- browser push registration in `src/lib/pushRegistration.ts`
-- shared timing helpers in `src/lib/notifications.ts`
-- service worker registration in `src/main.tsx`
-- custom service worker in `src/sw.ts`
-- Firebase Functions package in `functions/`
-- scheduled notification sender in `functions/src/index.ts`
-The app build passes.
-The functions package build passes.
-
-What is still not proven:
-
-- real signed-in browser/PWA background notification delivery on a device
-
-Do not describe notifications as fully working unless you personally verify real
-end-to-end delivery during this task.
+The last CodeRabbit full review (ID 4492153674, Jun 13 2026 23:17) was read via the GitHub API.
+Cursor was given a prompt to fix the final 4 issues from that review. Preston confirmed it is done
+but has not pushed yet as of this handoff. Confirm the latest commit is pushed before proceeding.
 
 ---
 
-## The task
+## Current status of PR #12 (feat/real-notifications-v1)
 
-Finish the notifications branch correctly by the book.
+Branch: `feat/real-notifications-v1`
+PR: https://github.com/prestonsokol1130/doser/pull/12
 
-That means:
+The last Cursor task fixed:
 
-1. verify the local app is using the right env/config for Firebase web push
-2. verify the Firebase Functions package is wired correctly for deployment
-3. test the real notification flows on the live local app as far as this environment allows
-4. fix anything blocking real delivery
-5. keep the current app theme intact
-6. keep the scope on notifications only
+1. `src/components/timer/carousel/SessionCompareCard.tsx` — 7-day baseline now uses profile-aware session boundaries instead of fixed 6-hour gap
+2. `src/lib/notifications.ts` — fallbacks added for missing profile fields (GBL=90min, BDO=120min, lead=5min)
+3. `src/components/settings/NotificationsScreen.tsx` — re-reads `auth.currentUser?.uid` after `requestPermission` await before calling `syncPushRegistration`
+4. `docs/STRUCTURE.md` — updated to describe OneSignal flow instead of Firebase push
+
+Known deferred issues (CodeRabbit keeps flagging these — they are intentionally not fixed yet):
+
+- Timezone: daily summaries run in UTC. Requires adding `timezone` field to Profile type. Deferred.
+- DST-safe midnight offset: same root cause as timezone. Deferred.
+- Unbounded user scan per cron run: acceptable at current user count. Deferred.
+- Claim ownership on failure: edge case at very low concurrency. Deferred.
+
+These are not regressions. Do not fix them without Preston approving the scope change.
+
+---
+
+## Your task
+
+1. Confirm the last Cursor commit is pushed to `feat/real-notifications-v1`
+2. Run `@coderabbitai full review` as a comment on PR #12 to trigger a fresh CodeRabbit review
+3. Wait for CodeRabbit to post its review
+4. Read the review using the GitHub CLI:
+   ```
+   gh api repos/prestonsokol1130/doser/pulls/12/reviews | Out-File "$env:TEMP\reviews.json" -Encoding utf8
+   $reviews = Get-Content "$env:TEMP\reviews.json" | ConvertFrom-Json
+   $latest = $reviews | Sort-Object submitted_at | Select-Object -Last 1
+   Write-Host $latest.body
+   ```
+5. If CodeRabbit has NEW actionable issues (not the deferred ones listed above), fix them with Cursor
+6. If CodeRabbit only has the deferred issues or is clean, merge PR #12
+
+To merge:
+```
+gh pr merge 12 --repo prestonsokol1130/doser --squash --auto
+```
+
+---
+
+## After merging PR #12
+
+1. Verify Vercel auto-deploys to production (check https://usedoser.com)
+2. Test OneSignal notifications end to end on a real signed-in device:
+   - grant permission in the PWA
+   - verify OneSignal dashboard shows a subscriber
+   - wait for a dose-due notification
+   - verify it arrives
+3. Create the Firestore composite index if Firebase logs a URL on first query
+4. If notifications work, PR #12 is fully done
 
 ---
 
@@ -71,75 +91,32 @@ That means:
 - `src/components/settings/NotificationsScreen.tsx`
 - `src/components/onboarding/NotificationBasics.tsx`
 - `src/components/MainApp.tsx`
-- `src/lib/firebase.ts`
 - `src/lib/notifications.ts`
 - `src/lib/pushRegistration.ts`
-- `src/lib/sessionStats.ts`
-- `src/main.tsx`
-- `src/sw.ts`
 - `src/store/authStore.ts`
-- `src/store/profileStore.ts`
-- `functions/src/index.ts`
-- `firebase.json`
-- `.env.example`
-
----
-
-## Product rules
-
-- missed-dose alert is a separate toggle
-- missed-dose alert happens 1 hour after redose eligibility
-- session auto-end follows 3 hours after redose eligibility
-- daily summary stays simple
-- stash low alert only fires on threshold crossing
-- do not bring back dose logged confirmation
-- do not replace the Firebase background path with a fake open-app-only solution
-- do not claim local-only users get real account-backed background notifications
+- `api/notify.ts`
+- `public/OneSignalSDKWorker.js`
 
 ---
 
 ## Validation
 
-Run:
+Run before any commit:
 
 - `npx tsc --noEmit -p tsconfig.app.json`
 - `npm run build`
-- in `functions/`: `npm run build`
 
-If possible in this environment, also verify:
-
-- permission request behavior
-- token registration behavior
-- due reminder path
-- missed-dose path
-- daily summary path
-- stash low path
-
-If any of those cannot be truly verified, say that clearly instead of pretending.
-
----
-
-## Acceptance criteria
-
-- notification branch remains honest about what is and is not verified
-- browser permission path is clear
-- push token registration path is sound
-- functions package builds
-- app build passes
-- any real delivery blockers found during testing are fixed
-- current theme is preserved
+Both must pass with no errors.
 
 ---
 
 ## Report back
 
-When finished, tell me:
+When finished, tell Preston:
 
-1. current branch name
+1. current branch
 2. exact files changed
-3. what was verified for real
-4. what is still unverified
-5. results of:
-   - `npx tsc --noEmit -p tsconfig.app.json`
-   - `npm run build`
-   - `functions/npm run build`
+3. what was fixed
+4. what is still deferred and why
+5. whether PR #12 is merged
+6. whether production delivery was tested and what the result was

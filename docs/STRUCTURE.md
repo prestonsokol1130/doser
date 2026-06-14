@@ -97,11 +97,15 @@ Important live state on `main`:
 
 ### `functions/`
 
-Branch-local notifications backend package.
+Legacy Firebase Functions package (superseded by `api/notify.ts` on Vercel).
 
 - `functions/src/index.ts`
 - `functions/package.json`
 - `functions/tsconfig.json`
+
+### `api/`
+
+- `api/notify.ts` — Vercel serverless notification scheduler (OneSignal delivery)
 
 ### `docs/`
 
@@ -346,24 +350,27 @@ If the current branch is `feat/real-notifications-v1`, these files are the main 
   - browser support check
   - permission check
   - permission request
-  - Firebase web token retrieval
-  - Firestore device registration
+  - OneSignal web SDK initialization via `react-onesignal`
+  - `OneSignal.login(uid)` — Firebase UID as OneSignal External User ID
+  - no device tokens stored in Firestore; OneSignal manages registration internally
 
-### Service worker
+### Service workers
 
 - `src/sw.ts`
-  - Workbox worker
-  - Firebase Messaging initialization
+  - Workbox worker for PWA caching only (no Firebase Messaging)
+- `public/OneSignalSDKWorker.js`
+  - OneSignal's separate service worker (`serviceWorkerPath` in OneSignal init)
 
-### Firebase backend
+### Notification backend
 
-- `functions/src/index.ts`
-  - scheduled Firebase notification sender
+- `api/notify.ts`
+  - Vercel serverless cron target (replaces Firebase Functions scheduler)
   - due reminder
   - missed-dose alert
   - daily summary
   - stash low alert
   - session auto-end markers
+  - sends via OneSignal REST API using `include_aliases.external_id: [uid]`
 
 ### Supporting persistence seams
 
@@ -408,9 +415,9 @@ Current important collections/documents:
   - `doseContexts`
 - `users/{uid}/doses/{doseId}`
 
-Notifications branch adds:
-
-- `users/{uid}/notificationDevices/{deviceId}`
+The former `users/{uid}/notificationDevices` subcollection (FCM tokens) has been
+removed. OneSignal manages device registration internally — no device tokens are
+stored in Firestore.
 
 Do not assume more exists without reading the live code first.
 
@@ -425,13 +432,15 @@ Web app validation:
 
 Notifications backend validation:
 
-- in `functions/`: `npm run build`
+- confirm `api/notify.ts` deploys with Vercel
+- confirm OneSignal env vars are present (`VITE_ONESIGNAL_APP_ID`, `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`)
 
 Manual verification still required on notifications branch:
 
 - signed-in browser permission flow
-- real device/PWA delivery
-- function deploy-backed end-to-end testing
+- OneSignal dashboard shows a registered subscriber
+- real device/PWA delivery via OneSignal
+- Vercel cron-backed end-to-end testing
 
 ---
 
@@ -450,7 +459,8 @@ Be careful with:
 - `src/store/profileStore.ts`
 - `src/lib/sessionStats.ts`
 - `src/sw.ts`
-- `functions/src/index.ts`
+- `src/lib/pushRegistration.ts`
+- `api/notify.ts`
 
 ---
 
@@ -460,9 +470,10 @@ The notifications branch has real architecture now, but not full real-world proo
 
 If you are continuing `feat/real-notifications-v1`, your first questions should be:
 
-1. Is the Firebase Functions package deployed?
-2. Is `VITE_FIREBASE_VAPID_KEY` present locally?
-3. Has a signed-in real-device test been completed?
-4. Which exact flows have actually been observed arriving on device?
+1. Is `api/notify.ts` deployed and reachable on Vercel?
+2. Are OneSignal env vars present (`VITE_ONESIGNAL_APP_ID`, `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`)?
+3. Does the OneSignal dashboard show a registered subscriber for the test user?
+4. Has a signed-in real-device test been completed?
+5. Which exact flows have actually been observed arriving on device?
 
 If those answers are missing, do not tell Preston the feature is working.

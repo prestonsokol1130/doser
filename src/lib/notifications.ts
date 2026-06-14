@@ -16,11 +16,11 @@ export function preferredIntervalMsForSubstance(
   profile: Profile,
   substance: Substance,
 ): number {
-  return (
-    (substance === 'GBL'
-      ? profile.gbl.preferredIntervalMinutes
-      : profile.bdo.preferredIntervalMinutes) * MINUTE_MS
-  )
+  const minutes =
+    substance === 'GBL'
+      ? (profile.gbl?.preferredIntervalMinutes ?? 90)
+      : (profile.bdo?.preferredIntervalMinutes ?? 120)
+  return Math.max(1, minutes) * MINUTE_MS
 }
 
 export function preferredIntervalMsForDose(
@@ -45,7 +45,7 @@ export function doseDueReminderAt(
   dose: Pick<Dose, 'ts' | 'substance'>,
 ): number {
   const intervalMs = preferredIntervalMsForDose(profile, dose)
-  const requestedLeadMs = profile.notif.doseDueLeadMinutes * MINUTE_MS
+  const requestedLeadMs = (profile.notif?.doseDueLeadMinutes ?? 5) * MINUTE_MS
   const clampedLeadMs = Math.min(
     Math.max(0, requestedLeadMs),
     Math.max(0, intervalMs - MINUTE_MS),

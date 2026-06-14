@@ -63,7 +63,10 @@ export function NotificationsScreen({
       const nextPermission = await Notification.requestPermission()
       setPermission(getBrowserPushPermission())
       if (nextPermission === 'granted') {
-        await syncPushRegistration(uid)
+        const currentUid = auth.currentUser?.uid ?? null
+        if (currentUid && currentUid === uid) {
+          await syncPushRegistration(currentUid)
+        }
       }
     } catch (error) {
       console.error('Failed to request browser push permission', error)

@@ -31,6 +31,7 @@ const STATE_COLLECTION = 'system'
 const STATE_DOC_ID = 'notificationState'
 const DEFAULT_TIME_ZONE = 'UTC'
 const USER_BATCH_SIZE = 100
+const STALE_CLAIM_MS = 5 * MINUTE_MS
 
 type Substance = 'GBL' | 'BDO'
 type DoseSubstance = Substance | 'GHB'
@@ -87,6 +88,7 @@ type NotificationState = {
   dailySummaryClaimedAt?: number
   stashLowActive?: boolean
   stashLowSentAt?: number
+  stashLowClaimedAt?: number
   updatedAt?: number
 }
 
@@ -185,39 +187,55 @@ async function processUser(
   const state = readState(stateSnapshot.data())
   const patch: Partial<NotificationState> = {}
 
-  const latestDose = await fetchLatestDose(userDoc.ref)
-  if (latestDose) {
-    await processDoseWindowNotifications(
-      uid,
+  try {
+    const latestDose = await fetchLatestDose(userDoc.ref)
+    if (latestDose) {
+      await processDoseWindowNotifications(
+        uid,
+        userDoc.ref,
+        stateRef,
+        profile,
+        latestDose,
+        state,
+        patch,
+        nowMs,
+      )
+    }
+
+    await processDailySummary(
+      userDoc.ref,
       stateRef,
       profile,
-      latestDose,
       state,
       patch,
       nowMs,
     )
-  }
 
-  await processDailySummary(
-    userDoc.ref,
-    stateRef,
-    profile,
-    state,
-    patch,
-    nowMs,
-  )
-
-  await processStashAlert(
-    userDoc.ref,
-    profile,
-    state,
-    patch,
-    nowMs,
-  )
-
-  if (Object.keys(patch).length > 0) {
-    patch.updatedAt = nowMs
-    await stateRef.set(patch, { merge: true })
+    await processStashAlert(
+      userDoc.ref,
+      stateRef,
+      profile,
+      state,
+      patch,
+      nowMs,
+    )
+  } finally {
+    if (Object.keys(patch).length > 0) {
+      patch.updatedAt = nowMs
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          await stateRef.set(patch, { merge: true })
+          break
+        } catch (error) {
+          if (attempt === 2) {
+            console.error('Failed to merge notification state patch', {
+              uid,
+              error: error instanceof Error ? error.message : String(error),
+            })
+          }
+        }
+      }
+    }
   }
 }
 
@@ -247,8 +265,45 @@ async function claimNotificationSlot(
   }
 }
 
+function isStaleClaim(claimedAt: number | undefined, nowMs: number): boolean {
+  return claimedAt != null && nowMs - claimedAt >= STALE_CLAIM_MS
+}
+
+async function persistNotificationSend(
+  stateRef: DocumentReference,
+  fields: Partial<NotificationState>,
+  nowMs: number,
+): Promise<boolean> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await stateRef.set({ ...fields, updatedAt: nowMs }, { merge: true })
+      return true
+    } catch (error) {
+      if (attempt === 2) {
+        console.error('Failed to persist notification send state', {
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+  }
+  return false
+}
+
+async function releaseNotificationClaim(
+  stateRef: DocumentReference,
+  fields: Partial<NotificationState>,
+  nowMs: number,
+): Promise<void> {
+  try {
+    await stateRef.set({ ...fields, updatedAt: nowMs }, { merge: true })
+  } catch {
+    // best-effort; stale-claim recovery will unblock a later retry
+  }
+}
+
 async function processDoseWindowNotifications(
   uid: string,
+  userRef: DocumentReference,
   stateRef: DocumentReference,
   profile: UserProfile,
   latestDose: DoseDoc,
@@ -265,13 +320,15 @@ async function processDoseWindowNotifications(
     profile.notif?.doseDueReminder === true &&
     state.doseDueSentForDoseId !== latestDose.id &&
     nowMs >= dueReminderAt &&
-    nowMs < nextWindowAt
+    nowMs <= nextWindowAt
   ) {
     const claimed = await claimNotificationSlot(
       stateRef,
-      (currentState) =>
-        currentState.doseDueSentForDoseId === latestDose.id ||
-        currentState.doseDueClaimedForDoseId === latestDose.id,
+      (currentState) => {
+        if (currentState.doseDueSentForDoseId === latestDose.id) return true
+        if (currentState.doseDueClaimedForDoseId !== latestDose.id) return false
+        return !isStaleClaim(currentState.doseDueClaimedAt, nowMs)
+      },
       {
         doseDueClaimedForDoseId: latestDose.id,
         doseDueClaimedAt: nowMs,
@@ -279,23 +336,46 @@ async function processDoseWindowNotifications(
       nowMs,
     )
     if (claimed) {
-      const sent = await sendOneSignalPush(
-        uid,
-        'Dose due soon',
-        `Your next ${normalizeTrackedSubstance(latestDose.substance)} window opens at ${formatClockTime(nextWindowAt, DEFAULT_TIME_ZONE)}.`,
-      )
-      if (sent) {
-        patch.doseDueSentForDoseId = latestDose.id
-        patch.doseDueSentAt = nowMs
+      const currentLatest = await fetchLatestDose(userRef)
+      const doseStillEligible =
+        currentLatest != null &&
+        currentLatest.id === latestDose.id &&
+        currentLatest.ts <= latestDose.ts &&
+        nowMs <= getNextDoseWindowAt(profile, currentLatest)
+
+      if (!doseStillEligible) {
+        await releaseNotificationClaim(stateRef, {
+          doseDueClaimedForDoseId: null,
+          doseDueClaimedAt: null,
+        }, nowMs)
       } else {
-        try {
-          await stateRef.update({
+        const reminderWindowAt = getNextDoseWindowAt(profile, currentLatest)
+        const sent = await sendOneSignalPush(
+          uid,
+          'Dose due soon',
+          `Your next ${normalizeTrackedSubstance(currentLatest.substance)} window opens at ${formatClockTime(reminderWindowAt, DEFAULT_TIME_ZONE)}.`,
+          profile.notif?.silent === true,
+        )
+        if (sent) {
+          const sentState = {
+            doseDueSentForDoseId: currentLatest.id,
+            doseDueSentAt: nowMs,
             doseDueClaimedForDoseId: null,
             doseDueClaimedAt: null,
-            updatedAt: nowMs,
-          })
-        } catch {
-          // best-effort; next cron run will re-evaluate
+          }
+          const persisted = await persistNotificationSend(stateRef, sentState, nowMs)
+          Object.assign(patch, sentState)
+          if (!persisted) {
+            console.error('Dose due push sent but immediate state persist failed', {
+              uid,
+              doseId: currentLatest.id,
+            })
+          }
+        } else {
+          await releaseNotificationClaim(stateRef, {
+            doseDueClaimedForDoseId: null,
+            doseDueClaimedAt: null,
+          }, nowMs)
         }
       }
     }
@@ -308,9 +388,13 @@ async function processDoseWindowNotifications(
   ) {
     const claimed = await claimNotificationSlot(
       stateRef,
-      (currentState) =>
-        currentState.missedDoseSentForDoseId === latestDose.id ||
-        currentState.missedDoseClaimedForDoseId === latestDose.id,
+      (currentState) => {
+        if (currentState.missedDoseSentForDoseId === latestDose.id) return true
+        if (currentState.missedDoseClaimedForDoseId !== latestDose.id) {
+          return false
+        }
+        return !isStaleClaim(currentState.missedDoseClaimedAt, nowMs)
+      },
       {
         missedDoseClaimedForDoseId: latestDose.id,
         missedDoseClaimedAt: nowMs,
@@ -318,23 +402,44 @@ async function processDoseWindowNotifications(
       nowMs,
     )
     if (claimed) {
-      const sent = await sendOneSignalPush(
-        uid,
-        'No dose logged',
-        `It has been 1 hour since your ${normalizeTrackedSubstance(latestDose.substance)} redose window opened and no new dose was logged.`,
-      )
-      if (sent) {
-        patch.missedDoseSentForDoseId = latestDose.id
-        patch.missedDoseSentAt = nowMs
+      const currentLatest = await fetchLatestDose(userRef)
+      const doseStillLatest =
+        currentLatest != null &&
+        currentLatest.id === latestDose.id &&
+        currentLatest.ts <= latestDose.ts
+
+      if (!doseStillLatest) {
+        await releaseNotificationClaim(stateRef, {
+          missedDoseClaimedForDoseId: null,
+          missedDoseClaimedAt: null,
+        }, nowMs)
       } else {
-        try {
-          await stateRef.update({
+        const sent = await sendOneSignalPush(
+          uid,
+          'No dose logged',
+          `It has been 1 hour since your ${normalizeTrackedSubstance(latestDose.substance)} redose window opened and no new dose was logged.`,
+          profile.notif?.silent === true,
+        )
+        if (sent) {
+          const sentState = {
+            missedDoseSentForDoseId: latestDose.id,
+            missedDoseSentAt: nowMs,
             missedDoseClaimedForDoseId: null,
             missedDoseClaimedAt: null,
-            updatedAt: nowMs,
-          })
-        } catch {
-          // best-effort; next cron run will re-evaluate
+          }
+          const persisted = await persistNotificationSend(stateRef, sentState, nowMs)
+          Object.assign(patch, sentState)
+          if (!persisted) {
+            console.error('Missed-dose push sent but immediate state persist failed', {
+              uid,
+              doseId: latestDose.id,
+            })
+          }
+        } else {
+          await releaseNotificationClaim(stateRef, {
+            missedDoseClaimedForDoseId: null,
+            missedDoseClaimedAt: null,
+          }, nowMs)
         }
       }
     }
@@ -361,14 +466,16 @@ async function processDailySummary(
 
   const summaryTime = sanitizeDailySummaryTime(profile.notif?.dailySummaryTime)
   const localNow = getLocalNow(DEFAULT_TIME_ZONE, nowMs)
-  if (localNow.timeKey !== summaryTime) return
+  if (localNow.timeKey < summaryTime) return
   if (state.dailySummaryLastSentDate === localNow.dateKey) return
 
   const claimed = await claimNotificationSlot(
     stateRef,
-    (currentState) =>
-      currentState.dailySummaryLastSentDate === localNow.dateKey ||
-      currentState.dailySummaryClaimedDate === localNow.dateKey,
+    (currentState) => {
+      if (currentState.dailySummaryLastSentDate === localNow.dateKey) return true
+      if (currentState.dailySummaryClaimedDate !== localNow.dateKey) return false
+      return !isStaleClaim(currentState.dailySummaryClaimedAt, nowMs)
+    },
     {
       dailySummaryClaimedDate: localNow.dateKey,
       dailySummaryClaimedAt: nowMs,
@@ -391,26 +498,35 @@ async function processDailySummary(
     userRef.id,
     'Daily summary',
     `${doseCount} dose${doseCount === 1 ? '' : 's'} today. ${totalMl.toFixed(1)} mL total. ${lastDoseLabel}`,
+    profile.notif?.silent === true,
   )
 
   if (sent) {
-    patch.dailySummaryLastSentDate = localNow.dateKey
-    patch.dailySummaryLastSentAt = nowMs
-  } else {
-    try {
-      await stateRef.update({
-        dailySummaryClaimedDate: null,
-        dailySummaryClaimedAt: null,
-        updatedAt: nowMs,
-      })
-    } catch {
-      // best-effort; next cron run will re-evaluate
+    const sentState = {
+      dailySummaryLastSentDate: localNow.dateKey,
+      dailySummaryLastSentAt: nowMs,
+      dailySummaryClaimedDate: null,
+      dailySummaryClaimedAt: null,
     }
+    const persisted = await persistNotificationSend(stateRef, sentState, nowMs)
+    Object.assign(patch, sentState)
+    if (!persisted) {
+      console.error('Daily summary push sent but immediate state persist failed', {
+        uid: userRef.id,
+        dateKey: localNow.dateKey,
+      })
+    }
+  } else {
+    await releaseNotificationClaim(stateRef, {
+      dailySummaryClaimedDate: null,
+      dailySummaryClaimedAt: null,
+    }, nowMs)
   }
 }
 
 async function processStashAlert(
   userRef: DocumentReference,
+  stateRef: DocumentReference,
   profile: UserProfile,
   state: NotificationState,
   patch: Partial<NotificationState>,
@@ -422,40 +538,130 @@ async function processStashAlert(
     if (state.stashLowActive) {
       patch.stashLowActive = false
     }
-    return
-  }
-
-  const refillAt = Math.max(0, stash.refillAt ?? 0)
-  const dosesSinceRefill = await fetchDosesSince(userRef, refillAt)
-  const consumedMl = dosesSinceRefill.reduce((sum, dose) => sum + dose.amountMl, 0)
-  const fullMl = (stash.fullMl ?? 0) > 0 ? stash.fullMl ?? 0 : stash.capacityMl ?? 0
-  const remainingMl = Math.max(0, fullMl - consumedMl)
-  const remainingPct =
-    fullMl > 0 ? Math.round((remainingMl / fullMl) * 100) : 0
-  const isLow = remainingPct <= (notif.stashLowThresholdPct ?? 20)
-
-  if (isLow && !state.stashLowActive) {
-    const sent = await sendOneSignalPush(
-      userRef.id,
-      'Stash running low',
-      `${remainingMl.toFixed(1)} mL remaining (${remainingPct}%).`,
-    )
-    if (sent) {
-      patch.stashLowActive = true
-      patch.stashLowSentAt = nowMs
+    if (state.stashLowClaimedAt != null) {
+      patch.stashLowClaimedAt = null
     }
     return
   }
 
-  if (!isLow && state.stashLowActive) {
-    patch.stashLowActive = false
+  const refillAt = Math.max(0, stash.refillAt ?? 0)
+  const thresholdPct = notif.stashLowThresholdPct ?? 20
+  const stashLevel = await getStashLevel(userRef, stash, refillAt, thresholdPct)
+
+  if (stashLevel.isLow && !state.stashLowActive) {
+    const claimed = await claimNotificationSlot(
+      stateRef,
+      (currentState) => {
+        if (currentState.stashLowActive === true) return true
+        if (currentState.stashLowClaimedAt == null) return false
+        return !isStaleClaim(currentState.stashLowClaimedAt, nowMs)
+      },
+      {
+        stashLowClaimedAt: nowMs,
+      },
+      nowMs,
+    )
+    if (!claimed) return
+
+    const freshLevel = await getStashLevel(userRef, stash, refillAt, thresholdPct)
+    if (!freshLevel.isLow) {
+      await releaseNotificationClaim(stateRef, {
+        stashLowClaimedAt: null,
+      }, nowMs)
+      return
+    }
+
+    const sent = await sendOneSignalPush(
+      userRef.id,
+      'Stash running low',
+      `${freshLevel.remainingMl.toFixed(1)} mL remaining (${freshLevel.remainingPct}%).`,
+      notif.silent === true,
+    )
+    if (sent) {
+      const sentState = {
+        stashLowActive: true,
+        stashLowSentAt: nowMs,
+        stashLowClaimedAt: null,
+      }
+      const persisted = await persistNotificationSend(stateRef, sentState, nowMs)
+      Object.assign(patch, sentState)
+      if (!persisted) {
+        console.error('Stash-low push sent but immediate state persist failed', {
+          uid: userRef.id,
+        })
+      }
+    } else {
+      await releaseNotificationClaim(stateRef, {
+        stashLowClaimedAt: null,
+      }, nowMs)
+    }
+    return
   }
+
+  if (!stashLevel.isLow && state.stashLowActive) {
+    patch.stashLowActive = false
+    patch.stashLowClaimedAt = null
+  }
+}
+
+type StashLevel = {
+  remainingMl: number
+  remainingPct: number
+  isLow: boolean
+}
+
+async function getStashLevel(
+  userRef: DocumentReference,
+  stash: StashPrefs,
+  refillAt: number,
+  thresholdPct: number,
+): Promise<StashLevel> {
+  const dosesSinceRefill = await fetchDosesSince(userRef, refillAt)
+  const consumedMl = dosesSinceRefill.reduce((sum, dose) => sum + dose.amountMl, 0)
+  const capacityMl = stash.capacityMl ?? 0
+  const remainingMl = Math.max(0, capacityMl - consumedMl)
+  const fullMl = (stash.fullMl ?? 0) > 0 ? stash.fullMl ?? 0 : capacityMl
+  const remainingPct =
+    fullMl > 0 ? Math.round((remainingMl / fullMl) * 100) : 0
+  return {
+    remainingMl,
+    remainingPct,
+    isLow: remainingPct <= thresholdPct,
+  }
+}
+
+function wasOneSignalPushDelivered(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false
+
+  const result = body as Record<string, unknown>
+  const id = result.id
+  const hasNotificationId = typeof id === 'string' && id.length > 0
+
+  if (hasNotificationId) {
+    if (typeof result.recipients === 'number' && result.recipients <= 0) {
+      return false
+    }
+    return true
+  }
+
+  const errors = result.errors
+  if (Array.isArray(errors) && errors.length > 0) return false
+  if (errors && typeof errors === 'object' && Object.keys(errors).length > 0) {
+    return false
+  }
+
+  if (typeof result.recipients === 'number' && result.recipients <= 0) {
+    return false
+  }
+
+  return false
 }
 
 async function sendOneSignalPush(
   uid: string,
   title: string,
   body: string,
+  silent = false,
 ): Promise<boolean> {
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
     console.error('OneSignal env vars missing')
@@ -466,19 +672,28 @@ async function sendOneSignalPush(
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 10_000)
     try {
+      const payload: Record<string, unknown> = {
+        app_id: ONESIGNAL_APP_ID,
+        include_aliases: { external_id: [uid] },
+        target_channel: 'push',
+        headings: { en: title },
+        contents: { en: body },
+      }
+      if (silent) {
+        payload.priority = 5
+        payload.data = { silent: 'true' }
+        payload.ios_sound = 'nil'
+        payload.android_sound = 'nil'
+        payload.huawei_sound = 'nil'
+      }
+
       const response = await fetch('https://onesignal.com/api/v1/notifications', {
         method: 'POST',
         headers: {
           Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          app_id: ONESIGNAL_APP_ID,
-          include_aliases: { external_id: [uid] },
-          target_channel: 'push',
-          headings: { en: title },
-          contents: { en: body },
-        }),
+        body: JSON.stringify(payload),
         signal: controller.signal,
       })
 
@@ -492,7 +707,21 @@ async function sendOneSignalPush(
         return false
       }
 
-      console.log('Sent notification via OneSignal', { uid, title })
+      const text = await response.text()
+      let body: unknown
+      try {
+        body = JSON.parse(text)
+      } catch {
+        console.error('OneSignal returned non-JSON response', { uid, title, text })
+        return false
+      }
+
+      if (!wasOneSignalPushDelivered(body)) {
+        console.error('OneSignal send did not deliver', { uid, title, body })
+        return false
+      }
+
+      console.log('Sent notification via OneSignal', { uid, title, body })
       return true
     } finally {
       clearTimeout(timeoutId)
