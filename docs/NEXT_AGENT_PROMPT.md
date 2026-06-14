@@ -1,150 +1,141 @@
-# Next Task — Finish And Verify Real Notifications V1
+# Next Task — Fix Production Deploy + Verify Notifications
 
 @HANDOFF.md
 @STRUCTURE.md
 
-Do not create, switch, or rename any branch. Run `git branch --show-current` first.
-Work only on the branch Preston already created for this task. If you are not on the
-expected branch, STOP and tell me.
+Do not create, switch, or rename any branch.
 
-Read before writing any code:
+First command to run: git branch --show-current
 
-- `docs/AI_CONTEXT.md`
-- `docs/HANDOFF.md` — especially Section `2b`
-- `docs/STRUCTURE.md`
+You should be on: main
+
+If not, STOP and tell me.
 
 ---
 
-## Status
-
-PR `#11` merged the explicit local-only upgrade decision to `main`. That work is done.
-
-You are likely continuing branch:
-
-- `feat/real-notifications-v1`
-
-The next active task is on branch:
-
-- `feat/real-notifications-v1`
-
-This branch is in progress. It is not merged to `main`.
-
-This branch already added:
-
-- browser notification permission UI in `src/components/settings/NotificationsScreen.tsx`
-- onboarding notification cleanup in `src/components/onboarding/NotificationBasics.tsx`
-- browser push registration in `src/lib/pushRegistration.ts`
-- shared timing helpers in `src/lib/notifications.ts`
-- service worker registration in `src/main.tsx`
-- custom service worker in `src/sw.ts`
-- Firebase Functions package in `functions/`
-- scheduled notification sender in `functions/src/index.ts`
-The app build passes.
-The functions package build passes.
-
-What is still not proven:
-
-- real signed-in browser/PWA background notification delivery on a device
-
-Do not describe notifications as fully working unless you personally verify real
-end-to-end delivery during this task.
+Read before doing anything:
+- docs/AI_CONTEXT.md
+- docs/HANDOFF.md
+- docs/CLAUDE_CODE_OPERATING_MANUAL.md
+- api/notify.ts
 
 ---
 
-## The task
+## What Happened This Session
 
-Finish the notifications branch correctly by the book.
+PR #12 (feat/real-notifications-v1) was merged to main on Jun 14 2026.
 
-That means:
+A production deploy was triggered via the Vercel API. It deployed commit 8afe6c3
+which had a TypeScript error that slipped past the build: a variable named `body`
+was used before its declaration in `sendOneSignalPush` in `api/notify.ts`.
 
-1. verify the local app is using the right env/config for Firebase web push
-2. verify the Firebase Functions package is wired correctly for deployment
-3. test the real notification flows on the live local app as far as this environment allows
-4. fix anything blocking real delivery
-5. keep the current app theme intact
-6. keep the scope on notifications only
+This caused usedoser.com to show a black screen. The Vercel logs showed:
+  "Cannot access 'body' before initialization"
+  on every POST /api/notify cron call.
 
----
+The fix was applied on main in commit 3b9f56e:
+  "fix: resolve body variable shadowing in sendOneSignalPush"
+  - renamed the parsed OneSignal response variable from `body` to `responseBody`
+  - updated 3 usages of that variable in the same function
 
-## Post-Merge Verification Checklist
+tsc and npm run build both passed after the fix.
 
-After this branch is merged and deployed to production:
-
-1. Verify Vercel auto-deploys the `main` branch to production (check https://usedoser.com).
-2. Test all OneSignal notification flows end-to-end on a real signed-in device/PWA:
-   - Grant permission in the PWA.
-   - Verify the OneSignal dashboard shows a subscriber for your test user.
-   - Manually trigger conditions to test and verify that the dose-due reminder, missed-dose alert, daily summary, and stash-low alert all arrive correctly.
-2. Test all notification flows end-to-end on a real signed-in device/PWA.
-   - **Permission**: Grant permission in the PWA and verify the OneSignal dashboard shows a new subscriber for your test user.
-   - **Dose-Due Reminder**: Log a dose and verify the "dose due" reminder arrives at the correct lead time.
-   - **Missed-Dose Alert**: Let a redose window pass without logging a dose and verify the "missed dose" alert arrives 1 hour later.
-   - **Daily Summary**: Set a summary time and verify the summary notification arrives at the correct time of day.
-   - **Stash-Low Alert**: Set a stash threshold, log doses to cross it, and verify the "stash low" alert arrives only once.
-   - **Opt-Out**: Turn off all notifications in settings and verify no notifications are received.
-   - **Sign-Out**: Sign out of the account and verify that account-related notifications stop arriving on that device.
-   - **Silent Mode**: Enable silent notifications and verify they arrive without sound or vibration.
-3. Create the Firestore composite index if Firebase logs a URL on the first cron run.
-4. Only when all notification types are confirmed to be delivered successfully is the feature considered fully verified.
+A second production deploy was triggered via the Vercel API targeting commit 3b9f56e.
+Deploy URL: doser-htkwskl8b-prestonsokol1130-6341s-projects.vercel.app
+That deploy may or may not have completed by the time you read this.
 
 ---
 
-## Product rules
+## Your First Job
 
-- missed-dose alert is a separate toggle
-- missed-dose alert happens 1 hour after redose eligibility
-- session auto-end follows 3 hours after redose eligibility
-- daily summary stays simple
-- stash low alert only fires on threshold crossing
-- do not bring back dose logged confirmation
-- do not replace the Firebase background path with a fake open-app-only solution
-- do not claim local-only users get real account-backed background notifications
+1. Check if the new deploy is live:
+   - Open https://usedoser.com — does it load?
+   - Check the Vercel dashboard for the project "doser" — is the latest deployment
+     from commit 3b9f56e marked as Ready and promoted to Production?
+
+2. If the deploy is not promoted to production yet:
+   - Go to the Vercel dashboard
+   - Find the deployment doser-htkwskl8b-prestonsokol1130-6341s-projects.vercel.app
+   - Click the three dots next to it and click "Promote to Production"
+
+3. If usedoser.com loads correctly after promotion:
+   - Ask Preston to open it on his phone, sign in, go to Settings → Notifications,
+     and grant permission
+   - Then check the OneSignal dashboard at dashboard.onesignal.com → Audience →
+     Subscriptions to see if Preston's device appears
+
+4. If usedoser.com is still black after promotion:
+   - Check the Vercel build logs for commit 3b9f56e for any new errors
+   - Fix any errors found in api/notify.ts on main, commit, push, and redeploy
+
+---
+
+## Vercel Project Info
+
+Project ID: prj_XoQl5z1GL156j5G7XyywyQ5ajFAG
+Team ID: team_PfeZqxnT0NDAs2WeZzMwwirH
+GitHub repo: prestonsokol1130/doser (repo ID: 1260952512)
+Production branch: main
+
+NOTE: Ask Preston to create a Vercel token at vercel.com/account/tokens.
+The previous token was revoked.
+
+To trigger a production deploy via API:
+POST https://api.vercel.com/v13/deployments?teamId=team_PfeZqxnT0NDAs2WeZzMwwirH
+Body: {"name":"doser","gitSource":{"type":"github","repoId":1260952512,"ref":"main"},"target":"production"}
+Auth: Bearer <token>
+
+The GitHub CLI is installed at:
+C:\Users\Preston Sokol\AppData\Local\Microsoft\WindowsApps\gh.exe
+It is authenticated. Use it to read PR reviews and repo state.
+
+---
+
+## After The Site Is Back Up
+
+Once usedoser.com loads:
+
+1. Preston opens it on his phone, signs in
+2. Goes to Settings → Notifications, grants permission
+3. Check OneSignal dashboard → Audience → Subscriptions for his device
+4. If device appears: wait for a dose-due notification or trigger one manually
+5. If no device appears after granting permission: the OneSignal SDK init is
+   failing — check browser console on the phone for errors
+
+---
+
+## PR #14 — Still Open
+
+Branch: feat/default-substance-preference
+PR: https://github.com/prestonsokol1130/doser/pull/14
+
+This branch adds a default substance preference to the user profile. Main was
+merged into it. A CodeRabbit full review was triggered. After the production
+site is stable, check this PR and handle any CodeRabbit findings before merging.
+
+---
+
+## Known Deferred Issues (Do Not Fix Without Preston Approving)
+
+- Timezone: notifications fire in UTC. Requires adding timezone field to Profile.
+- DST-safe midnight calculation: same root cause.
+- Unbounded user scan: acceptable at current user count.
 
 ---
 
 ## Validation
 
-Run:
+Run before any commit:
+- npx tsc --noEmit -p tsconfig.app.json
+- npm run build
 
-- `npx tsc --noEmit -p tsconfig.app.json`
-- `npm run build`
-- in `functions/`: `npm run build`
-- `npm run build`
-
-If possible in this environment, also verify:
-
-- permission request behavior
-- token registration behavior
-- due reminder path
-- missed-dose path
-- daily summary path
-- stash low path
-
-If any of those cannot be truly verified, say that clearly instead of pretending.
+Both must pass.
 
 ---
 
-## Acceptance criteria
+## Report Back To Preston
 
-- notification branch remains honest about what is and is not verified
-- browser permission path is clear
-- push token registration path is sound
-- functions package builds
-- app build passes
-- any real delivery blockers found during testing are fixed
-- current theme is preserved
-
----
-
-## Report back
-
-When finished, tell me:
-
-1. current branch name
-2. exact files changed
-3. what was verified for real
-4. what is still unverified
-5. results of:
-   - `npx tsc --noEmit -p tsconfig.app.json`
-   - `npm run build`
-   - `functions/npm run build`
+1. Is usedoser.com loading?
+2. Did Preston's device appear in OneSignal after granting permission?
+3. Did a test notification arrive?
+4. What is still not working and why?
